@@ -43,7 +43,7 @@ jobs:
 
             echo "................"
 
-            #git push --set-upstream origin dummy_master
+            git push --set-upstream origin dummy_master
 workflows:
     version: 2
     build_and_push:
