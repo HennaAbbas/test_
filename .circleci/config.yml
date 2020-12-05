@@ -25,19 +25,19 @@ jobs:
 
             echo "................"
 
-            #echo "DELETE ME LATER......."
+            echo "DELETE ME LATER......."
             #git config user.email
-            #git commit -a -m "[Machine User]: dummy commit [ci skip]" -m "Dummy message...."
+            git commit -a -m "[Machine User]: dummy commit [ci skip]" -m "Dummy message...."
             #git config user.email
             #git config user.name
-            #git push
-            #echo "End DELETE ME LATER......."
+            git push
+            echo "End DELETE ME LATER......."
             
 
 
             echo "................"
 
-            #git push --set-upstream origin dummy_master
+            git push --set-upstream origin dummy_master
 workflows:
     version: 2
     build_and_push:
