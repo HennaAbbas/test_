@@ -6,11 +6,15 @@ jobs:
     steps:
       - checkout
       - run: echo "hello world"
+      - run: mkdir hello
+      - run: cd hello
+      - run: touch hi.txt && echo "hello world" >> hi.txt
       - run:
           name: "Git status...."
           command: |
             echo "GIT STATUS ...."
             git status
+            git add .
             echo "END GIT STATUS ...."
 
             echo "SETIING UP GIT USER ...."
