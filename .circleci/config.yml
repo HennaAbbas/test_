@@ -18,7 +18,7 @@ jobs:
           command: |
             echo "GIT STATUS ...."
             git status
-            git add .
+            git add -A
             echo "END GIT STATUS ...."
 
             echo "SETIING UP GIT USER ...."
