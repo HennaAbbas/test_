@@ -5,7 +5,14 @@ workflows:
     jobs:
       - run-tests
       - second_job   
-   
+      - third_job        
+      - forth_job
+      - fifth_job   
+      - sixth_job          
+      - seventh_job        
+      - eighth_job
+      - nineth_job   
+      - tenth_job        
   
 jobs:
   run-tests:
@@ -26,6 +33,44 @@ jobs:
       - image: cimg/base:2020.01
     steps:
       - run: echo "bye world. This is a scheduled workflow/job"
-
-
-
+  third_job:
+    docker:
+      - image: cimg/base:2020.01
+    steps:
+      - run: echo "bye world. This is a scheduled workflow/job"
+  forth_job:
+    docker:
+      - image: cimg/base:2020.01
+    steps:
+      - run: echo "bye world. This is a scheduled workflow/job"
+  fifth_job:
+    docker:
+      - image: cimg/base:2020.01
+    steps:
+      - run: echo "bye world. This is a scheduled workflow/job"
+  sixth_job:
+    docker:
+      - image: cimg/base:2020.01
+    steps:
+      - run: echo "bye world. This is a scheduled workflow/job"  
+  seventh_job:       
+    docker:
+      - image: cimg/base:2020.01    
+    steps:
+      - run: echo "bye world. This is a scheduled workflow/job"
+  eighth_job:
+    docker:
+      - image: cimg/base:2020.01    
+    steps:
+      - run: echo "bye world. This is a scheduled workflow/job" 
+  nineth_job:
+    docker:
+      - image: cimg/base:2020.01    
+    steps:
+      - run: echo "bye world. This is a scheduled workflow/job"    
+  tenth_job:
+    docker:
+      - image: cimg/base:2020.01    
+    steps:
+      - run: echo "bye world. This is a scheduled workflow/job"         
+      
