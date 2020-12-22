@@ -16,8 +16,9 @@ jobs:
       - run: echo "hello world"
       - run: npm list -g
       - run: npm -v     
-      - run: sudo npm install -g npm@3.10.10
-      - run: npm -v        
+      - run: sudo npm install -g appium
+      - run: npm view appium version
+     
           
   second_job:
     docker:
