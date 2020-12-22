@@ -16,8 +16,8 @@ jobs:
       - run: echo "hello world"
       - run: npm list -g
       - run: npm -v     
-     
-      
+      - run: sudo npm install -v 6.11.1    
+      - run: npm -v        
           
   second_job:
     docker:
