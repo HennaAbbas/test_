@@ -15,6 +15,7 @@ jobs:
 
       - run: echo "hello world"
       - run: npm list -g
+      - run: npm -v     
      
       
           
