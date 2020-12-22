@@ -15,7 +15,8 @@ jobs:
 
       - run: echo "hello world"
       - run: npm list -g
-      - run: npm -v     
+      - run: npm -v   
+      - run: sudo npm install -g appium-doctor
       - run: sudo npm install -g appium
       - run: npm view appium version
      
