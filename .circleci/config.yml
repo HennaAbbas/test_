@@ -21,7 +21,7 @@ jobs:
     steps:
 
       - run: echo "hello world"
-      - run: npm list -g
+      - run: sleep 3h
       - run: npm -v   
       - run: sudo npm install -g appium-doctor
       - run: sudo npm install -g appium
