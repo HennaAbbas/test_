@@ -6,44 +6,7 @@ jobs:
     steps:
       - checkout
       - run: echo "hello world"
-      
-      
-      
-      - run: mkdir hello
-      - run: cd hello
-      - run: touch hi.txt && echo "hello world" >> hi.txt
 
-      - run:
-          name: "Git status...."
-          command: |
-            echo "GIT STATUS ...."
-            git status
-            git add -A
-            echo "END GIT STATUS ...."
-
-            echo "SETIING UP GIT USER ...."
-            git config user.email $ANDROID_BUILD_MACHINE_USER_PAT
-            git config user.name "pcln-androidadmin"
-            #git config user.email
-            #git config user.name
-            echo "END SETIING UP GIT USER ...."
-
-
-            echo "................"
-
-            echo "DELETE ME LATER......."
-            #git config user.email
-            git commit -am "Dummy message...."
-            #git config user.email
-            #git config user.name
-            #git push
-            echo "End DELETE ME LATER......."
-            
-
-
-            echo "................"
-
-            git push --set-upstream origin dummy_master
 workflows:
     version: 2
     build_and_push:
