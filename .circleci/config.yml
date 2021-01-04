@@ -6,6 +6,14 @@ jobs:
     steps:
       - checkout
       - run: echo "hello world"
+      - run: mkdir tests
+      - run: cd tests && touch my_test_1.txt
+      - run: echo "this is a test" > my_test_1.txt
+      - store_artifacts:
+          path: tests
+          
+
+      
 
 workflows:
     version: 2
