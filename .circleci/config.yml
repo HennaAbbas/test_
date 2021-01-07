@@ -48,7 +48,6 @@ jobs:
       - run: echo "hello world"
 
 workflows:
-    version: 2
     build_and_push:
       jobs:
         - build 
