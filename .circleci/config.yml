@@ -1,25 +1,59 @@
-version: 2
-jobs:
-  build:
-    docker:
-      - image: circleci/node
-    steps:
-      - checkout
-      - run: echo "hello world"
-      - run: mkdir tests
-      - run: cd tests && touch my_test_1.txt
-      - run: echo "this is a test" > my_test_1.txt
-      - store_artifacts:
-          path: tests
+# version: 2
+# jobs:
+#   build:
+#     docker:
+#       - image: circleci/node
+#     steps:
+#       - checkout
+#       - run: echo "hello world"
+#       - run: mkdir tests
+#       - run: cd tests && touch my_test_1.txt
+#       - run: echo "this is a test" > my_test_1.txt
+#       - store_artifacts:
+#           path: tests
           
 
       
 
+# workflows:
+#     version: 2
+#     build_and_push:
+#       jobs:
+#         - build
+
+
+
+version: 2.1
+# Yaml from foo-orb
+executors:
+  one:
+    machine: true
+    environment:
+      RUN_TESTS: foobar
+
+  two:
+    docker:
+      - image: circleci/node
+
+    
+jobs:
+  build:
+    executor: one  
+    steps:
+      - checkout
+      - run: echo "hello world"
+  test:
+    executor: two  
+    steps:
+      - checkout
+      - run: echo "hello world" 
 workflows:
     version: 2
     build_and_push:
       jobs:
-        - build
+        - build 
+        - test
+   
                 
                 
                 #test
