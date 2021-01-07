@@ -38,7 +38,11 @@ executors:
     
 jobs:
   build:
-    executor: one  
+    parameters:
+      my-executor:
+        default: one
+        type: string  
+    executor: << parameters.my-executor >> 
     steps:
       - checkout
       - run: echo "hello world"
@@ -52,6 +56,8 @@ workflows:
     build_and_push:
       jobs:
         - build 
+        - build: 
+            my-executor: two    
         - test
    
                 
