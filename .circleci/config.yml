@@ -11,10 +11,11 @@ jobs:
       - run: echo "this is a test" > my_test_1.txt
       - store_artifacts:
           path: tests
+      - run: wqr    
       - run:
-          name: Upload CodeCov.io Data
+          name: conditional step
           command: echo "conditional step"
-          when: always # Uploads code coverage results, pass or fail
+          when: on_fail # Uploads code coverage results, pass or fail
           
 
       
