@@ -12,10 +12,10 @@ jobs:
       - store_artifacts:
           path: tests
       - run: wqr    
-      - run:
-          name: conditional step
-          command: echo "conditional step"
-#           when: on_fail # Uploads code coverage results, pass or fail
+#       - run:
+#           name: conditional step
+#           command: echo "conditional step"
+# #           when: on_fail # Uploads code coverage results, pass or fail
           
 
       
