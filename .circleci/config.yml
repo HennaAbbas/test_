@@ -78,5 +78,5 @@ jobs:
           POSTGRES_DB: circle_test  
     steps:
       - checkout
-      - run: postgres -V
+      - run: sleep 10h
 
