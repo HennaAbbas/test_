@@ -1,30 +1,30 @@
-version: 2.0
-jobs:
-  build:
-    docker:
-      - image: circleci/node
-    steps:
-      - checkout
-      - run: echo "hello world"
-      - run: mkdir tests
-      - run: cd tests && touch my_test_1.txt
-      - run: echo "this is a test" > my_test_1.txt
-      - store_artifacts:
-          path: tests
-      - run: wqr    
-#       - run:
-#           name: conditional step
-#           command: echo "conditional step"
-# #           when: on_fail # Uploads code coverage results, pass or fail
+# version: 2.0
+# jobs:
+#   build:
+#     docker:
+#       - image: circleci/node
+#     steps:
+#       - checkout
+#       - run: echo "hello world"
+#       - run: mkdir tests
+#       - run: cd tests && touch my_test_1.txt
+#       - run: echo "this is a test" > my_test_1.txt
+#       - store_artifacts:
+#           path: tests
+#       - run: wqr    
+# #       - run:
+# #           name: conditional step
+# #           command: echo "conditional step"
+# # #           when: on_fail # Uploads code coverage results, pass or fail
           
 
       
 
-workflows:
-    version: 2.0
-    build_and_push:
-      jobs:
-        - build
+# workflows:
+#     version: 2.0
+#     build_and_push:
+#       jobs:
+#         - build
 
 
 
@@ -60,5 +60,23 @@ workflows:
 #             my-executor: node    
 
    
+version: 2.1
+orbs:
+  slack: circleci/slack@4.0.0
 
+jobs:
+  build:
+    working_directory: ~/circleci-demo-python-django
+    docker:
+      - image: circleci/python:3.6.4
+        environment:
+          PIPENV_VENV_IN_PROJECT: true
+          DATABASE_URL: postgresql://root@localhost/circle_test?sslmode=disable
+      - image: circleci/postgres:9.6.2
+        environment:
+          POSTGRES_USER: root
+          POSTGRES_DB: circle_test  
+    steps:
+      - checkout
+      - run: postgres -V
 
