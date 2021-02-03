@@ -71,5 +71,5 @@ jobs:
       - image: image: circleci/python:3.6-jessie-browsers
     steps:
       - checkout
-      - run: ping cmsuat.canamins.com
+      - run: sudo ping cmsuat.canamins.com
 
