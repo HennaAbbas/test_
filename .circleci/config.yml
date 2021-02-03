@@ -61,12 +61,8 @@
 
    
 version: 2.1
-orbs:
-  slack: circleci/slack@4.0.0
-
 jobs:
   build:
-    working_directory: ~/circleci-demo-python-django
     docker:
       - image: image: circleci/python:3.6-jessie-browsers
     steps:
