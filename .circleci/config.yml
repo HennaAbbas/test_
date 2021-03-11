@@ -5,7 +5,8 @@ jobs:
       - image: circleci/python:3.6-jessie-browsers
     steps:
 #       - checkout
-      - run: sudo ping cmsuat.canamins.com      
+      - run: echo $CIRCLE_PULL_REQUEST     
+      - run: echo << pipeline.git.branch >>
 #       - run: echo "hello world"
 #       - run: mkdir tests
 #       - run: cd tests && touch my_test_1.txt
