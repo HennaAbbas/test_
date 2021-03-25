@@ -25,6 +25,7 @@ jobs:
                 fi
               else
                 current_wait_time=$(( current_wait_time + 60 ))
+                echo "adding 60 to wait time"
               fi 
             done   
       
