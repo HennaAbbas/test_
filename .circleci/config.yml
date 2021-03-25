@@ -14,6 +14,7 @@ jobs:
             while true; do
               if (( $current_wait_time > 600 )); then
                 echo "current wait > 600"
+                echo $current_wait_time
                 if [[ "true" == "true" ]]; then
                   echo "Proceeding with future steps";
                   echo "exiting";
