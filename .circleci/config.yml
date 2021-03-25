@@ -10,7 +10,8 @@ jobs:
           command: |
             echo "running sleep command"
             current_wait_time=0
-
+            
+            while true; do
               if (( $current_wait_time > 1800 )); then
                 if [[ "true" == "true" ]]; then
                   echo "Proceeding with future steps";
@@ -20,7 +21,8 @@ jobs:
                   echo "Failing job by exiting forcefully";
                   exit 1;
                 fi
-              fi      
+              fi 
+            done   
       
 workflows:
     version: 2.1
