@@ -12,10 +12,11 @@ jobs:
             current_wait_time=0
             
             while true; do
-              if (( $current_wait_time > 1800 )); then
+              if (( $current_wait_time < 1800 )); then
                 if [[ "true" == "true" ]]; then
                   echo "Proceeding with future steps";
-                  current_wait_time=$(( current_wait_time + 60 ))
+                  echo "exiting";
+                  # current_wait_time=$(( current_wait_time + 60 ))
                   exit 0;
                 else
                   echo "Failing job by exiting forcefully";
