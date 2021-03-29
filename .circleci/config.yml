@@ -40,7 +40,6 @@ jobs:
                               "run_job": true
                             }
                           }'
-                          && echo "made api call"
      
           when: on_fail
   deploy:
