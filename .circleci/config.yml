@@ -1,8 +1,9 @@
 version: 2.1
 parameters: 
   run_job: 
-    default: false
     type: boolean
+    default: false  
+ 
 
 workflows:
   my-workflow:
@@ -53,10 +54,10 @@ jobs:
     steps:
       - run : echo " rollback job pre-step"
       - run: echo << pipeline.parameters.run_job >>
-      - when: 
-          condition: << pipeline.parameters.run_job >>
-          steps:
-            - run: echo "running rollback job"
+      - when:
+         condition: << pipeline.parameters.run_job >> # this would be triggered when you pass the parameter value via API
+         steps:
+           - run: echo "running rollback steps...."
             
             #test
  
