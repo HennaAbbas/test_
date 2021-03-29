@@ -35,7 +35,7 @@ jobs:
                             "parameters": {
                               "run_job": true
                             }
-                          }
+                          }'
      
           when: on_fail
   deploy:
