@@ -28,13 +28,13 @@ jobs:
       - image: cimg/base:2020.01
     steps:
       - run: echo "deploy"
-workflows:
-  my-workflow:
-    jobs:
-      - build
-      - test 
-      - deploy       
-
+      
             
             #test
- 
+ workflows:
+  version: 2
+  build-deploy:
+    jobs:
+      - build
+      - test
+      - deploy
