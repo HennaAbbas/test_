@@ -75,6 +75,8 @@ jobs:
     executor: node-executor
     steps:
       - run: echo " deploy_to_dev_job"
+      - run: echo "<< pipeline.parameters.deploy_to_dev >>"
+      - run: echo "<< parameters.deploy_to_dev >> "
       - when:
          condition: << pipeline.parameters.deploy_to_dev >> # this would be triggered when you pass the parameter value via API
          steps:
