@@ -55,9 +55,9 @@ jobs:
     steps:
       - run: echo "hello world! build job"
       - run: 
-          name: run rollback job
+          name: run fail job
           command: |
-              echo "hello world!!!!!!!!!!"
+              wqr
       - run: 
           name: run rollback job
           command: |
