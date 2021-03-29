@@ -1,4 +1,8 @@
 version: 2.1
+parameters: 
+  run_job: 
+  default: false
+  type: boolean
 
 workflows:
   my-workflow:
@@ -44,10 +48,6 @@ jobs:
     steps:
       - run: echo "deploy"
   rollback:
-    parameters: 
-      run_job: 
-        default: false
-        type: boolean
     docker:
       - image: cimg/base:2020.01
     steps:
