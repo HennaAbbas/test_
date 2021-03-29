@@ -1,8 +1,8 @@
 version: 2.1
-# commands:
-#   rollback_steps:
-#     steps:
-#       - run: echo "run rollback steps"
+commands:
+  rollback_steps:
+    steps:
+      - run: echo "run rollback steps"
       
 jobs:
   build:
@@ -11,17 +11,17 @@ jobs:
     steps:
 
       - run: echo "hello world"
-#       - rollback_steps:
-#           when: on_fail
+      - rollback_steps:
+          when: on_fail
                
   test:
     docker:
       - image: cimg/base:2020.01
     steps:
       - run: echo "test job"
-#       - run: wqr
-#       - rollback_steps:
-#           when: on_fail    
+      - run: wqr
+      - rollback_steps:
+          when: on_fail    
 
   deploy:
     docker:
@@ -31,8 +31,8 @@ jobs:
       
             
             #test
- workflows:
-  build-deploy:
+workflows:
+  build-test:
     jobs:
       - build
       - test
