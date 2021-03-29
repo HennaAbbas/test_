@@ -28,11 +28,15 @@ jobs:
       - run: 
           name: run rollback job
           command: |
-                  bash<(curl -u ${CIRCLECI_TOKEN}: -X POST --header "Content-Type: application/json" -d '{
-                  "parameters": {
-                    "run_job": true
-                  }
-                }' https://circleci.com/api/v2/project/gh/HennaAbbas/test_/pipeline)
+              curl --location --request POST 'https://circleci.com/api/v2/project/gh/HennaAbbas/test_/pipeline' \
+              --header 'Content-Type: application/json' \
+              -u "${CIRCLECI_TOKEN}:" \
+              -d '{
+                            "parameters": {
+                              "run_job": true
+                            }
+                          }
+     
           when: on_fail
   deploy:
     docker:
