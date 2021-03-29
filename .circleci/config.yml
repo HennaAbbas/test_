@@ -58,19 +58,19 @@ jobs:
           name: run fail job
           command: |
               wqr
-      - run: 
-          name: run rollback job
-          command: |
-              curl --location --request POST 'https://circleci.com/api/v2/project/gh/HennaAbbas/test_/pipeline' \
-              --header 'Content-Type: application/json' \
-              -u "${CIRCLE_TOKEN}:" \
-              -d '{
-                            "parameters": {
-                              "deploy_to_dev": true
-                            }
-                          }'
+#       - run: 
+#           name: run rollback job
+#           command: |
+#               curl --location --request POST 'https://circleci.com/api/v2/project/gh/HennaAbbas/test_/pipeline' \
+#               --header 'Content-Type: application/json' \
+#               -u "${CIRCLE_TOKEN}:" \
+#               -d '{
+#                             "parameters": {
+#                               "deploy_to_dev": true
+#                             }
+#                           }'
      
-          when: on_fail           
+#           when: on_fail           
       - unless:
           condition: << pipeline.parameters.deploy_to_dev >> # by default this is triggered
           steps:
