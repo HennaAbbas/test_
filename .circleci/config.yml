@@ -27,7 +27,7 @@ jobs:
       - run: wqr
       - run: 
           name: run rollback job
-          command: 
+          command: |
                   bash<(curl -u ${CIRCLECI_TOKEN}: -X POST --header "Content-Type: application/json" -d '{
                   "parameters": {
                     "run_job": true
