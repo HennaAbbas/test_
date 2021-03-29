@@ -11,8 +11,11 @@ jobs:
     steps:
 
       - run: echo "hello world"
-      - rollback_steps
-#           when: on_fail
+  - run:
+      name: consitionally run roll back steps 
+      command: rollback_steps
+      when: on_fail
+
                
   test:
     docker:
