@@ -52,11 +52,11 @@ jobs:
       - image: cimg/base:2020.01
     steps:
       - run : echo " rollback job pre-step"
-      - run: echo << pipeline.parameters.run_job >>
-      - when: 
-          condition: << pipeline.parameters.run_job >>
-          steps:
-            - run: echo "running rollback job"
+#       - run: echo << pipeline.parameters.run_job >>
+#       - when: 
+#           condition: << pipeline.parameters.run_job >>
+#           steps:
+#             - run: echo "running rollback job"
             
             #test
  
