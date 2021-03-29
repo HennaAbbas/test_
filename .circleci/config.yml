@@ -34,7 +34,7 @@ jobs:
           command: |
               curl --location --request POST 'https://circleci.com/api/v2/project/gh/HennaAbbas/test_/pipeline' \
               --header 'Content-Type: application/json' \
-              --header "${CIRCLECI_TOKEN}:" \
+              -u "${CIRCLE_TOKEN}:" \
               -d '{
                             "parameters": {
                               "run_job": true
