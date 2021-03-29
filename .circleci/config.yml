@@ -11,8 +11,8 @@ jobs:
     steps:
 
       - run: echo "hello world"
-      - rollback_steps:
-          when: on_fail
+      - rollback_steps
+#           when: on_fail
                
   test:
     docker:
@@ -20,8 +20,8 @@ jobs:
     steps:
       - run: echo "test job"
       - run: wqr
-      - rollback_steps:
-          when: on_fail    
+#       - rollback_steps:
+#           when: on_fail    
 
   deploy:
     docker:
