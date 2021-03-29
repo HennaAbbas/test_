@@ -1,8 +1,8 @@
 version: 2.1
 parameters: 
   run_job: 
-  default: false
-  type: boolean
+    default: false
+    type: boolean
 
 workflows:
   my-workflow:
