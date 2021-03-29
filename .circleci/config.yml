@@ -31,8 +31,8 @@ jobs:
 
 workflows:
   version: 2
-  jobs:
-    build-deploy:
+  build-deploy:
+    jobs:
       - build
       - deploy_to_dev
  
