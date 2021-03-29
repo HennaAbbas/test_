@@ -1,8 +1,9 @@
 version: 2.1
-parameters: 
-  run_job: 
-    type: boolean
-    default: false  
+commands:
+  rollback_steps:
+    steps:
+      - run: echo "run rollback steps"
+    
  
 
 workflows:
@@ -22,46 +23,28 @@ jobs:
     steps:
 
       - run: echo "hello world"
-      - unless:
-          condition: << pipeline.parameters.run_job >> # by default this is triggered
-          steps:
-            - run: " triggered with a run_job parameter"     
-     
-          
+      - run:
+          name: run rollback steps
+          commands: rollback_steps
+          when: on_fail    
+               
   test:
     docker:
       - image: cimg/base:2020.01
     steps:
       - run: echo "test job"
       - run: wqr
-      - run: 
-          name: run rollback job
-          command: |
-              curl --location --request POST 'https://circleci.com/api/v2/project/gh/HennaAbbas/test_/pipeline' \
-              --header 'Content-Type: application/json' \
-              -u "${CIRCLE_TOKEN}:" \
-              -d '{
-                            "parameters": {
-                              "run_job": true
-                            }
-                          }'
-     
-          when: on_fail
+      - run:
+          name: run rollback steps
+          commands: rollback_steps
+          when: on_fail       
+
   deploy:
     docker:
       - image: cimg/base:2020.01
     steps:
       - run: echo "deploy"
-  rollback:
-    docker:
-      - image: cimg/base:2020.01
-    steps:
-      - run : echo " rollback job pre-step"
-      - run: echo << pipeline.parameters.run_job >>
-      - when:
-         condition: << pipeline.parameters.run_job >> # this would be triggered when you pass the parameter value via API
-         steps:
-           - run: echo "running rollback steps...."
+
             
             #test
  
