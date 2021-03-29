@@ -23,7 +23,7 @@ jobs:
 
       - run: echo "hello world"
       - unless:
-          condition: << pipeline.parameters.rub_job >> # by default this is triggered
+          condition: << pipeline.parameters.run_job >> # by default this is triggered
           steps:
             - run: " triggered with a run_job parameter"     
      
