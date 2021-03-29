@@ -11,17 +11,17 @@ jobs:
     steps:
 
       - run: echo "hello world"
-      - rollback_steps:
-          when: on_fail
+#       - rollback_steps:
+#           when: on_fail
                
   test:
     docker:
       - image: cimg/base:2020.01
     steps:
       - run: echo "test job"
-      - run: wqr
-      - rollback_steps:
-          when: on_fail    
+#       - run: wqr
+#       - rollback_steps:
+#           when: on_fail    
 
   deploy:
     docker:
