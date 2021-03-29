@@ -12,8 +12,8 @@ workflows:
   
 jobs:
   build:
-    macos:
-      xcode: 11.3.0
+    docker:
+      - image: cimg/base:2020.01
     steps:
 
       - run: echo "hello world"
