@@ -19,7 +19,7 @@ jobs:
       - unless:
           condition: << pipeline.parameters.deploy_to_dev >> # by default this is triggered
           steps:
-            - run: # build
+            - run: echo "running build job"
   deploy_to_dev:
     executor: node-executor
     steps:
@@ -27,8 +27,7 @@ jobs:
       - when:
          condition: << pipeline.parameters.deploy_to_dev >> # this would be triggered when you pass the parameter value via API
          steps:
-           - run: # deploy steps
-                  # do deploy to dev
+           - run: echo "running deploy job"
 
 workflows:
   version: 2
