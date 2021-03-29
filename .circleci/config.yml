@@ -3,19 +3,7 @@ commands:
   rollback_steps:
     steps:
       - run: echo "run rollback steps"
-    
- 
-
-workflows:
-  my-workflow:
-    jobs:
-      - build
-      - test 
-      - deploy      
-
-  
-     
-  
+      
 jobs:
   build:
     docker:
@@ -40,6 +28,12 @@ jobs:
       - image: cimg/base:2020.01
     steps:
       - run: echo "deploy"
+workflows:
+  my-workflow:
+    jobs:
+      - build
+      - test 
+      - deploy       
 
             
             #test
