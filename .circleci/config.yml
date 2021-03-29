@@ -42,6 +42,7 @@ jobs:
     docker:
       - image: cimg/base:2020.01
     steps:
+      - run : echo " rollback job pre-step"
       - when: 
           condition: << parameters.run_job >>
           steps:
