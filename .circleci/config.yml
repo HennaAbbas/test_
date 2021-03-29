@@ -22,6 +22,10 @@ jobs:
     steps:
 
       - run: echo "hello world"
+      - unless:
+          condition: << pipeline.parameters.rub_job >> # by default this is triggered
+          steps:
+            - run: " triggered with a run_job parameter"     
      
           
   test:
