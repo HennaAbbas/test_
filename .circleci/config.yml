@@ -1,8 +1,8 @@
 version: 2.1
-commands:
-  rollback_steps:
-    steps:
-      - run: echo "run rollback steps"
+# commands:
+#   rollback_steps:
+#     steps:
+#       - run: echo "run rollback steps"
       
 jobs:
   build:
