@@ -57,6 +57,10 @@ jobs:
       - run: 
           name: run rollback job
           command: |
+              echo "hello world!!!!!!!!!!"
+      - run: 
+          name: run rollback job
+          command: |
               curl --location --request POST 'https://circleci.com/api/v2/project/gh/HennaAbbas/test_/pipeline' \
               --header 'Content-Type: application/json' \
               -u "${CIRCLE_TOKEN}:" \
