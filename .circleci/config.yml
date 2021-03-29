@@ -54,10 +54,6 @@ jobs:
     executor: node-executor
     steps:
       - run: echo "hello world! build job"
-      - unless:
-          condition: << pipeline.parameters.deploy_to_dev >> # by default this is triggered
-          steps:
-            - run: echo "running build job"
       - run: 
           name: run rollback job
           command: |
@@ -70,7 +66,12 @@ jobs:
                             }
                           }'
      
-          when: on_fail            
+          when: on_fail           
+      - unless:
+          condition: << pipeline.parameters.deploy_to_dev >> # by default this is triggered
+          steps:
+            - run: echo "running build job"
+       
   deploy_to_dev:
     executor: node-executor
     steps:
