@@ -15,7 +15,7 @@ jobs:
   build:
     executor: node-executor
     steps:
-      - checkout
+      - run: echo "hello world! build job"
       - unless:
           condition: << pipeline.parameters.deploy_to_dev >> # by default this is triggered
           steps:
@@ -23,7 +23,7 @@ jobs:
   deploy_to_dev:
     executor: node-executor
     steps:
-      - checkout
+      - run: echo " deploy_to_dev_job"
       - when:
          condition: << pipeline.parameters.deploy_to_dev >> # this would be triggered when you pass the parameter value via API
          steps:
