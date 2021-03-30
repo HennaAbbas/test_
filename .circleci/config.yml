@@ -1,4 +1,9 @@
 version: 2.1
+parameters: 
+      rollback_job: 
+      type: boolean
+      default: false
+
 
       
 jobs:
@@ -7,12 +12,8 @@ jobs:
       - image: cimg/base:2020.01
     steps:
 
-      - run: wqr
-      - when: on_fail
-          name: consitionally run roll back steps 
-          command: echo "failed step" 
-            
-
+      - run: echo "build job"
+   
 
                
   test:
@@ -33,7 +34,7 @@ jobs:
     docker:
       - image: cimg/base:2020.01
     steps:
-      - run: echo "deploy"      
+      - run: echo "rollback"      
       
             
             #test
@@ -43,4 +44,13 @@ workflows:
       - build
       - test
       - deploy
-      - rollback
+  rollback_workflow:  
+      when:
+        equal: [ true, << pipeline.parameters.rollback_job >> ]
+            jobs: 
+              - rollback    
+
+
+                  
+                                  
+            
