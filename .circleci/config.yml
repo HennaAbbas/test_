@@ -1,8 +1,9 @@
 version: 2.1
-parameters: 
-      rollback_job: 
-      type: boolean
-      default: false
+
+parameters:
+  rollback_job:
+    type: boolean
+    default: false      
 
 
       
