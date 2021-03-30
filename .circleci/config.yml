@@ -44,11 +44,11 @@ workflows:
       - build
       - test
       - deploy
-  rollback_workflow:  
-      when:
-        equal: [ true, << pipeline.parameters.rollback_job >> ]
-            jobs: 
-              - rollback    
+  rollback_workflow:
+    when: << pipeline.parameters.rollback_job >>
+    jobs:
+      - rollback    
+  
 
 
                   
