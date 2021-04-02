@@ -54,10 +54,13 @@ jobs:
     executor: node-executor
     steps:
       - run: echo "hello world! build job"
-      - run: 
-          name: run fail job
-          command: |
-              wqr
+      - run:
+            name: Trigger deployment
+            command: |
+                    if [[ ${CIRCLE_BRANCH} == "dev" || ${CIRCLE_BRANCH} == "exp" ]]; then
+                        curl -u $CIRCLECI_TOKEN -H "Content-Type: application/json" https://circleci.com/api/v1.1/project/bitbucket/imbio/imbio-deploy/tree/${CIRCLE_BRANCH} -d '{"build_parameters": {"API_TRIGGER": "LaunchpadService"}}'
+                    fi      
+
 #       - run: 
 #           name: run rollback job
 #           command: |
