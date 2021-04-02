@@ -57,7 +57,7 @@ jobs:
       - run:
             name: Trigger deployment
             command: |
-                    if [[ ${CIRCLE_BRANCH} == "dev" || ${CIRCLE_BRANCH} == "exp" ]]; then
+                    if [[ ${CIRCLE_BRANCH} == "master" || ${CIRCLE_BRANCH} == "exp" ]]; then
                         curl -u $CIRCLECI_TOKEN -H "Content-Type: application/json" https://circleci.com/api/v1.1/project/bitbucket/imbio/imbio-deploy/tree/${CIRCLE_BRANCH} -d '{"build_parameters": {"API_TRIGGER": "LaunchpadService"}}'
                     fi      
 
