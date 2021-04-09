@@ -128,9 +128,9 @@ jobs:
       
 workflows:
   matrix-test:
-	  jobs:
-	    - matrix-test:
- 		      matrix
+    jobs:
+      - matrix-test:
+ 	  matrix
             parameters:
               os: [docker, linux, macos, win/default]
               subject: ["World", "Friend", "Baby"]      
