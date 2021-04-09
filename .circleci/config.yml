@@ -127,7 +127,7 @@ jobs:
       - run: echo “Hello << parameters.subject >>!”
       
 workflows:
-  matrix-test:
+  matri-test:
     jobs:
       - matrix-test:
  	    matrix:
