@@ -130,7 +130,7 @@ workflows:
   matrix-test:
     jobs:
       - matrix-test:
- 	    Matrix
+ 	    matrix:
             parameters:
               os: [docker, linux, macos, win/default]
               subject: ["World", "Friend", "Baby"]      
