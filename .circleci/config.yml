@@ -126,11 +126,19 @@ jobs:
       - checkout
       - run: echo “Hello << parameters.subject >>!”
       
+# workflows:
+#   matri-test:
+#     jobs:
+#       - matrix-test:
+#  	    matrix:
+#             parameters:
+#               os: [docker, linux, macos, win/default]
+#               subject: ["World", "Friend", "Baby"]    
 workflows:
-  matri-test:
+  all-tests:
     jobs:
       - matrix-test:
- 	    matrix:
+          matrix:
             parameters:
               os: [docker, linux, macos, win/default]
-              subject: ["World", "Friend", "Baby"]      
+              subject: ["World", "Friend", "Baby"]              
