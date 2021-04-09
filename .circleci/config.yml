@@ -1,100 +1,136 @@
-version: 2.1
+# version: 2.1
 
-parameters:
-  rollback_job:
-    type: boolean
-    default: false      
+# parameters:
+#   rollback_job:
+#     type: boolean
+#     default: false      
 
 
       
-jobs:
-  build:
-    docker:
-      - image: cimg/base:2020.01
-    steps:
+# jobs:
+#   build:
+#     docker:
+#       - image: cimg/base:2020.01
+#     steps:
 
-      - run: echo "build job"
-      - run: 
-          name: run rollback job
-          command: |
-              curl --location --request POST 'https://circleci.com/api/v2/project/gh/HennaAbbas/test_/pipeline' \
-              --header 'Content-Type: application/json' \
-              -u "${CIRCLE_TOKEN}:" \
-              -d '{
-                            "parameters": {
-                              "rollback_job": true
-                            }
-                          }'
+#       - run: echo "build job"
+#       - run: 
+#           name: run rollback job
+#           command: |
+#               curl --location --request POST 'https://circleci.com/api/v2/project/gh/HennaAbbas/test_/pipeline' \
+#               --header 'Content-Type: application/json' \
+#               -u "${CIRCLE_TOKEN}:" \
+#               -d '{
+#                             "parameters": {
+#                               "rollback_job": true
+#                             }
+#                           }'
      
-          when: on_fail       
+#           when: on_fail       
    
 
                
-  test:
-    docker:
-      - image: cimg/base:2020.01
-    steps:
-      - run: echo "test job"
-      - run: 
-          name: run rollback job
-          command: |
-              curl --location --request POST 'https://circleci.com/api/v2/project/gh/HennaAbbas/test_/pipeline' \
-              --header 'Content-Type: application/json' \
-              -u "${CIRCLE_TOKEN}:" \
-              -d '{
-                            "parameters": {
-                              "rollback_job": true
-                            }
-                          }'
+#   test:
+#     docker:
+#       - image: cimg/base:2020.01
+#     steps:
+#       - run: echo "test job"
+#       - run: 
+#           name: run rollback job
+#           command: |
+#               curl --location --request POST 'https://circleci.com/api/v2/project/gh/HennaAbbas/test_/pipeline' \
+#               --header 'Content-Type: application/json' \
+#               -u "${CIRCLE_TOKEN}:" \
+#               -d '{
+#                             "parameters": {
+#                               "rollback_job": true
+#                             }
+#                           }'
      
-          when: on_fail       
+#           when: on_fail       
 
-#       - rollback_steps:
-#           when: on_fail    
+# #       - rollback_steps:
+# #           when: on_fail    
 
-  deploy:
-    docker:
-      - image: cimg/base:2020.01
-    steps:
-      - run: echo "deploy"
-      - run: 
-          name: run rollback job
-          command: |
-              curl --location --request POST 'https://circleci.com/api/v2/project/gh/HennaAbbas/test_/pipeline' \
-              --header 'Content-Type: application/json' \
-              -u "${CIRCLE_TOKEN}:" \
-              -d '{
-                            "parameters": {
-                              "rollback_job": true
-                            }
-                          }'
+#   deploy:
+#     docker:
+#       - image: cimg/base:2020.01
+#     steps:
+#       - run: echo "deploy"
+#       - run: 
+#           name: run rollback job
+#           command: |
+#               curl --location --request POST 'https://circleci.com/api/v2/project/gh/HennaAbbas/test_/pipeline' \
+#               --header 'Content-Type: application/json' \
+#               -u "${CIRCLE_TOKEN}:" \
+#               -d '{
+#                             "parameters": {
+#                               "rollback_job": true
+#                             }
+#                           }'
      
-          when: on_fail       
-  rollback:
-    docker:
-      - image: cimg/base:2020.01
-    steps:
-      - run: echo "rollback"      
+#           when: on_fail       
+#   rollback:
+#     docker:
+#       - image: cimg/base:2020.01
+#     steps:
+#       - run: echo "rollback"      
       
             
-            #test
-workflows:
-  build-test:
-    jobs:
-      - build
-      - test:
-          requires:
-            - build
-      - deploy:
-          requires:
-            - test     
-  rollback_workflow:
-    when: << pipeline.parameters.rollback_job >>
-    jobs:
-      - rollback    
+#             #test
+# workflows:
+#   build-test:
+#     jobs:
+#       - build
+#       - test:
+#           requires:
+#             - build
+#       - deploy:
+#           requires:
+#             - test     
+#   rollback_workflow:
+#     when: << pipeline.parameters.rollback_job >>
+#     jobs:
+#       - rollback    
   
 
 
                   
                                   
-            
+
+version: 2.1
+
+executors:
+  docker:
+    docker:
+      - image: cimg/base:2020.01
+  linux:
+    machine:
+      image: ubuntu-1604:202004-01
+  macos:
+    macos:
+      xcode: 11.4
+
+orbs:
+  win: circleci/windows@2.4.0
+
+jobs:
+  matrix-test:
+    parameters:
+      os:
+        type: string
+      subject:
+        type: string
+    executor: << parameters.os >>
+    steps:
+      - checkout
+      - run: echo “Hello << parameters.subject >>!”
+      
+workflows:
+  matrix-test:
+	  jobs:
+	    - matrix-test:
+ 		      matrix
+            parameters:
+              os: [docker, linux, macos, win/default]
+              subject: ["World", "Friend", "Baby"]      
