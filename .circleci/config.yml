@@ -1,100 +1,79 @@
-# version: 2.1
-# jobs:
-#   build:
-#     docker:
-#       - image: circleci/python:3.6-jessie-browsers
-#     steps:
-# #       - checkout
-#       - run: echo "hello world"
-#       - run: 
-#           command: |
-#             echo "running sleep command"
-#             current_wait_time=0
-            
-#             while true; do
-#               if (( $current_wait_time > 600 )); then
-#                 echo "current wait > 600"
-#                 echo $current_wait_time
-#                 if [[ "true" == "true" ]]; then
-#                   echo "Proceeding with future steps";
-#                   echo "exiting";
-#                   exit 0;
-#                 else
-#                   echo "Failing job by exiting forcefully";
-#                   exit 1;
-#                 fi
-#               else
-#                 sleep 60
-#                 current_wait_time=$(( current_wait_time + 60 ))
-#                 echo "adding 60 to wait time"
-#               fi 
-#             done   
-      
-# workflows:
-#     version: 2.1
-#     build_and_push:
-#       jobs:
-#         - build
-
-
 version: 2.1
-executors:
-  node-executor:
-    docker:
-      - image: circleci/node:10.8
-
-# Set parameter here
-parameters:
-  deploy_to_dev:
-    type: boolean
-    default: false
-
 jobs:
   build:
-    executor: node-executor
+    docker:
+      - image: cimg/node:12.18
     steps:
-      - run: echo "hello world! build job"
-      - run:
-            name: Trigger deployment
-            command: |
-                    if [[ ${CIRCLE_BRANCH} == "master" || ${CIRCLE_BRANCH} == "exp" ]]; then
-                        curl -u $CIRCLECI_TOKEN -H "Content-Type: application/json" https://circleci.com/api/v1.1/project/bitbucket/imbio/imbio-deploy/tree/${CIRCLE_BRANCH} -d '{"build_parameters": {"API_TRIGGER": "LaunchpadService"}}'
-                    fi      
+      - checkout
+      - run: echo "hello world"
 
-#       - run: 
-#           name: run rollback job
-#           command: |
-#               curl --location --request POST 'https://circleci.com/api/v2/project/gh/HennaAbbas/test_/pipeline' \
-#               --header 'Content-Type: application/json' \
-#               -u "${CIRCLE_TOKEN}:" \
-#               -d '{
-#                             "parameters": {
-#                               "deploy_to_dev": true
-#                             }
-#                           }'
-     
-#           when: on_fail           
-      - unless:
-          condition: << pipeline.parameters.deploy_to_dev >> # by default this is triggered
-          steps:
-            - run: echo "running build job"
-       
-  deploy_to_dev:
-    executor: node-executor
-    steps:
-      - run: echo " deploy_to_dev_job"
-      - run: echo "<< pipeline.parameters.deploy_to_dev >>"
-      - when:
-         condition: << pipeline.parameters.deploy_to_dev >> # this would be triggered when you pass the parameter value via API
-         steps:
-           - run: echo "running deploy job"
-
+  
+      
 workflows:
-  version: 2
-  build-deploy:
-    jobs:
-      - build
-      - deploy_to_dev
+    version: 2.1
+    build_and_push:
+      jobs:
+        - build
+
+
+# version: 2.1
+# executors:
+#   node-executor:
+#     docker:
+#       - image: circleci/node:10.8
+
+# # Set parameter here
+# parameters:
+#   deploy_to_dev:
+#     type: boolean
+#     default: false
+
+# jobs:
+#   build:
+#     executor: node-executor
+#     steps:
+#       - run: echo "hello world! build job"
+#       - run:
+#             name: Trigger deployment
+#             command: |
+#                     if [[ ${CIRCLE_BRANCH} == "master" || ${CIRCLE_BRANCH} == "exp" ]]; then
+#                         curl -u $CIRCLECI_TOKEN -H "Content-Type: application/json" https://circleci.com/api/v1.1/project/bitbucket/imbio/imbio-deploy/tree/${CIRCLE_BRANCH} -d '{"build_parameters": {"API_TRIGGER": "LaunchpadService"}}'
+#                     fi      
+
+# #       - run: 
+# #           name: run rollback job
+# #           command: |
+# #               curl --location --request POST 'https://circleci.com/api/v2/project/gh/HennaAbbas/test_/pipeline' \
+# #               --header 'Content-Type: application/json' \
+# #               -u "${CIRCLE_TOKEN}:" \
+# #               -d '{
+# #                             "parameters": {
+# #                               "deploy_to_dev": true
+# #                             }
+# #                           }'
+     
+# #           when: on_fail           
+#       - unless:
+#           condition: << pipeline.parameters.deploy_to_dev >> # by default this is triggered
+#           steps:
+#             - run: echo "running build job"
+       
+#   deploy_to_dev:
+#     executor: node-executor
+#     steps:
+#       - run: echo " deploy_to_dev_job"
+#       - run: echo "<< pipeline.parameters.deploy_to_dev >>"
+#       - when:
+#          condition: << pipeline.parameters.deploy_to_dev >> # this would be triggered when you pass the parameter value via API
+#          steps:
+#            - run: echo "running deploy job"
+
+# workflows:
+#   version: 2
+#   build-deploy:
+#     jobs:
+#       - build
+#       - deploy_to_dev
  
 
 
