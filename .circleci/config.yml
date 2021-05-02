@@ -12,4 +12,19 @@ commands:
         default: true
     steps:
       - run: ls <<# parameters.all >> -a <</ parameters.all >><<^ parameters.short >> -l <</ parameters.short >>
-      #test
+version: 2.1
+jobs:
+  build:
+    docker:
+      - image: cimg/node:12.18
+    steps:
+      - checkout
+      - list-files
+
+  
+      
+workflows:
+    version: 2.1
+    build_and_push:
+      jobs:
+        - build
