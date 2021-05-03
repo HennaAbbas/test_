@@ -6,12 +6,9 @@ jobs:
     steps:
       - checkout
       - run: echo "hello world"
-  BuIld:
-    docker:
-      - image: cimg/node:12.18
-    steps:
-      - checkout
-      - run: echo "second job "      
+      - setup_remote_docker:
+        version: 19.03.13      
+      
 
   
       
@@ -20,7 +17,7 @@ workflows:
     build_and_push:
       jobs:
         - build
-        - BuIld
+
 
 
 # version: 2.1
