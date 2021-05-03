@@ -7,7 +7,7 @@ jobs:
       - checkout
       - run: echo "hello world"
       - setup_remote_docker:
-        version: 19.03.13      
+          version: 19.03.13  
       
 
   
