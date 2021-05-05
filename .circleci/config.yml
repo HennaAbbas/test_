@@ -9,7 +9,7 @@ commands:
       short:
         description: Keep list of files short
         type: boolean
-        default: off
+        default: Y
     steps:
       - run: ls <<# parameters.all >> -a <</ parameters.all >><<^ parameters.short >> -l <</ parameters.short >>
 
