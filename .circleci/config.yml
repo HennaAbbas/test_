@@ -10,7 +10,7 @@ executors:
   macos-catalina:
     macos:
       xcode: "11.6.0"
-    resource_class: large   
+  
   macos-xcode12:
     macos:
       xcode: "12.2.0"
