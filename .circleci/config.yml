@@ -31,6 +31,9 @@ jobs:
     steps:
       - checkout
       - run : echo "hello world!" 
+      - run : echo "$CIRCLE_BRANCH"
+      - run : echo $CIRCLE_BUILD_NUM     
+      
 
 workflows:
   all-tests:
