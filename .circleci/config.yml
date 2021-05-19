@@ -43,4 +43,7 @@ workflows:
           matrix:
             parameters:
               os: [macos-catalina, macos-bigsur]
+  my-tests:
+    jobs:
+      - test              
 
