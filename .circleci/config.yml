@@ -11,8 +11,7 @@ commands:
         type: boolean
         default: N
     steps:
-      - run: ls <<# parameters.all >> -a <</ parameters.all >><<^ parameters.short >> -l <</ parameters.short >>
-
+      - run: echo "hello world!"
 jobs:
   build:
     docker:
