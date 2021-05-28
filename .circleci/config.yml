@@ -35,6 +35,21 @@ jobs:
       - run : echo $CIRCLE_BUILD_NUM  
       - run : echo 'export MY_ENV_VAR="FOO"' >> $BASH_ENV
       
+      
+  install_simulator:
+    macos:
+      xcode: '12.4.0'
+
+    working_directory: ~/app-waitr/ios
+    # use a --login shell so our "set Ruby version" command gets picked up for later steps
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - run: 
+          name: install simulators
+          no_output_timeout: 30m
+          command: |
+            xcversion simulators --install="iOS 14.4 Simulator" --no-progress      
+      
 
 workflows:
   all-tests:
@@ -45,5 +60,5 @@ workflows:
               os: [macos-catalina, macos-bigsur]
   my-tests:
     jobs:
-      - test              
+      - install_simulator
 
