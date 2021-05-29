@@ -44,11 +44,13 @@ jobs:
     # use a --login shell so our "set Ruby version" command gets picked up for later steps
     shell: /bin/bash --login -o pipefail
     steps:
-      - run: 
-          name: install simulators
-          no_output_timeout: 30m
-          command: |
-            xcversion simulators --install="iOS 14.4 Simulator" --no-progress      
+      - run: gem install xcode-install
+      - run: xcversion simulators --install="13.2"    
+#       - run: 
+#           name: install simulators
+#           no_output_timeout: 30m
+#           command: |
+#             xcversion simulators --install="iOS 14.4 Simulator" --no-progress      
       
 
 workflows:
