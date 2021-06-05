@@ -62,5 +62,6 @@ workflows:
               os: [macos-catalina, macos-bigsur]
   my-tests:
     jobs:
-      - install_simulator
+      - install_simulator:
+          type: approval
 
