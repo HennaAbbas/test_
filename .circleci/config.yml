@@ -1,67 +1,50 @@
 version: 2.1
-#test
-#test
+defaults: &defaults
+  environment:
+    EXTERNAL_REGISTRY_BASE_DOMAIN: '771535030486.dkr.ecr.us-east-1.amazonaws.com'
+    DOCKERTAG: 'gmr'
+    DATABASE_HOST: '127.0.0.1'
+    DATABASE_NAME: 'gmr_test'
+    DATABASE_USERNAME: 'gmr'
+    DATABASE_PASSWORD: ''
+    CYPRESS_PROJECT_ID: '161f641b-e850-400b-93e7-99172e71404b'
+    AIRBRAKE_PROJECT_ID: '141108'
+    AIRBRAKE_PROJECT_KEY: '0348bbc44df91bb9b438e91257b61bfb'
+    REPOSITORY: 'https://github.com/verticalfox/VF'
+    CC_TEST_REPORTER_ID: '933e544533c78f2eb4de16e8225814c443716d0b297d2958c6e8cd26a6a816b0'
 
-executors:
-  macos-mojave:
-    macos:
-      xcode: "11.1.0"
-
-  macos-catalina:
-    macos:
-      xcode: "11.6.0"
-  
-  macos-xcode12:
-    macos:
-      xcode: "12.2.0"
-  macos-bigsur:
-    macos:
-      xcode: 110.12.4
-  macos: # macos executor using xcode 11.6
-    macos:
-      xcode: 11.6
-
+references:
+  deploy_job_defaults: &deploy_job_defaults
+    <<: *defaults
+    docker:
+    - image: circleci/ruby:2.6.5-buster-node
+    
+  deploy_steps: &deploy_steps
+    steps:
+    - run: echo "deploy steps"  
+    
+    
 jobs:
-  test:
-    parameters:
-      os:
-        type: executor
-
-    executor: << parameters.os >>
-    steps:
-      - checkout
-      - run : echo "hello world!" 
-      - run : echo "$CIRCLE_BRANCH"
-      - run : echo $CIRCLE_BUILD_NUM  
-      - run : echo 'export MY_ENV_VAR="FOO"' >> $BASH_ENV
+  deploy-dev:
+    steps: 
+      - run: echo "running steps..."
+#       - jira/notify:
+#               issue_regexp: '[A-Z]{2,30}-[0-9]+'
+#               environment_type: development
+#               job_type: deployment
+      
+    <<: *deploy_job_defaults
+    environment:
+      CONTEXT: development
+      ENVIRONMENT: development
+    <<: *deploy_steps
       
       
-  install_simulator:
-    macos:
-      xcode: '12.4.0'
-
-    working_directory: ~/app-waitr/ios
-    # use a --login shell so our "set Ruby version" command gets picked up for later steps
-    shell: /bin/bash --login -o pipefail
-    steps:
-#       - run: gem install xcode-install
-#       - run: xcversion simulators --install="13.2"    
-      - run: 
-          name: install simulators
-          no_output_timeout: 30m
-          command: |
-            xcversion simulators --install="iOS 14.3 Simulator" --no-progress    
+  
       
 
 workflows:
-  all-tests:
+  build:
     jobs:
-      - test:
-          matrix:
-            parameters:
-              os: [macos-catalina, macos-bigsur]
-  my-tests:
-    jobs:
-      - install_simulator:
-          type: approval
+      - deploy-dev
 
