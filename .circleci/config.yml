@@ -22,3 +22,5 @@ workflows:
   setup:
     jobs:
       - setup
+      
+      #test
