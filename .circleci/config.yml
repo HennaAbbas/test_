@@ -17,8 +17,22 @@ jobs:
           command: |
             dotnet new tool-manifest
             dotnet tool install --local AzureSignTool --version 2.0.17
+#       - run:
+#           name: "Build Solution"
+#           shell: powershell.exe
+#           command: |
+#             MSBuild TimekeeperSignupData.sln /property:Configuration=Release /property:Platform=x86
+            
+      - run:
+          name: Install .NET 3.5
+          shell: powershell.exe
+          command: $ProgressPreference = "SilentlyContinue"; Install-WindowsFeature Net-Framework-Core
+      - run:
+          name: Install WiX
+          command: choco install wixtoolset --installargs 'INSTALLFOLDER="C:\wix"' -y     
+          
       - run:
           name: "Build Solution"
           shell: powershell.exe
           command: |
-            MSBuild TimekeeperSignupData.sln /property:Configuration=Release /property:Platform=x86
+            MSBuild TimekeeperSignupData.sln /property:Configuration=Release /property:Platform=x86          
