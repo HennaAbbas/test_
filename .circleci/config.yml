@@ -1,29 +1,24 @@
 version: 2.1
 
-# this allows you to use CircleCI's dynamic configuration feature
-setup: true 
-
-# the continuation orb is required in order to use dynamic configuration
 orbs:
-  continuation: circleci/continuation@0.1.2
+  win: circleci/windows@2.2.0
 
-# our defined job, and its steps
 jobs:
-  setup:
-    executor: continuation/default
+  build:
+    executor:
+      name: win/default
+      shell: powershell.exe
     steps:
-      - checkout # checkout code
-      - run: echo "hello world"
-#       - continuation/continue:
-#           configuration_path: generated_config.yml # use newly generated config to continue
-
-# our single workflow, that triggers the setup job defined above
-workflows:
-  setup:
-    jobs:
-      - setup
-  setup-2:
-    jobs:
-      - setup      
-      
-      #test test
+      - checkout
+      - run: systeminfo
+      - run:
+          name: "InstallAzureSignTool"
+          shell: powershell.exe
+          command: |
+            dotnet new tool-manifest
+            dotnet tool install --local AzureSignTool --version 2.0.17
+      - run:
+          name: "Build Solution"
+          shell: powershell.exe
+          command: |
+            MSBuild TimekeeperSignupData.sln /property:Configuration=Release /property:Platform=x86
