@@ -19,10 +19,13 @@ jobs:
     steps:
       - checkout
       - run: echo "hello world!"
+      - run: echo $password      
 
   
       
 workflows:
     build_and_push:
       jobs:
-        - build
+        - build:
+            context:
+              - my-context
