@@ -23,13 +23,16 @@ jobs:
       - run: echo $env_var 
       - run: 
           command:
-            if[ -n "$env_var" ]; 
-#             if[ "$1" -eq "Server" ];
-            then
-                echo "Set"
-            else
-                echo "Not set"
-            fi 
+            if [ $env_var = "password/" ]; then
+              echo "hello"
+            fi
+#             if[ -n "$env_var" ]; 
+# #             if[ "$1" -eq "Server" ];
+#             then
+#                 echo "Set"
+#             else
+#                 echo "Not set"
+#             fi 
   
       
 workflows:
