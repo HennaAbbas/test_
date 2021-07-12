@@ -23,7 +23,6 @@ jobs:
       - run: echo $env_var 
       - run: 
           command:
-            echo "hello"
             if[ -n "$env_var" ]; 
 #             if[ "$1" -eq "Server" ];
             then
