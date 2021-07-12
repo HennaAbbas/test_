@@ -1,46 +1,353 @@
-version: 2.1
-# commands:
-#   list-files:
-#     parameters:
-#       all:
-#         description: include all files
-#         type: boolean
-#         default: false
-#       short:
-#         description: Keep list of files short
-#         type: boolean
-#         default: N
+# Python CircleCI 2.0 configuration file
+# Test
+#
+# Check https://circleci.com/docs/2.0/language-python/ for more details
+#
+version: 2
+# jobs:
+#   deploy-job:
 #     steps:
-#       - run: echo "hello world!"
+#       - add_ssh_keys:
+#           fingerprints:
+#             - "4b:2e:35:15:d4:4e:b3:18:ab:d6:c3:48:13:0b:f1:1c"
+# Testing based on circleCI response
+application: &application
+  docker:
+    - image: python:3.6-slim-stretch
+      environment:
+        LANG: C.UTF-8
+        PYTHONUNBUFFERED: 1
+
+    - image: postgres:10.4
+      environment:
+        POSTGRES_USER: circleci
+        POSTGRES_PASSWORD: circleci
+        POSTGRES_DB: circle-test
+
+  working_directory: /var/local
+
+deployer: &deployer
+  docker:
+    - image: python:3.6-slim-stretch
+      environment:
+        LANG: C.UTF-8
+        PYTHONUNBUFFERED: 1
+        CF_LOGIN_URL: 'https://api.fr.cloud.gov'
+
+  working_directory: /var/local
+
+
+core: &core
+  name: Install development tools
+  command: |
+    apt-get update
+    apt-get install -y git g++ gcc make procps
+
+django: &django
+  name: Install requirements
+  command: |
+    cp ./app/discovery/local_settings.circle.py ./app/discovery/local_settings.py
+
+    pip install --no-cache-dir -r ./requirements.txt
+    pip install --no-cache-dir -r ./requirements-dev.txt
+
+    ./scripts/init-webserver.sh /dev/stderr
+
+angular: &angular
+  name: Install Angular CLI
+  command: |
+    ./scripts/setup-angular.sh /dev/stderr
+    ./scripts/build-frontend.sh /dev/stderr
+
+cloudfoundry: &cloudfoundry
+  name: Setup CloudFoundry client CLI
+  command: |
+    ./scripts/setup-cf.sh /dev/stderr
+
+chrome: &chrome
+  name: Install Chrome web driver
+  command: |
+    ./scripts/setup-chrome.sh /dev/stderr
+
+xvfb: &xvfb
+  name: Running Xvfb server
+  background: true
+  command: Xvfb -ac :99 -screen 0 1280x1024x16 +extension RANDR > /dev/null 2>&1
+
+discovery: &discovery
+  name: Import fixtures and run test server
+  background: true
+  command: |
+    ./scripts/init-db.sh /dev/stderr
+    ./scripts/init-webserver.sh /dev/stderr
+    ./scripts/load-fixtures.sh
+    cd app
+    waitress-serve --expose-tracebacks --port=8080 discovery.wsgi:application
+
+
+logging: &logging
+  path: logs
+
+
 jobs:
-  build:
-    docker:
-      - image: cimg/node:12.18
+  ut-components:
+    <<: *application
+
     steps:
+      - run: *core
       - checkout
-      - run: echo "hello world!"
-      - run: echo $password  
-      - run: echo $env_var 
-      - run: 
-          command:
-            if [ -z "$env_var" ]
-            then
-                  echo "\$env_var is empty"
-            else
-                  echo "\$env_var is NOT empty"
-            fi
-#             if[ -n "$env_var" ]; 
-# #             if[ "$1" -eq "Server" ];
-#             then
-#                 echo "Set"
-#             else
-#                 echo "Not set"
-#             fi 
-  
-      
+      - run: *django
+
+      - run:
+          name: Run component tests
+          no_output_timeout: 1h
+          command: |
+            ./run test --parallel=4 discovery categories vendors contracts
+
+      - store_artifacts:
+          <<: *logging
+          destination: component-test-reports
+
+  ut-core-api:
+    <<: *application
+
+    steps:
+      - run: *core
+      - checkout
+      - run: *django
+
+      - run:
+          name: Run core API tests
+          no_output_timeout: 1h
+          command: |
+            ./run test api --tag=object
+            ./run test api --tag=ordering
+            ./run test api --tag=pagination
+            ./run test api --tag=search
+            ./run test api --tag=request
+            ./run test api --tag=info
+
+      - store_artifacts:
+          <<: *logging
+          destination: core-api-test-reports
+
+  ut-api-fields:
+    <<: *application
+
+    steps:
+      - run: *core
+      - checkout
+      - run: *django
+
+      - run:
+          name: Run API field tests
+          no_output_timeout: 1h
+          command: |
+            ./run test api --tag=field_test
+
+      - store_artifacts:
+          <<: *logging
+          destination: api-field-test-reports
+
+  ut-api-values:
+    <<: *application
+
+    steps:
+      - run: *core
+      - checkout
+      - run: *django
+
+      - run:
+          name: Run API values tests
+          no_output_timeout: 1h
+          command: |
+            ./run test api --tag=values_test
+
+      - store_artifacts:
+          <<: *logging
+          destination: api-values-test-reports
+
+  ut-frontend:
+    <<: *application
+
+    steps:
+      - run: *core
+      - checkout
+      - run: *django
+      - run: *angular
+      - run: *chrome
+      - run: *xvfb
+      - run: *discovery
+
+      - run:
+          name: Run Angular unit tests
+          no_output_timeout: 1h
+          command: |
+            ./scripts/wait-for-it.sh --host="localhost" --port=8080 --timeout=300
+            ./scripts/test-frontend.sh karma /dev/stderr
+
+      - store_artifacts:
+          <<: *logging
+          destination: angular-test-reports
+
+  at-backend:
+    <<: *application
+
+    steps:
+      - run: *core
+      - checkout
+      - run: *django
+      - run: *angular
+      - run: *chrome
+      - run: *xvfb
+      - run: *discovery
+
+      - run:
+          name: Run Django acceptance tests
+          no_output_timeout: 1h
+          command: |
+            ./scripts/wait-for-it.sh --host="localhost" --port=8080 --timeout=300
+            ./run test --parallel=3 acceptance
+
+      - store_artifacts:
+          <<: *logging
+          destination: django-acceptance-reports
+
+  at-frontend:
+    <<: *application
+
+    steps:
+      - run: *core
+      - checkout
+      - run: *django
+      - run: *angular
+      - run: *chrome
+      - run: *xvfb
+      - run: *discovery
+
+      - run:
+          name: Run Angular acceptance tests
+          no_output_timeout: 1h
+          command: |
+             ./scripts/wait-for-it.sh --host="localhost" --port=8080 --timeout=300
+             ./scripts/test-frontend.sh e2e /dev/stderr
+      - store_artifacts:
+          <<: *logging
+          destination: angular-acceptance-reports
+
+  dep-dev:
+    <<: *deployer
+
+    steps:
+      - run: *core
+      - checkout
+      - run: *django
+      - run: *angular
+      - run: *cloudfoundry
+
+      - run:
+          name: Deploy development applications
+          command: |
+            git config --global user.name "CircleCI ( ${CIRCLE_USERNAME} )"
+            git config --global user.email "${CIRCLE_USERNAME}@${CIRCLE_BRANCH}"
+            ./scripts/deploy-static.sh
+            ./scripts/deploy-dev.sh
+
+      - store_artifacts:
+          <<: *logging
+          destination: dev-deploy-reports
+
+  dep-prod:
+    <<: *deployer
+
+    steps:
+      - run: *core
+      - checkout
+      - run: *django
+      - run: *angular
+      - run: *cloudfoundry
+
+      - run:
+          name: Deploy production applications
+          command: |
+            git config --global user.name "CircleCI ( ${CIRCLE_USERNAME} )"
+            git config --global user.email "${CIRCLE_USERNAME}@${CIRCLE_BRANCH}"
+            ./scripts/deploy-static.sh
+            ./scripts/deploy-prod.sh
+
+      - store_artifacts:
+          <<: *logging
+          destination: prod-deploy-reports
+
+  dep-docs:
+    <<: *deployer
+
+    steps:
+      - run: *core
+      - checkout
+      - run: *django
+
+      - run:
+          name: Deploy documentation
+          command: |
+            git config --global user.name "CircleCI ( ${CIRCLE_USERNAME} )"
+            git config --global user.email "${CIRCLE_USERNAME}@${CIRCLE_BRANCH}"
+            ./scripts/deploy-docs.sh "${CIRCLE_BRANCH}"
+
+  dep-staging:
+    <<: *deployer
+
+    steps:
+      - run: *core
+      - checkout
+      - run: *django
+      - run: *angular
+      - run: *cloudfoundry
+
+      - run:
+          name: Deploy development applications
+          command: |
+            git config --global user.name "CircleCI ( ${CIRCLE_USERNAME} )"
+            git config --global user.email "${CIRCLE_USERNAME}@${CIRCLE_BRANCH}"
+            ./scripts/deploy-static.sh
+            ./scripts/deploy-staging.sh          
+      - store_artifacts:
+          <<: *logging
+          destination: docs-deploy-reports
+
 workflows:
-    build_and_push:
-      jobs:
-        - build:
-            context:
-              - my-context
+  version: 2
+  test-and-deploy:
+    jobs:
+      - ut-components
+      - ut-core-api
+      - ut-api-fields
+      - ut-api-values
+      - ut-frontend
+      - at-backend
+      - at-frontend
+      - dep-docs:
+          requires:
+            - ut-components
+
+      - dep-dev:
+          requires:
+            - ut-components
+            - ut-frontend
+            - at-backend
+            - at-frontend
+            - dep-docs
+
+      - dep-prod:
+          requires:
+            - ut-core-api
+            - ut-api-fields
+            - ut-api-values
+
+      - dep-staging:
+          requires:
+            - ut-components
+            - ut-frontend
+            - at-backend
+            - at-frontend
+
