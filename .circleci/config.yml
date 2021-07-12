@@ -24,7 +24,8 @@ jobs:
       - run: 
           command:
             echo "hello"
-            if [ -n "$env_var" ]; 
+            if[ -n "$env_var" ]; 
+#             if[ "$1" -eq "Server" ];
             then
                 echo "Set"
             else
