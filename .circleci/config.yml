@@ -26,8 +26,8 @@ jobs:
             if [ $env_var == "password/" ]
             then 
               echo "hello"
-            else
-              echo "bye"
+#             else
+#               echo "bye"
             fi 
 
   
