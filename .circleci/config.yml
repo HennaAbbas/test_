@@ -23,7 +23,7 @@ jobs:
       - run: echo $env_var 
       - run: 
           command:
-            if [ $env_var == "password/" ] ;
+            if [ $env_var == "password/" ]
             then 
               echo "hello"
             else
