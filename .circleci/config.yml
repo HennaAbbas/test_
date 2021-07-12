@@ -24,12 +24,12 @@ jobs:
       - run: 
           command:
             echo "hello"
-#             if [ $env_var == "password/" ]
-#             then 
-#               echo "hello"
-# #             else
-# #               echo "bye"
-#             fi 
+            if [ $env_var ]
+            then 
+              echo "hello"
+#             else
+#               echo "bye"
+            fi 
 
   
       
