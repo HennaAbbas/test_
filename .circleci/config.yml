@@ -24,13 +24,11 @@ jobs:
       - run: 
           command:
             echo "hello"
-            if [ $env_var ]
-            then 
-              echo "hello"
-#             else
-#               echo "bye"
+            if [ -n "$env_var" ]; then
+                echo "Set"
+            else
+                echo "Not set"
             fi 
-
   
       
 workflows:
