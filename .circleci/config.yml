@@ -24,7 +24,8 @@ jobs:
       - run: 
           command:
             echo "hello"
-            if [ -n "$env_var" ]; then
+            if [ -n "$env_var" ]; 
+            then
                 echo "Set"
             else
                 echo "Not set"
