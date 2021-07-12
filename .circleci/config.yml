@@ -19,7 +19,8 @@ jobs:
     steps:
       - checkout
       - run: echo "hello world!"
-      - run: echo $password      
+      - run: echo $password  
+      - run: echo $env_var   
 
   
       
