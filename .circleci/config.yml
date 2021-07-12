@@ -20,7 +20,15 @@ jobs:
       - checkout
       - run: echo "hello world!"
       - run: echo $password  
-      - run: echo $env_var   
+      - run: echo $env_var 
+      - run: 
+          command:
+            if [ $env_var == "password/" ] ;
+            then 
+              echo "hello"
+            else
+              echo "bye"
+            fi 
 
   
       
