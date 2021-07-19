@@ -1,67 +1,30 @@
 version: 2.1
-#test
 
-
-executors:
-  macos-mojave:
-    macos:
-      xcode: "11.1.0"
-
-  macos-catalina:
-    macos:
-      xcode: "11.6.0"
-  
-  macos-xcode12:
-    macos:
-      xcode: "12.2.0"
-  macos-bigsur:
-    macos:
-      xcode: 110.12.4
-  macos: # macos executor using xcode 11.6
-    macos:
-      xcode: 11.6
+orbs:
+  ruby: circleci/ruby@1.1.4
+  android: circleci/android@1.0.3
 
 jobs:
-  test:
-    parameters:
-      os:
-        type: executor
-
-    executor: << parameters.os >>
+  run_tests:
+    docker:
+      - image: cimg/android:29.0
     steps:
       - checkout
-      - run : echo "hello world!" 
-      - run : echo "$CIRCLE_BRANCH"
-      - run : echo $CIRCLE_BUILD_NUM  
-      - run : echo 'export MY_ENV_VAR="FOO"' >> $BASH_ENV
-      
-      
-  install_simulator:
-    macos:
-      xcode: '12.4.0'
-
-    working_directory: ~/app-waitr/ios
-    # use a --login shell so our "set Ruby version" command gets picked up for later steps
-    shell: /bin/bash --login -o pipefail
+      - run: echo 'tests run'
+  build:
+    docker:
+      - image: cimg/android:29.0
+    resource_class: medium+
     steps:
-#       - run: gem install xcode-install
-#       - run: xcversion simulators --install="13.2"    
-      - run: 
-          name: install simulators
-          no_output_timeout: 30m
-          command: |
-            xcversion simulators --install="iOS 14.3 Simulator" --no-progress    
-      
-
+      - checkout
+      - ruby/install:
+          version: 2.7.3
+      - run: echo "Ruby 2.7 has been installed"
+      - run: ruby -v
+      - run: echo 'success'
 workflows:
-  all-tests:
+  build:
     jobs:
-      - test:
-          matrix:
-            parameters:
-              os: [macos-catalina, macos-bigsur]
-  my-tests:
-    jobs:
-      - install_simulator:
-          type: approval
-
+      - run_tests
+      - build
+      #test 2
