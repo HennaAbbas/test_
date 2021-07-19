@@ -17,11 +17,47 @@ jobs:
     resource_class: medium+
     steps:
       - checkout
-      - ruby/install:
-          version: 2.7.3
-      - run: echo "Ruby 2.7 has been installed"
-      - run: ruby -v
-      - run: echo 'success'
+      - run:
+          command: |
+            # Disable IPv6
+            mkdir -p ~/.gnupg/
+            find ~/.gnupg -type d -exec chmod 700 {} \;
+            echo "disable-ipv6" >> ~/.gnupg/dirmngr.conf
+
+            count=0
+            until gpg --keyserver hkp://keyserver.ubuntu.com --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3 7D2BAF1CF37B13E2069D6956105BD0E739499BDB
+            do
+                count=$((count+1)); sleep 10;
+                if [ $count -gt 2 ]; then
+                    echo "Unable to receive GPG keys, FAILING";
+                    exit 1;
+                fi;
+                echo "Network error: Unable to receive GPG keys. Will attempt again ($count/3)";
+            done;
+            ## Update if RVM is installed and exit
+            if [ -x "$(command -v rvm -v)" ]; then
+                rvm get stable
+                exit 0
+            fi
+
+            curl -sSL "https://get.rvm.io" | bash -s stable
+            # this should be what needs to be added to that $BASH_ENV since this is what's in bash_profile - i dont know when $HOME is set
+            echo 'export PATH=$PATH:$HOME/.rvm/bin' >> $BASH_ENV
+            echo "source $HOME/.rvm/scripts/rvm" >> $BASH_ENV
+            # this will source if anyone logs in noninteractively, nvm setup only adds nvm to the path, to get the rubygems later you need to source this again
+            echo "source $HOME/.rvm/scripts/rvm" >> ~/.bashrc
+          name: Install/Verify Ruby Version Manager.
+#       - run:
+#           command: |
+#             rvm install 2.7.3
+#             rvm use 2.7.3
+#             echo . $(rvm 2.7.3 do rvm env --path) >> $BASH_ENV
+#           name: Install Ruby v2.7.3 via RVM      
+#       - ruby/install:
+#           version: 2.7.3
+#       - run: echo "Ruby 2.7 has been installed"
+#       - run: ruby -v
+#       - run: echo 'success'
 workflows:
   build:
     jobs:
