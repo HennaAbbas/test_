@@ -1,13 +1,6 @@
 version: 2.1
 jobs:
   build:
-#     resource_class: small
-#     parallelism: 8
-#     branches:
-#       ignore:
-#         - master
-#         - eastcoast
-#         - demo
     working_directory: ~/netyield-online
     docker:
       - image: circleci/ruby:2.7.2-node-browsers
@@ -67,7 +60,7 @@ workflows:
           filters:
             branches:
               ignore:
-                - master
+#                 - master
                 - eastcoast
                 - demo
 
