@@ -1,13 +1,13 @@
 version: 2.1
 jobs:
   build:
-    resource_class: small
-    parallelism: 8
-    branches:
-      ignore:
-        - master
-        - eastcoast
-        - demo
+#     resource_class: small
+#     parallelism: 8
+#     branches:
+#       ignore:
+#         - master
+#         - eastcoast
+#         - demo
     working_directory: ~/netyield-online
     docker:
       - image: circleci/ruby:2.7.2-node-browsers
@@ -21,6 +21,8 @@ jobs:
           POSTGRES_DB: netyield-online_test
           POSTGRES_PASSWORD: netyield-online
       - image: redis
+    resource_class: small
+    parallelism: 8      
     steps:
       - checkout
 
@@ -61,6 +63,13 @@ jobs:
 workflows:
   all-tests:
     jobs:
-      - build
+      - build:
+          filters:
+            branches:
+              ignore:
+                - master
+                - eastcoast
+                - demo
+
 
 
