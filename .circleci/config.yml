@@ -60,7 +60,7 @@ workflows:
           filters:
             branches:
               ignore:
-#                 - master
+                - master
                 - eastcoast
                 - demo
 
