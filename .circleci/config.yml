@@ -18,6 +18,18 @@ jobs:
 #           POSTGRES_DB: circle_test
 #           POSTGRES_PASSWORD: ""
     steps:
+      - run:
+          name: Git config
+          command: |
+            mkdir -p ~/.ssh
+            touch ~/.ssh/known_hosts
+            if [ ! -n "$(grep "^github.com " "$HOME"/.ssh/known_hosts)" ]; then
+              ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+            fi
+            touch ~/.ssh/config
+            echo "Host github.com
+ Hostname ssh.github.com
+ Port 443" >> ~/.ssh/config
 
       - run: git clone --branch $CIRCLE_BRANCH --single-branch --depth 1 $CIRCLE_REPOSITORY_URL .      
 
