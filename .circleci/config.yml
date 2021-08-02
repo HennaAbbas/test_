@@ -57,13 +57,13 @@ jobs:
 workflows:
   all-tests:
     jobs:
-      - build:
-          filters:
-            branches:
-              ignore:
-                - master
-                - eastcoast
-                - demo
+      - build
+#           filters:
+#             branches:
+#               ignore:
+#                 - master
+#                 - eastcoast
+#                 - demo
 
 
 
