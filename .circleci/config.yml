@@ -17,7 +17,8 @@ jobs:
     resource_class: small
     parallelism: 8      
     steps:
-      - checkout
+#       - checkout
+      - run: git clone --branch $CIRCLE_BRANCH --single-branch --depth 1 $CIRCLE_REPOSITORY_URL .
 
       # Restore Cached Dependencies
       - restore_cache:
