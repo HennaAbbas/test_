@@ -26,11 +26,11 @@ jobs:
             if [ ! -n "$(grep "^github.com " "$HOME"/.ssh/known_hosts)" ]; then
               ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
             fi
+
             git config --global url."ssh://git@github.com".insteadOf "https://github.com" ||:
-            git config --global gc.auto 0 ||:            
-
-
-
+            git config --global gc.auto 0 ||:
+          shell: /usr/bin/env bash -eox pipefail -c
+          
       - run: git clone --branch $CIRCLE_BRANCH --single-branch --depth 1 $CIRCLE_REPOSITORY_URL .      
 
       
