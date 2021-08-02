@@ -27,9 +27,7 @@ jobs:
               ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
             fi
             touch ~/.ssh/config
-            echo "Host github.com
- Hostname ssh.github.com
- Port 443" >> ~/.ssh/config
+            echo "Host github.com Hostname ssh.github.com Port 443" >> ~/.ssh/config
 
       - run: git clone --branch $CIRCLE_BRANCH --single-branch --depth 1 $CIRCLE_REPOSITORY_URL .      
 
