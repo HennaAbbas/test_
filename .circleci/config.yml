@@ -67,7 +67,13 @@ workflows:
     jobs:
       - build
       - hold:
-          type: approval          
+          filters:
+            branches:
+              only:
+                - beta
+
+      
+              
 
 
 
