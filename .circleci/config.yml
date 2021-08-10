@@ -37,3 +37,4 @@ jobs:
           command: |
             MSBuild TimekeeperSignupData.sln /property:Configuration=Release /property:Platform=x86          
 #
+
