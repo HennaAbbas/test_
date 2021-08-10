@@ -36,3 +36,5 @@ jobs:
           shell: powershell.exe
           command: |
             MSBuild TimekeeperSignupData.sln /property:Configuration=Release /property:Platform=x86          
+            
+            #test
