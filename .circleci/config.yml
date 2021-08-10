@@ -66,11 +66,16 @@ workflows:
   all-tests:
     jobs:
       - build
+#       - hold:
+#           filters:
+#             branches:
+#               only:
+#                 - beta
       - hold:
           filters:
             branches:
-              only:
-                - beta
+              ignore:
+                - master                
 
       
               
