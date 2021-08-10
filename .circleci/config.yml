@@ -52,7 +52,7 @@ jobs:
       # Save the results
       - store_test_results:
           path: ~/rspec 
-  test:
+  hold:
     docker:
       - image: circleci/ruby:2.7.2-node-browsers     
     steps:
