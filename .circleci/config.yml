@@ -38,14 +38,13 @@
 #             MSBuild TimekeeperSignupData.sln /property:Configuration=Release /property:Platform=x86          
 # #
 
-
 version: 2.1
 orbs:
-  myorb: hennaabbas/myorb@1.0.0
+  hectopus-orb: commercetools/hectopus-orb@0.0.1
   #node: circleci/node@4.6.0
 workflows:
   greet:
     jobs:
       #- node/test
-      - myorb/hello:
+      - hectopus-orb/hello:
           to: George
