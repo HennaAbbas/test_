@@ -1,39 +1,51 @@
-version: 2.1
+# version: 2.1
 
-orbs:
-  win: circleci/windows@2.2.0
+# orbs:
+#   win: circleci/windows@2.2.0
 
-jobs:
-  build:
-    executor:
-      name: win/default
-      shell: powershell.exe
-    steps:
-      - checkout
-      - run: systeminfo
-      - run:
-          name: "InstallAzureSignTool"
-          shell: powershell.exe
-          command: |
-            dotnet new tool-manifest
-            dotnet tool install --local AzureSignTool --version 2.0.17
+# jobs:
+#   build:
+#     executor:
+#       name: win/default
+#       shell: powershell.exe
+#     steps:
+#       - checkout
+#       - run: systeminfo
+#       - run:
+#           name: "InstallAzureSignTool"
+#           shell: powershell.exe
+#           command: |
+#             dotnet new tool-manifest
+#             dotnet tool install --local AzureSignTool --version 2.0.17
+# #       - run:
+# #           name: "Build Solution"
+# #           shell: powershell.exe
+# #           command: |
+# #             MSBuild TimekeeperSignupData.sln /property:Configuration=Release /property:Platform=x86
+            
+#       - run:
+#           name: Install .NET 3.5
+#           shell: powershell.exe
+#           command: $ProgressPreference = "SilentlyContinue"; Install-WindowsFeature Net-Framework-Core
+#       - run:
+#           name: Install WiX
+#           command: choco install wixtoolset --installargs 'INSTALLFOLDER="C:\wix"' -y     
+          
 #       - run:
 #           name: "Build Solution"
 #           shell: powershell.exe
 #           command: |
-#             MSBuild TimekeeperSignupData.sln /property:Configuration=Release /property:Platform=x86
-            
-      - run:
-          name: Install .NET 3.5
-          shell: powershell.exe
-          command: $ProgressPreference = "SilentlyContinue"; Install-WindowsFeature Net-Framework-Core
-      - run:
-          name: Install WiX
-          command: choco install wixtoolset --installargs 'INSTALLFOLDER="C:\wix"' -y     
-          
-      - run:
-          name: "Build Solution"
-          shell: powershell.exe
-          command: |
-            MSBuild TimekeeperSignupData.sln /property:Configuration=Release /property:Platform=x86          
-#
+#             MSBuild TimekeeperSignupData.sln /property:Configuration=Release /property:Platform=x86          
+# #
+
+
+version: 2.1
+orbs:
+  myorb: hennaabbas/myorb@1.0.0
+  #node: circleci/node@4.6.0
+workflows:
+  greet:
+    jobs:
+      #- node/test
+      - myorb/hello:
+          to: "George"
