@@ -1,17 +1,4 @@
 version: 2.1
-# commands:
-#   list-files:
-#     parameters:
-#       all:
-#         description: include all files
-#         type: boolean
-#         default: false
-#       short:
-#         description: Keep list of files short
-#         type: boolean
-#         default: N
-#     steps:
-#       - run: echo "hello world!"
 jobs:
   build:
     docker:
@@ -19,28 +6,30 @@ jobs:
     steps:
       - checkout
       - run: echo "hello world!"
-      - run: echo $password  
-      - run: echo $env_var 
-      - run: 
-          command:
-            if [ -z "$env_var" ]
-            then
-                  echo "\$env_var is empty"
-            else
-                  echo "\$env_var is NOT empty"
-            fi
-#             if[ -n "$env_var" ]; 
-# #             if[ "$1" -eq "Server" ];
-#             then
-#                 echo "Set"
-#             else
-#                 echo "Not set"
-#             fi 
+  job_1:
+    docker:
+      - image: cimg/node:12.18
+    steps:
+      - checkout
+      - run: echo "hello world!"
+  job_2:
+    docker:
+      - image: cimg/node:12.18
+    steps:
+      - checkout
+      - run: echo "hello world!"      
+  job_3:
+    docker:
+      - image: cimg/node:12.18
+    steps:
+      - checkout
+      - run: echo "hello world!"       
   
       
 workflows:
     build_and_push:
       jobs:
-        - build:
-            context:
-              - my-context
+        - build
+        - job_1
+        - job_2
+        - job_3
