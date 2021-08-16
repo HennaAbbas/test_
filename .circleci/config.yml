@@ -1,16 +1,19 @@
-# version: 2.1
+version: 2.1
 
-# orbs:
-#   win: circleci/windows@2.2.0
+orbs:
+  win: circleci/windows@2.2.0
 
-# jobs:
-#   build:
-#     executor:
-#       name: win/default
-#       shell: powershell.exe
-#     steps:
-#       - checkout
-#       - run: systeminfo
+jobs:
+  build:
+    executor:
+      name: win/default
+      shell: powershell.exe
+    steps:
+      - checkout
+      - run: systeminfo
+      - restore_cache:
+         keys:
+           - client-build-v6-{{ checksum "client-version.txt" }}      
 #       - run:
 #           name: "InstallAzureSignTool"
 #           shell: powershell.exe
@@ -36,17 +39,14 @@
 #           shell: powershell.exe
 #           command: |
 #             MSBuild TimekeeperSignupData.sln /property:Configuration=Release /property:Platform=x86          
-# #
+# # #
 
 version: 2.1
-
-  #node: circleci/node@4.6.0
 workflows:
-  greet:
+  pull_request:
     jobs:
-      - restore_cache:
-         keys:
-           - client-build-v6-{{ checksum "client-version.txt" }}
+      - build
+
       
       
 
