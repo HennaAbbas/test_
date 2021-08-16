@@ -39,8 +39,7 @@
 # #
 
 version: 2.1
-orbs:
-  hectopus-orb: commercetools/hectopus-orb@0.0.1
+
   #node: circleci/node@4.6.0
 workflows:
   greet:
@@ -50,6 +49,4 @@ workflows:
            - client-build-v6-{{ checksum "client-version.txt" }}
       
       
-      #- node/test
-      - hectopus-orb/hello:
-          to: George
+
