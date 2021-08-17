@@ -1,7 +1,7 @@
 # Orb 'circleci/sumologic@1.0.6' resolved to 'circleci/sumologic@1.0.6'
 version: 2.1
 jobs:
-  sumologic/workflow-collector:
+  workflow-collector:
     docker:
     - image: cimg/base:stable
     resource_class: small
@@ -344,7 +344,7 @@ jobs:
 workflows:
     build_and_push:
       jobs:
-        - sumologic/workflow-collector
+        - workflow-collector
         - build
 
       
