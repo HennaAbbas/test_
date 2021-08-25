@@ -21,7 +21,6 @@ jobs:
 workflows:
     build_and_push:
       jobs:
-        - sumologic/workflow-collector
         - build
 
       
