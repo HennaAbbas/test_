@@ -22,6 +22,9 @@ workflows:
     build_and_push:
       jobs:
         - build
+        - python/update_python_package_homebrew_formula:
+#             context: org-global
+            formula_configuration_file_name: dev-cli.yml        
 
       
       
