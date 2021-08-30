@@ -1,9 +1,7 @@
 # Orb 'circleci/sumologic@1.0.6' resolved to 'circleci/sumologic@1.0.6'
 version: 2.1
 
-orbs:
-  shared: indigo/shared@volatile
-  python: indigo/python@dev:55f1fbb2250aebead996e822bbdee6dd89a17427
+
 
 jobs:
   build:
@@ -16,7 +14,7 @@ jobs:
           command: |
             set -ex
             automation_path="$HOME/automation"   
-  build/123:
+  build/start:
     docker:
       - image: cimg/node:12.18
     steps:
@@ -32,7 +30,7 @@ workflows:
     build_and_push:
       jobs:
         - build
-        - build/123
+        - build/start
         
 
       
