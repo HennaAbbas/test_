@@ -14,7 +14,7 @@ jobs:
           command: |
             set -ex
             automation_path="$HOME/automation"   
-  build/start:
+  old-joe-test-windows-smoke-win/default:
     docker:
       - image: cimg/node:12.18
     steps:
@@ -30,7 +30,7 @@ workflows:
     build_and_push:
       jobs:
         - build
-        - build/start
+        - old-joe-test-windows-smoke-win/default
         
 
       
