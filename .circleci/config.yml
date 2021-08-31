@@ -53,7 +53,7 @@ jobs:
       - run:
           command: |
             set -ex
-            echo $HOME
+            echo $floof
             ls -la $HOME/automation/scripts/indigo-homebrew-formula-update/       
     
             
