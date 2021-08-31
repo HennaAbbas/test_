@@ -12,8 +12,34 @@ jobs:
       - run: whoami
       - run:
           command: |
+            
             set -ex
-            automation_path="$HOME/automation"   
+            automation_path="$rando/automation"
+            if [ -d $automation_path ]; then
+              # the automation repo exists
+              if [ -f "$automation_path/.already_updated" ]; then
+                echo "A previous step has updated the automation repo already - no need to do it again"
+                cd $automation_path
+                echo "Current automation sha is $(git rev-parse HEAD)"
+                exit 0
+              fi
+              echo "The automation repo exists - updating it"
+              sudo chown -R circleci:circleci $automation_path
+              cd $automation_path
+              git remote set-url origin https://autoindigoag:"$GH_TOKEN"@github.com/indigo-ag/automation.git
+              git config user.email "automation@indigoag.com"
+              git config user.name "Automation"
+              git checkout develop
+              git fetch --depth=1 origin develop
+              git reset --hard origin/develop
+            else
+              echo "The automation repo folder does not exist - cloning it"
+              cd $(dirname $automation_path)
+              git clone https://autoindigoag:"$GH_TOKEN"@github.com/indigo-ag/automation.git -b develop --depth 1
+            fi
+            cd $automation_path
+            echo "Current automation sha is $(git rev-parse HEAD)"
+            touch $automation_path/.already_updated            
   test:
     docker:
       - image: cimg/node:12.18
