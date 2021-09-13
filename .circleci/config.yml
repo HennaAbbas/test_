@@ -12,9 +12,10 @@ jobs:
       - run: whoami
       - run:
           command: |
-          
-            echo $HOME
-            ls -la $HOME/automation/scripts/indigo-homebrew-formula-update/      
+            
+            git push origin master       
+#             echo $HOME
+#             ls -la $HOME/automation/scripts/indigo-homebrew-formula-update/      
             
 #             set -ex
 #             rando=""
