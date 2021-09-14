@@ -10,6 +10,8 @@ jobs:
       
     steps:
       - run : echo $JAVA_HOME
+      - run : cd /usr/local/
+      - run : ls
 
 #       - run: whoami
 #       - run:
@@ -49,19 +51,13 @@ jobs:
 #             touch $automation_path/.already_updated            
 
   test:
-#     environment: 
-#       JAVA_HOME: /usr/local/bin
     docker:
       - image: cimg/openjdk:16.0.2
       
     steps:
       - run : echo $JAVA_HOME   
-#       - run: whoami
-#       - run:
-#           command: |
-#             set -ex
-#             echo $floof
-#             ls -la $HOME/automation/scripts/indigo-homebrew-formula-update/       
+      - run : cd /usr/local/
+      - run : ls 
     
             
 # # #
