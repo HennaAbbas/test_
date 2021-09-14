@@ -6,14 +6,16 @@ version: 2.1
 jobs:
   build:
     docker:
-      - image: cimg/node:12.18
+      - image: cimg/openjdk:11.0.0
+      
     steps:
-      - checkout    
-      - run: whoami
-      - run:
-          command: |
+      - run : echo $JAVA_HOME
+
+#       - run: whoami
+#       - run:
+#           command: |
             
-            git push origin master       
+#             git push origin master       
 #             echo $HOME
 #             ls -la $HOME/automation/scripts/indigo-homebrew-formula-update/      
             
@@ -45,17 +47,21 @@ jobs:
 #             cd $automation_path
 #             echo "Current automation sha is $(git rev-parse HEAD)"
 #             touch $automation_path/.already_updated            
+
   test:
+    environment: 
+      JAVA_HOME: /usr/local/bin
     docker:
-      - image: cimg/node:12.18
+      - image: cimg/openjdk:11.0.0
+      
     steps:
-      - checkout    
-      - run: whoami
-      - run:
-          command: |
-            set -ex
-            echo $floof
-            ls -la $HOME/automation/scripts/indigo-homebrew-formula-update/       
+      - run : echo $JAVA_HOME   
+#       - run: whoami
+#       - run:
+#           command: |
+#             set -ex
+#             echo $floof
+#             ls -la $HOME/automation/scripts/indigo-homebrew-formula-update/       
     
             
 # # #
