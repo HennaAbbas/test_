@@ -49,10 +49,10 @@ jobs:
 #             touch $automation_path/.already_updated            
 
   test:
-    environment: 
-      JAVA_HOME: /usr/local/bin
+#     environment: 
+#       JAVA_HOME: /usr/local/bin
     docker:
-      - image: cimg/openjdk:11.0.0
+      - image: cimg/openjdk:16.0.2
       
     steps:
       - run : echo $JAVA_HOME   
