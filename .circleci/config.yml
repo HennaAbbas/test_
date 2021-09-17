@@ -67,6 +67,7 @@ workflows:
       jobs:
         - build:
             post-steps:
+              - checkout
               - run:
                   command: echo 'export MY_ENV_VAR="FOO"' >> $BASH_ENV             
         - test
