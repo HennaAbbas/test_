@@ -10,9 +10,7 @@ jobs:
       
     steps:
       - run : echo $JAVA_HOME
-          post-steps:
-            - run:
-                command: echo 'export MY_ENV_VAR="FOO"' >> $BASH_ENV   
+  
 
 
 
@@ -67,7 +65,10 @@ jobs:
 workflows:
     build_and_push:
       jobs:
-        - build
+        - build:
+            post-steps:
+              - run:
+                  command: echo 'export MY_ENV_VAR="FOO"' >> $BASH_ENV             
         - test
 
         
