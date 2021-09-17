@@ -10,11 +10,11 @@ jobs:
       
     steps:
       - run : echo $JAVA_HOME
-#       - run : cd /usr/local/ && ls
-      - persist_to_workspace:
-          root: ./
-          paths:
-            - .      
+          post-steps:
+            - run:
+                command: echo 'export MY_ENV_VAR="FOO"' >> $BASH_ENV   
+
+
 
 
 #       - run: whoami
