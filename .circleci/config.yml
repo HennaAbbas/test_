@@ -9,11 +9,11 @@ jobs:
       - image: cimg/openjdk:11.0.0
       
     steps:
-      - run : echo $JAVA_HOME
+      - run : echo $JAVA_VERSION
  
       - run:
           command: |
-              if [[ "$JAVA_HOME" == *"0.0"* ]]; then
+              if [[ "$JAVA_VERSION" == *"0.0"* ]]; then
                 echo "It's there."
               fi           
     
