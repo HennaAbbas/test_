@@ -10,10 +10,13 @@ jobs:
       
     steps:
       - run : echo $JAVA_HOME
-      - run : if [[ "$STR" == *"0.0"* ]]; then
+ 
+      - run:
+          command: |
+              if [[ "$JAVA_HOME" == *"0.0"* ]]; then
                 echo "It's there."
-              fi    
-  
+              fi           
+    
 
 
 
