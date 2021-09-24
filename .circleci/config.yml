@@ -10,7 +10,9 @@ jobs:
       
     steps:
       - run : echo $JAVA_HOME
-      - run: echo $VERSION_MAJOR    
+      - run : if [[ "$STR" == *"0.0"* ]]; then
+                echo "It's there."
+              fi    
   
 
 
