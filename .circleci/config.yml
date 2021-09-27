@@ -6,10 +6,16 @@ version: 2.1
 jobs:
   build:
     docker:
-      - image: cimg/openjdk:11.0
+      - image: cimg/python:3.8.4
       
     steps:
-      - run : echo $JAVA_HOME && ls -lah /usr/local/
+
+      - run :
+          name : Install Git LFS
+          command : |
+            sudo apt-get install git-lfs=2.13.2 -y
+            git lfs install
+            git lfs pull      
   
 
 
@@ -54,22 +60,22 @@ jobs:
 
   test:
     docker:
-      - image: cimg/openjdk:16.0.2
+      - image: circleci/python:3.8.12-node-browsers
       
     steps:
-      - run : echo $JAVA_HOME   
-      - run : cd /usr/local/ && ls
+      - run :
+          name : Install Git LFS
+          command : |
+            sudo apt-get install git-lfs=2.13.2 -y
+            git lfs install
+            git lfs pull           
     
             
 # # #
 workflows:
     build_and_push:
       jobs:
-        - build:
-            post-steps:
-              - checkout
-              - run:
-                  command: echo 'export MY_ENV_VAR="FOO"' >> $BASH_ENV             
+        - build   
         - test
 
         
