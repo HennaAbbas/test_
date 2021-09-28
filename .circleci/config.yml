@@ -26,7 +26,17 @@ workflows:
     build_and_push:
       jobs:
         - build   
-        - test
+
+    my-workflow:
+      when:
+        and:
+          - not:
+              matches:
+                pattern: "^master$"
+                value: << pipeline.git.branch >>        
+      jobs:
+  
+        - test                
 
 
 
