@@ -1,46 +1,38 @@
-version: 2
+version: 2.1
+
+
+
 jobs:
   build:
     docker:
-      - image: circleci/python:3.6.2-stretch-browsers
-#         auth:
-#           username: mydockerhub-user
-#           password: $DOCKERHUB_PASSWORD  # context / project UI env-var reference
-#         environment:
-#           FLASK_CONFIG: testing
-#           TEST_DATABASE_URL: postgresql://ubuntu@localhost/circle_test?sslmode=disable
-#       - image: circleci/postgres:9.6.5-alpine-ram
-#         auth:
-#           username: mydockerhub-user
-#           password: $DOCKERHUB_PASSWORD  # context / project UI env-var reference
-#         environment:
-#           POSTGRES_USER: ubuntu
-#           POSTGRES_DB: circle_test
-#           POSTGRES_PASSWORD: ""
-    steps:
-#       - run:
-#           name: Git config
-#           command: |
-#             mkdir -p ~/.ssh
-#             touch ~/.ssh/known_hosts
-#             if [ ! -n "$(grep "^github.com " "$HOME"/.ssh/known_hosts)" ]; then
-#               ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
-#             fi
-
-#             git config --global url."ssh://git@github.com".insteadOf "https://github.com" ||:
-#             git config --global gc.auto 0 ||:
-#           shell: /usr/bin/env bash -eox pipefail -c
-      - run:
-          name: Dependency Audit
-          command: |
-            response_code=$(curl https://registry.yarnpkg.com/-/npm/v1/security/audits -s -o /dev/null -X POST -d {} -w '%{http_code}')
-            if [ $response_code = 200 ]; then
-              yarn audit --network-timeout=100000
-            else
-              echo -e "\e[41myarn audit server failed with status code $response_code. Skipping."
-              exit 0
-            fi
-          
-#       - run: git clone --branch $CIRCLE_BRANCH --single-branch --depth 1 $CIRCLE_REPOSITORY_URL .      
-
+      - image: cimg/python:3.8.12-browsers
       
+    steps:
+
+      - run : echo "hello world! this is the build job"      
+            
+        
+
+  test:
+    docker:
+      - image: circleci/python:3.8.12-node-browsers
+      
+    steps:
+      - run : echo "hello world - test job"        
+    
+            
+# # #
+workflows:
+    build_and_push:
+      jobs:
+        - build   
+
+    my-workflow:
+      when:
+        and:
+          - not:
+              matches:
+                pattern: "^master$"
+                value: << pipeline.git.branch >>        
+      jobs:
+        - test    
