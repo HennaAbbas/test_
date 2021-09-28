@@ -1,84 +1,33 @@
 version: 2.1
+
+
+
 jobs:
   build:
-    working_directory: ~/netyield-online
     docker:
-      - image: circleci/ruby:2.7.2-node-browsers
-        environment:
-          PGHOST: localhost
-          PGUSER: netyield-online
-          RAILS_ENV: test
-      - image: postgres:12.0
-        environment:
-          POSTGRES_USER: netyield-online
-          POSTGRES_DB: netyield-online_test
-          POSTGRES_PASSWORD: netyield-online
-      - image: redis
-    resource_class: small
-    parallelism: 8      
-    steps:
-#       - checkout
-      - run: git clone --branch $CIRCLE_BRANCH --single-branch --depth 1 $CIRCLE_REPOSITORY_URL .
-
-      # Restore Cached Dependencies
-      - restore_cache:
-          keys:
-            - netyield-online-{{ checksum "Gemfile.lock" }}
-
-      # Bundle install dependencies
-      - run: gem install bundler
-      - run: bundle install --path vendor/bundle
-      - run: sudo apt-get update
-      - run: sudo apt install -y postgresql-client
-
-      # Cache Dependencies
-      - save_cache:
-          key: netyield-online-{{ checksum "Gemfile.lock" }}
-          paths:
-            - vendor/bundle
-
-      # Wait for DB
-      - run: dockerize -wait tcp://localhost:5432 -timeout 1m
-
-      # Setup the database
-      - run: bundle exec rake db:create
-      - run: bundle exec rake db:schema:load
-
-      # Run the tests
-      - run: mkdir ~/rspec
-      - run: circleci tests glob "spec/models/*.rb" "spec/api/*.rb" "spec/features/*/*_spec.rb" | circleci tests split --split-by=timings > /tmp/tests-to-run
-      - run: bundle exec rspec $(cat /tmp/tests-to-run) --seed 45093 --format progress --format RspecJunitFormatter -o ~/rspec/rspec.xml
-
-      # Save the results
-      - store_test_results:
-          path: ~/rspec 
-  hold:
-    docker:
-      - image: circleci/ruby:2.7.2-node-browsers     
-    steps:
-#       - checkout
-      - run: echo "hold"
-
-      # Restore Cached Dependencies          
+      - image: cimg/python:3.8.12-browsers
       
+    steps:
 
+      - run : echo "hello world! this is the build job"      
+            
+        
+
+  test:
+    docker:
+      - image: circleci/python:3.8.12-node-browsers
+      
+    steps:
+      - run : echo "hello world - test job"        
+    
+            
+# # #
 workflows:
-  all-tests:
-    jobs:
-      - build
-#       - hold:
-#           filters:
-#             branches:
-#               only:
-#                 - beta
-      - hold:
-          filters:
-            branches:
-              ignore:
-                - master                
+    build_and_push:
+      jobs:
+        - build   
+        - test
 
-      
-              
 
 
 
