@@ -9,8 +9,9 @@ jobs:
       
     steps:
 
-      - run : printenv    
-            
+      - run : printenv 
+      - run : echo ${NDK_LTS_VERSION}
+      - run : echo ${NDK_STABLE_VERSION}
         
 
   test:
@@ -25,18 +26,19 @@ jobs:
 workflows:
     build_and_push:
       jobs:
-        - build   
+        - build
+        - test
 
-    my-workflow:
-      when:
-        and:
-          - not:
-              matches:
-                pattern: "^master$"
-                value: << pipeline.git.branch >>        
-      jobs:
+#     my-workflow:
+#       when:
+#         and:
+#           - not:
+#               matches:
+#                 pattern: "^master$"
+#                 value: << pipeline.git.branch >>        
+#       jobs:
   
-        - test                
+#         - test                
 
 
 
