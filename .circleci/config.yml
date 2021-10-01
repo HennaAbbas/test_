@@ -4,15 +4,25 @@ version: 2.1
 jobs:
   build:
     docker:
-      - image: cimg/android:2021.09.1-ndk
+      - image: circleci/node:12.20.2
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_PASSWORD       
     steps:
       - checkout
-      - run : printenv 
-      - run : echo ${NDK_LTS_VERSION}
-      - run : echo ${NDK_STABLE_VERSION}      
+      - run:
+          command: |
+            export YARN_VERSION=1.22.4
+            sudo rm -Rf /usr/local/bin/yarn
+            if [[ ! -e ~/.yarn/bin/yarn || $(yarn --version) != "${YARN_VERSION}" ]]; then
+              curl -o- -L https://yarnpkg.com/install.sh | bash -s -- --version $YARN_VERSION
+            else
+              echo "The correct version of Yarn is already installed."
+            fi
+            sudo ln -s $HOME/.yarn/bin/yarn /usr/local/bin/yarn
+            sudo ln -s $HOME/.yarn/bin/yarn.js /usr/local/bin/yarn.js
+            # export PATH=$HOME/.yarn/bin:$PATH
+            yarn --version
 
      
       
