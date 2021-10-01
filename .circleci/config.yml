@@ -5,9 +5,9 @@ jobs:
   build:
     docker:
       - image: circleci/node:12.20.2
-        auth:
-          username: $DOCKERHUB_USERNAME
-          password: $DOCKERHUB_PASSWORD       
+#         auth:
+#           username: $DOCKERHUB_USERNAME
+#           password: $DOCKERHUB_PASSWORD       
     steps:
       - checkout
       - run:
