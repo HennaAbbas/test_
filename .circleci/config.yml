@@ -6,6 +6,9 @@ jobs:
   build:
     docker:
       - image: cimg/android:2021.9.1-ndk
+        auth:
+          username: henna453  # can specify string literal values
+          password: $DOCKERHUB_PASSWORD      
       
     steps:
 
