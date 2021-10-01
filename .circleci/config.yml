@@ -1,18 +1,21 @@
 version: 2.1
 
+
 jobs:
   build:
     docker:
-      - image: cimg/android:2021.9.1
+      - image: cimg/android:2021.9.1-ndk
         auth:
           username: henna453  # can specify string literal values
-          password: $DOCKERHUB_PASSWORD      
-      
+          password: $DOCKERHUB_PASSWORD       
     steps:
-
+      - checkout
       - run : printenv 
       - run : echo ${NDK_LTS_VERSION}
-      - run : echo ${NDK_STABLE_VERSION}
+      - run : echo ${NDK_STABLE_VERSION}      
+
+     
+      
         
 
   test:
