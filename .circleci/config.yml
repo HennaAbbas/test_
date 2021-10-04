@@ -13,7 +13,7 @@ jobs:
       - heroku/install
       - run:
           name: Backup database
-          command: heroku pg:backups:capture --app $HEROKU_APP  
+          command: heroku pg:backups:capture --app test-app
   build:
     docker:
       - image: cimg/node:12.20.2
