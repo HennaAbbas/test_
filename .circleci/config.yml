@@ -7,13 +7,13 @@ orbs:
 
 jobs:
   heroku_test:
-  machine: true
-  steps:
-    - checkout
-    - heroku/install
-    - run:
-        name: Backup database
-        command: heroku pg:backups:capture --app $HEROKU_APP  
+    machine: true
+    steps:
+      - checkout
+      - heroku/install
+      - run:
+          name: Backup database
+          command: heroku pg:backups:capture --app $HEROKU_APP  
   build:
     docker:
       - image: cimg/node:12.20.2
