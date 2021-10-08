@@ -15,13 +15,7 @@ jobs:
           name: Backup database
           command: heroku pg:backups:capture --app test-app
           
-          
-  unit-test:
-    docker:
-      - image: circleci/android:api-30
-    
-    steps:
-      - checkout
+
 
 
 
@@ -55,7 +49,7 @@ jobs:
 
   test:
     docker:
-      - image: circleci/python:3.8.12-node-browsers
+      - image: circleci/android:api-30
       
     steps:
       - run : echo "hello world - test job"        
@@ -68,7 +62,7 @@ workflows:
         - build
         - test
         - heroku_test
-        - unit_test
+
 
 #     my-workflow:
 #       when:
