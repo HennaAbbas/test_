@@ -14,6 +14,18 @@ jobs:
       - run:
           name: Backup database
           command: heroku pg:backups:capture --app test-app
+          
+          
+  unit-test:
+    docker:
+      - image: circleci/android:api-30
+    
+    steps:
+      - checkout
+
+
+
+
   build:
     docker:
       - image: cimg/node:12.20.2
@@ -36,12 +48,7 @@ jobs:
             # export PATH=$HOME/.yarn/bin:$PATH
             yarn --version
 
-  unit-test:
-    docker:
-      - image: circleci/android:api-30
-    
-    steps:
-      - checkout
+
      
       
         
