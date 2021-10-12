@@ -25,7 +25,7 @@ jobs:
       - checkout
       - node/install
 #           node-version: '12.18.3'
-#           install-yarn: true
+          install-yarn: true
 #           yarn-version: '1.22.10'      
  
   unit-test:
