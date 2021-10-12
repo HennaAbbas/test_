@@ -23,7 +23,7 @@ jobs:
     shell: /bin/bash --login -o pipefail
     steps:
       - checkout
-      - node/install
+      - node/install:
 #           node-version: '12.18.3'
           install-yarn: true
 #           yarn-version: '1.22.10'      
