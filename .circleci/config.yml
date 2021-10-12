@@ -3,6 +3,7 @@ version: 2.1
 orbs:
   heroku: circleci/heroku@1.2.6
   android: circleci/android@1.0.3  
+  node: circleci/node@4.0.0  
 
 
 
@@ -15,6 +16,17 @@ jobs:
       - run:
           name: Backup database
           command: heroku pg:backups:capture --app test-app
+          
+  ios-staging:
+    macos:
+      xcode: 12.4.0
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - checkout
+      - node/install:
+          node-version: '12.18.3'
+          install-yarn: true
+          yarn-version: '1.22.10'      
  
   unit-test:
     executor:
