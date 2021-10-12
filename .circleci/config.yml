@@ -19,8 +19,8 @@ jobs:
           
   ios-staging:
     macos:
-      xcode: latest
-    shell: /bin/bash --login -o pipefail
+      xcode: 12.4.0
+#     shell: /bin/bash --login -o pipefail
     steps:
       - checkout
       - node/install:
