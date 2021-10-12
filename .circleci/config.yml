@@ -12,10 +12,10 @@ jobs:
     machine: true
     steps:
       - checkout
-      - heroku/install
-      - run:
-          name: Backup database
-          command: heroku pg:backups:capture --app test-app
+      - node/install:
+          node-version: '12.18.3'
+          install-yarn: true
+          yarn-version: '1.22.10'   
           
   ios-staging:
     macos:
