@@ -12,7 +12,7 @@ jobs:
     machine: true
     steps:
       - checkout
-      - run : sleep 500
+
 
           
   ios-staging:
