@@ -23,10 +23,11 @@ jobs:
     shell: /bin/bash --login -o pipefail
     steps:
       - checkout
+      - run : echo insecure >> $HOME/.curlrc
       - node/install:
-#           node-version: '12.18.3'
+          node-version: '12.18.3'
           install-yarn: true
-#           yarn-version: '1.22.10'      
+          yarn-version: '1.22.10'      
  
   unit-test:
     executor:
