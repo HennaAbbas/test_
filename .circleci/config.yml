@@ -85,6 +85,9 @@ workflows:
         - heroku_test
         - unit-test
         - ios-staging
+    test:  
+        - build
+        - test    
 
 
 #     my-workflow:
