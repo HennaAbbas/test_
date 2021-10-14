@@ -73,7 +73,7 @@ jobs:
       - image: circleci/android:api-30
       
     steps:
-      - run : echo "hello world - test job"        
+      - run : wqr        
     
             
 # # #
@@ -81,7 +81,6 @@ workflows:
     build_and_push:
       jobs:
         - build
-        - test
         - heroku_test
         - unit-test
         - ios-staging
