@@ -62,11 +62,11 @@ jobs:
       
     steps:
       - run : echo "hello world"  
-      - run : 'export RUN_TEST=true' >> $BASH_ENV
+      - run : 'export RUN_TEST=yes' >> $BASH_ENV
       - run : echo $RUN_TEST
       - when:
           condition:           - 
-            equal: [ true, $RUN_TEST >> ]
+            equal: [ yes, $RUN_TEST >> ]
           steps:
             - run : echo "conditional steps are running "  
     
