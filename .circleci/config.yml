@@ -62,8 +62,8 @@ jobs:
       
     steps:
       - run : echo "hello world"  
-      - run : echo 'export RUN_TEST=yes' >> $BASH_ENV
-      - run : echo $RUN_TEST
+#       - run : echo 'export RUN_TEST=yes' >> $BASH_ENV
+#       - run : echo $RUN_TEST
       - run: 
           command: | 
                   if [ -n "${RUN_TEST}" ]; then
