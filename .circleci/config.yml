@@ -21,11 +21,11 @@ jobs:
     shell: /bin/bash --login -o pipefail
     steps:
       - checkout
-      - run : echo insecure >> $HOME/.curlrc
-      - node/install:
-          node-version: '12.18.3'
-          install-yarn: true
-          yarn-version: '1.22.10'      
+#       - run : echo insecure >> $HOME/.curlrc
+#       - node/install:
+#           node-version: '12.18.3'
+#           install-yarn: true
+#           yarn-version: '1.22.10'      
  
   unit-test:
     executor:
@@ -49,19 +49,7 @@ jobs:
 #           password: $DOCKERHUB_PASSWORD       
     steps:
       - checkout
-      - run:
-          command: |
-            export YARN_VERSION=1.22.4
-            sudo rm -Rf /usr/local/bin/yarn
-            if [[ ! -e ~/.yarn/bin/yarn || $(yarn --version) != "${YARN_VERSION}" ]]; then
-              curl -o- -L https://yarnpkg.com/install.sh | bash -s -- --version $YARN_VERSION
-            else
-              echo "The correct version of Yarn is already installed."
-            fi
-            sudo ln -s $HOME/.yarn/bin/yarn /usr/local/bin/yarn
-            sudo ln -s $HOME/.yarn/bin/yarn.js /usr/local/bin/yarn.js
-            # export PATH=$HOME/.yarn/bin:$PATH
-            yarn --version
+      - run: 'export RUN_TEST= true' >> $BASH_ENV
 
 
      
@@ -73,7 +61,14 @@ jobs:
       - image: circleci/android:api-30
       
     steps:
-      - run : echo "hello world"      
+      - run : echo "hello world"  
+      - run : 'export RUN_TEST= true' >> $BASH_ENV
+      - run : echo $RUN_TEST
+      - when:
+          condition:           - 
+            equal: [ true, $RUN_TEST >> ]
+          steps:
+            - run : echo "conditional steps are running "  
     
             
 # # #
