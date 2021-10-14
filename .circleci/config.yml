@@ -49,7 +49,7 @@ jobs:
 #           password: $DOCKERHUB_PASSWORD       
     steps:
       - checkout
-      - run: 'export RUN_TEST= true' >> $BASH_ENV
+      
 
 
      
@@ -62,7 +62,7 @@ jobs:
       
     steps:
       - run : echo "hello world"  
-      - run : 'export RUN_TEST= true' >> $BASH_ENV
+      - run : 'export RUN_TEST=true' >> $BASH_ENV
       - run : echo $RUN_TEST
       - when:
           condition:           - 
