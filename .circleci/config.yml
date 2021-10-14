@@ -65,10 +65,10 @@ jobs:
       - run : echo 'export RUN_TEST=yes' >> $BASH_ENV
       - run : echo $RUN_TEST
       - run: 
-          commands: | 
-            if [[ -z "$RUN_TEST" ]]; then
-              echo "RUN_TEST is set"
-            fi
+          command: | 
+                  if [ -n "${RUN_TEST}" ]; then
+                    echo "RUN_TEST is set"
+                  fi
     
             
 # # #
