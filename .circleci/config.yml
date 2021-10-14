@@ -73,7 +73,7 @@ jobs:
       - image: circleci/android:api-30
       
     steps:
-      - run : wqr        
+      - run : echo "hello world"      
     
             
 # # #
