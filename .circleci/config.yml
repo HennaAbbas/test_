@@ -69,7 +69,15 @@ jobs:
                   if [ -n "${RUN_TEST}" ]; then
                     echo "RUN_TEST is set"
                   fi
-    
+
+      - run: 
+          command: | 
+
+                  if [ $TEST_VAR = "testvar" ]; then
+                    echo "they match"
+                  else
+                    echo "try again"
+                  fi
             
 # # #
 workflows:
