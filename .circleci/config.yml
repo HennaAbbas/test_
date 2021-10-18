@@ -4,6 +4,7 @@ orbs:
   heroku: circleci/heroku@1.2.6
   android: circleci/android@1.0.3  
   node: circleci/node@4.7.0
+  jq: circleci/jq@2.2
   
 commands: 
   jira_test: 
