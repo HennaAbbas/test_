@@ -80,6 +80,15 @@ jobs:
                     echo $TEST_VAR
                   fi
             
+      - run: 
+          command: | 
+
+                  if [ $MY_ENV_VAR = "password" ]; then
+                    echo "they match"
+                  else
+                    echo "try again"
+                    echo $MY_ENV_VAR
+                  fi            
 # # #
 workflows:
     build_and_push:
