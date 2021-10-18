@@ -63,7 +63,10 @@ jobs:
     steps:
       - run : echo "hello world"  
 #       - run : echo 'export RUN_TEST=yes' >> $BASH_ENV
-#       - run : echo $RUN_TEST
+      - run : fetch https://circleci.com/api/v1.1/project/${VCS_TYPE}/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/${CIRCLE_BUILD_NUM} /tmp/job_info.json
+      - run : cat /tmp/job_info.json
+      - run: ISSUE_KEYS=$(cat /tmp/job_info.json | jq '[.all_commit_details[].subject | scan("([A-Z]{2,30}-[0-9]+)")   | .[] ] + [.all_commit_details[].branch | scan("([A-Z]{2,30}-[0-9]+)")   | .[] ] + [if .branch then .branch else "" end | scan("([A-Z]{2,30}-[0-9]+)")  | . [] ] + [if false then .all_commit_details[].body else "" end | scan("([A-Z]{2,30}-[0-9]+)")   | .[] ]')
+      - run: echo $ISSUE_KEYS
       - run: 
           command: | 
                   if [ -n "${RUN_TEST}" ]; then
