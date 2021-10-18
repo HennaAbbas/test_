@@ -58,7 +58,7 @@ jobs:
 
   test:
     docker:
-      - image: circleci/android:api-30
+      - image: circleci/node:12.20.2
       
     steps:
       - run : echo "hello world"  
@@ -77,6 +77,7 @@ jobs:
                     echo "they match"
                   else
                     echo "try again"
+                    echo "TEST_VAR"
                   fi
             
 # # #
