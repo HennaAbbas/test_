@@ -19,6 +19,7 @@ jobs:
       - checkout 
       - docker/install-dockerize:
           version: v0.6.1
-      - node/install
+      - node/install:
+          npm-version: v8.0.0
       
 
