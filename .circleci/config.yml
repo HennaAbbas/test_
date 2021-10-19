@@ -10,9 +10,13 @@ jobs:
       - image: rabbitmq
     steps:
       - checkout 
-      - run: sudo apt install curl
-      - docker/install-dockerize:
-          version: v0.6.1
+      - run:
+          name: Install dockerize
+          command: wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz && sudo tar -C /usr/local/bin -xzvf dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz && rm dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz
+          environment:
+            DOCKERIZE_VERSION: v0.6.1      
+#       - docker/install-dockerize:
+#           version: v0.6.1
       - node/install-packages:
           override-ci-command: npm install
       - run:
