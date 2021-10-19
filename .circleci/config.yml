@@ -31,7 +31,7 @@ jobs:
     docker:
       - image: 'cimg/base:stable'
     steps:
-      - run: echo "helloP"
+      - run: echo "hello"
   build-production:
     docker:
       - image: 'cimg/base:stable'
