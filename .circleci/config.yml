@@ -28,3 +28,4 @@ workflows:
   test_and_build:
     jobs:
     - build
+    #test
