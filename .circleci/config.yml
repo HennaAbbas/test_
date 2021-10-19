@@ -13,13 +13,19 @@ workflows:
       
 jobs:
   build:
-    executor:
-      name: node/default
+    executor: node/default
     steps:
       - checkout 
       - docker/install-dockerize:
           version: v0.6.1
-      - node/install:
-          npm-version: v8.0.0
+      - node/install-packages:
+          override-ci-command: npm install
+      - run:
+          name: Wait for RabbitMQ to have started
+          command: dockerize -wait tcp://localhost:5672 -timeout 1m
+
+      - run:
+          name: Integration Tests
+          command: npm run test:integration          
       
 
