@@ -6,6 +6,8 @@ orbs: # adds orbs to your configuration
 jobs:
   build:
     executor: node/default
+    docker: 
+      - image: rabbitmq
     steps:
       - checkout 
       - docker/install-dockerize:
