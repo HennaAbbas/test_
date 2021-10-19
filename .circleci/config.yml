@@ -2,14 +2,6 @@ orbs: # adds orbs to your configuration
   node: circleci/node@4.7.0
   codecov: codecov/codecov@3.2.0
   docker: circleci/docker@1.7.0
-  
-version: 2.1
-workflows:
-  test_and_build:
-    jobs:
-      - build
-      
-      
       
 jobs:
   build:
@@ -27,5 +19,11 @@ jobs:
       - run:
           name: Integration Tests
           command: npm run test:integration          
-      
+
+
+version: 2.1
+workflows:
+  test_and_build:
+    jobs:
+      - build
 
