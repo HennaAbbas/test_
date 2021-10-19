@@ -10,6 +10,7 @@ jobs:
       - image: rabbitmq
     steps:
       - checkout 
+      - sudo apt install curl
       - docker/install-dockerize:
           version: v0.6.1
       - node/install-packages:
