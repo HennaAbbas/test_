@@ -10,17 +10,19 @@ jobs:
       - image: rabbitmq
     steps:
       - checkout 
-      - docker/install-dockerize:
-          version: v0.6.1
-      - node/install-packages:
-          override-ci-command: npm install
-      - run:
-          name: Wait for RabbitMQ to have started
-          command: dockerize -wait tcp://localhost:5672 -timeout 1m
+      - run: echo "export ARTIFACT_URL=${CIRCLE_BUILD_URL}" >> $BASH_ENV    
+      - run: echo $ARTIFACT_URL
+#       - docker/install-dockerize:
+#           version: v0.6.1
+#       - node/install-packages:
+#           override-ci-command: npm install
+#       - run:
+#           name: Wait for RabbitMQ to have started
+#           command: dockerize -wait tcp://localhost:5672 -timeout 1m
 
-      - run:
-          name: Integration Tests
-          command: npm run test:integration          
+#       - run:
+#           name: Integration Tests
+#           command: npm run test:integration          
 
 
 version: 2.1
