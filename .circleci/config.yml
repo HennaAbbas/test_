@@ -11,6 +11,8 @@ jobs:
     steps:
       - checkout 
       - run: echo " my circle tok is ${CIRCLE_TOKEN}"
+      - run: pwd
+      - run: ci.sh 
 #       - docker/install-dockerize:
 #           version: v0.6.1
 #       - node/install-packages:
