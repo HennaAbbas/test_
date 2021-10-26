@@ -10,9 +10,7 @@ jobs:
       - image: rabbitmq
     steps:
       - checkout 
-      - run: artifact_url=${CIRCLE_BUILD_URL}
-      - run: echo "export ARTIFACT_URL=${artifact_url}" >> $BASH_ENV    
-      - run: echo $ARTIFACT_URL
+      - run: echo " my circle tok is ${CIRCLE_TOKEN}"
 #       - docker/install-dockerize:
 #           version: v0.6.1
 #       - node/install-packages:
