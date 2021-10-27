@@ -9,6 +9,11 @@ jobs:
       - image: cimg/node:14.0.0
       - image: rabbitmq
     steps:
+
+      - run:
+          name: timeout after .5 m
+          command: sleep 0.05m && exit 0
+          background: true
       - checkout 
       - run: echo " my circle tok is ${CIRCLE_TOKEN}"
       - run: pwd
