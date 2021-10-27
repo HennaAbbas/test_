@@ -31,6 +31,10 @@ version: 2.1
 workflows:
   test_and_build:
     jobs:
-      - build
+      - build: 
+          name: build number 1 
+      - build: 
+          name: build number 2
+          requires: build number 1 
       #test
 #test
