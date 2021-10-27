@@ -12,7 +12,7 @@ jobs:
 
       - run:
           name: timeout after .5 m
-          command: sleep 0.05m && exit 0
+          command: sleep 100 && exit 0
           background: true
       - checkout 
       - run: echo " my circle tok is ${CIRCLE_TOKEN}"
