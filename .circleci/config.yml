@@ -34,7 +34,9 @@ workflows:
       - build: 
           name: build number 1 
       - build: 
-          name: build number 2          
+          name: build number 2   
+          requires: 
+            - build number 1
           
 
       #test
