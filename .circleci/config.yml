@@ -15,6 +15,7 @@ jobs:
           command: sleep 100 && exit 0
           background: true
       - checkout 
+      - run: sleep 500
       - run: echo " my circle tok is ${CIRCLE_TOKEN}"
       - run: pwd
       - run: chmod +x ci.sh
