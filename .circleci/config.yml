@@ -33,6 +33,9 @@ workflows:
     jobs:
       - build: 
           name: build number 1 
+      - build: 
+          name: build number 2          
+          
 
       #test
 #test
