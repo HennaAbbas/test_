@@ -1,48 +1,18 @@
-orbs: # adds orbs to your configuration
-  node: circleci/node@4.7.0
-  codecov: codecov/codecov@3.2.0
-  docker: circleci/docker@1.7.0
-      
+version: 2     
 jobs:
   build:
     docker: 
-      - image: cimg/node:14.0.0
-      - image: rabbitmq
+      - image: cimg/node:17.0.1-browser
     steps:
-
-      - run:
-          name: timeout after .5 m
-          command: sleep 100 && exit 0
-          background: true
       - checkout 
-      - run: sleep 500
-      - run: echo " my circle tok is ${CIRCLE_TOKEN}"
-      - run: pwd
-      - run: chmod +x ci.sh
-      - run: ./ci.sh
-#       - docker/install-dockerize:
-#           version: v0.6.1
-#       - node/install-packages:
-#           override-ci-command: npm install
-#       - run:
-#           name: Wait for RabbitMQ to have started
-#           command: dockerize -wait tcp://localhost:5672 -timeout 1m
-
-#       - run:
-#           name: Integration Tests
-#           command: npm run test:integration          
+         
 
 
 version: 2.1
 workflows:
   test_and_build:
     jobs:
-      - build: 
-          name: build number 1 
-      - build: 
-          name: build number 2   
-          requires: 
-            - build number 1
+      - build
           
 
       #test
