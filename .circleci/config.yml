@@ -6,7 +6,7 @@ orbs: # adds orbs to your configuration
 jobs:
   build:
     docker: 
-      - image: cimg/node:17.0.1-browser
+      - image: cimg/node:17.0.1-browsers
     steps:
 
       - run: echo "hello world"
