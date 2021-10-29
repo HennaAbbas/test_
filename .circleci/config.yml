@@ -1,11 +1,17 @@
-version: 2     
+orbs: # adds orbs to your configuration
+  node: circleci/node@4.7.0
+  codecov: codecov/codecov@3.2.0
+  docker: circleci/docker@1.7.0
+      
 jobs:
   build:
     docker: 
       - image: cimg/node:17.0.1-browser
     steps:
-      - checkout 
-         
+
+      - run: echo "hello world"
+
+       
 
 
 version: 2.1
@@ -13,7 +19,8 @@ workflows:
   test_and_build:
     jobs:
       - build
-          
+
+
 
       #test
 #test
