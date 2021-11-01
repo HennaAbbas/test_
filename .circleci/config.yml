@@ -14,12 +14,13 @@ jobs:
       
   android-test:
     executor:
-      name: android/android-machine
+      name: android/android
+              sdk-version: 30
 
     steps:
       - checkout
-      - android/start-emulator-and-run-tests:
-          system-image: system-images;android-30;google_apis;x86  
+#       - android/start-emulator-and-run-tests:
+#           system-image: system-images;android-30;google_apis;x86  
       - run: sdkmanager --list     
 
        
