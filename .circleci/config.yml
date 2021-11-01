@@ -10,10 +10,6 @@ jobs:
 
       - run: echo "hello world"
       - ruby/install-deps      
-      
-  
-
-       
 
 
 version: 2.1
