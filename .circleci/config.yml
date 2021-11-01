@@ -2,6 +2,7 @@ orbs: # adds orbs to your configuration
   node: circleci/node@4.7.0
   codecov: codecov/codecov@3.2.0
   docker: circleci/docker@1.7.0
+  android: circleci/android@1.0.3
       
 jobs:
   build:
@@ -10,6 +11,16 @@ jobs:
     steps:
 
       - run: echo "hello world"
+      
+  android-test:
+    executor:
+      name: android/android-machine
+
+    steps:
+      - checkout
+      - android/start-emulator-and-run-tests:
+          system-image: system-images;android-30;google_apis;x86  
+      - run: sdkmanager --list     
 
        
 
