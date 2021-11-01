@@ -1,36 +1,22 @@
-orbs: # adds orbs to your configuration
-  node: circleci/node@4.7.0
-  codecov: codecov/codecov@3.2.0
-  docker: circleci/docker@1.7.0
-  android: circleci/android@1.0.3
-      
-jobs:
-  build:
-    docker: 
-      - image: cimg/node:17.0.1-browsers
-    steps:
+version: 2.1
 
-      - run: echo "hello world"
-      
-  android-test:
-    executor: android/android
+jobs:
+  build_and_publish_image:
+    docker:
+      - image: cimg/python:3.9.7
+
+    working_directory: ~/project
     steps:
       - checkout
-#       - android/start-emulator-and-run-tests:
-#           system-image: system-images;android-30;google_apis;x86  
-      - run: sdkmanager --list     
-
-       
 
 
-version: 2.1
+
 workflows:
-  test_and_build:
+  build:
     jobs:
-      - build
-      - android-test
+      - build_and_publish_image:
+          filters:
+            branches:
+              only: docker
 
 
-
-      #test
-#test
