@@ -13,10 +13,7 @@ jobs:
       - run: echo "hello world"
       
   android-test:
-    executor:
-      name: android/android
-              sdk-version: 30
-
+    executor: android/android
     steps:
       - checkout
 #       - android/start-emulator-and-run-tests:
