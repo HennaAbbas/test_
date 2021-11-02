@@ -43,14 +43,8 @@ jobs:
 workflows:
   build:
     jobs:
-      - build_and_publish:
-          context: infra-2.0
-          filters:
-            branches:
-              only:
-                - /.*/
-            tags:
-              only: /.*/
+      - build_and_publish
+
 
 
 
