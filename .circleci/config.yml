@@ -1,22 +1,56 @@
-orbs:
-  ruby: circleci/ruby@1.0
-  node: circleci/node@2
-      
-jobs:
-  build:
-    docker: 
-      - image: circleci/ruby:2.7.4-node-browsers
-    steps:
-
-      - run: echo "hello world"
-      - ruby/install-deps      
-
-
 version: 2.1
+
+orbs:
+  slack: circleci/slack@3.4.2
+  expel-apps: expel-io/expel-apps@0.3.1
+
+jobs:
+  build_and_publish:
+    description: build and publish a new release
+    machine:
+      image: ubuntu-1604:202004-01
+    steps:
+      - checkout
+      - expel-apps/setup-registry
+      - run:
+          name: install dependencies
+          command: |
+            ./ci.sh install_deps
+      - run:
+          name: run tests
+          command: |
+            ./ci.sh test
+      - run:
+          name: generate package.json version numbers
+          command: |
+            ./ci.sh update_package_version
+      - deploy:
+          name: deploy with tag or main branch
+          command: |
+              ./ci.sh publish
+
+    working_directory: /app
+    docker:
+      - image: gcr.io/expel-engineering-devops/mad-ann
+        auth:
+          username: _json_key
+          password: $CI_SERVICE_ACCOUNT
+    steps:
+      - run:
+          name: Fetch pr desc and add to ticket
+          command: npm start jiraComment $CIRCLE_PROJECT_REPONAME $CIRCLE_SHA1
+
 workflows:
-  test_and_build:
+  build:
     jobs:
-      - build
+      - build_and_publish:
+          context: infra-2.0
+          filters:
+            branches:
+              only:
+                - /.*/
+            tags:
+              only: /.*/
 
 
 
