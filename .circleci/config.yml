@@ -29,16 +29,7 @@ jobs:
           command: |
               ./ci.sh publish
 
-    working_directory: /app
-    docker:
-      - image: gcr.io/expel-engineering-devops/mad-ann
-        auth:
-          username: _json_key
-          password: $CI_SERVICE_ACCOUNT
-    steps:
-      - run:
-          name: Fetch pr desc and add to ticket
-          command: npm start jiraComment $CIRCLE_PROJECT_REPONAME $CIRCLE_SHA1
+
 
 workflows:
   build:
