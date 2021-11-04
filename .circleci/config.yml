@@ -4,22 +4,10 @@ jobs:
     machine:
       image: ubuntu-1604-cuda-11.1:202012-01
     steps:
-      - run: java -version
-      - run: 
-          name: update jdk to 11
-          command: |
-              sudo apt update
-              sudo apt install -y openjdk-11-jdk
-              sudo update-alternatives --install /usr/bin/java java /usr/lib/jvm/java-11-openjdk-amd64/bin/java 1
-              echo 1 | sudo update-alternatives --config java
-              java -version
       - run:
-          name: install gradle
-          command: |
-              wget https://services.gradle.org/distributions/gradle-6.1.1-bin.zip
-              sudo unzip -d /opt/gradle gradle-6.1.1-bin.zip
-              export PATH=$PATH:/opt/gradle/gradle-6.1.1/bin
-              echo $PATH
-              gradle -v
-
-
+        name: add environment variable
+        command: |
+          curl --location --request POST 'https://circleci.com/api/v2/context/94dd59fd-8a33-4348-8e47-fea629491f2c/environment-variable/{env-var-name}' \
+          --header 'Content-Type: application/json' \
+          -u "${API_TOKEN}"
+          --data '{"value":"some-secret-value"}'
