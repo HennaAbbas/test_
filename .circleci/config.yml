@@ -53,7 +53,7 @@ jobs:
 workflows:
   build:
     jobs:
-      - build_and_publish          
+      - android-test          
 
       #test
 #test
