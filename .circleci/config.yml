@@ -1,44 +1,59 @@
-version: 2.1
+# version: 2.1
 
+# orbs:
+#   slack: circleci/slack@3.4.2
+#   expel-apps: expel-io/expel-apps@0.3.1
+
+# jobs:
+#   build_and_publish:
+#     description: build and publish a new release
+#     machine:
+#       image: ubuntu-1604:202004-01
+#     steps:
+#       - checkout
+#       - expel-apps/setup-registry
+#       - run:
+#           name: install dependencies
+#           command: |
+#             ./ci.sh install_deps
+#       - run:
+#           name: run tests
+#           command: |
+#             ./ci.sh test
+#       - run:
+#           name: generate package.json version numbers
+#           command: |
+#             ./ci.sh update_package_version
+#       - deploy:
+#           name: deploy with tag or main branch
+#           command: |
+#               ./ci.sh publish
+
+
+
+# workflows:
+#   build:
+#     jobs:
+#       - build_and_publish
+
+
+
+version: 2.1
 orbs:
-  slack: circleci/slack@3.4.2
-  expel-apps: expel-io/expel-apps@0.3.1
+  android: circleci/android@1.0.3
 
 jobs:
-  build_and_publish:
-    description: build and publish a new release
-    machine:
-      image: ubuntu-1604:202004-01
+  android-test:
+    executor:
+      name: android/android-machine
+      resource-class: xlarge
     steps:
-      - checkout
-      - expel-apps/setup-registry
-      - run:
-          name: install dependencies
-          command: |
-            ./ci.sh install_deps
-      - run:
-          name: run tests
-          command: |
-            ./ci.sh test
-      - run:
-          name: generate package.json version numbers
-          command: |
-            ./ci.sh update_package_version
-      - deploy:
-          name: deploy with tag or main branch
-          command: |
-              ./ci.sh publish
-
-
-
+      - android/start-emulator-and-run-tests:
+          system-image: system-images;android-30;google_apis;x86
 workflows:
   build:
     jobs:
-      - build_and_publish
-
-
-
-
+      - build_and_publish          
 
       #test
 #test
