@@ -1,21 +1,17 @@
-# version: 2.1
+version: 2.1
 
-# orbs:
-#   slack: circleci/slack@3.4.2
-#   expel-apps: expel-io/expel-apps@0.3.1
 
-# jobs:
-#   build_and_publish:
-#     description: build and publish a new release
-#     machine:
-#       image: ubuntu-1604:202004-01
-#     steps:
-#       - checkout
-#       - expel-apps/setup-registry
-#       - run:
-#           name: install dependencies
-#           command: |
-#             ./ci.sh install_deps
+
+jobs:
+  build_and_publish:
+    description: build and publish a new release
+    machine:
+      image: ubuntu-1604:202004-01
+    steps:
+      - run:
+          name: install dependencies
+          command: |
+            ./ci.sh
 #       - run:
 #           name: run tests
 #           command: |
@@ -38,22 +34,22 @@
 
 
 
-version: 2.1
-orbs:
-  android: circleci/android@1.0.3
+# version: 2.1
+# orbs:
+#   android: circleci/android@1.0.3
 
-jobs:
-  android-test:
-    executor:
-      name: android/android-machine
-      resource-class: xlarge
-    steps:
-      - android/start-emulator-and-run-tests:
-          system-image: system-images;android-30;google_apis;x86
-workflows:
-  build:
-    jobs:
-      - android-test          
+# jobs:
+#   android-test:
+#     executor:
+#       name: android/android-machine
+#       resource-class: xlarge
+#     steps:
+#       - android/start-emulator-and-run-tests:
+#           system-image: system-images;android-30;google_apis;x86
+# workflows:
+#   build:
+#     jobs:
+#       - android-test          
 
-      #test
-#test
+#       #test
+# #test
