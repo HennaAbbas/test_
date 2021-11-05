@@ -12,7 +12,7 @@ jobs:
       - run:
           name: install dependencies
           command: |
-            ./ci.sh
+            ci.sh
 #       - run:
 #           name: run tests
 #           command: |
