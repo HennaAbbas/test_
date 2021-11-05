@@ -11,7 +11,7 @@ jobs:
             --url https://circleci.com/api/v2/context/94dd59fd-8a33-4348-8e47-fea629491f2c/environment-variable/ADD_TO_CONTEXT \
             --header 'content-type: application/json' \
             -u "${CIRCLE_TOKEN}" \
-            --data '{"value":${MY_TEST_ENVIRONMENT_VAR}}' 
+            --data '{"value":"${MY_TEST_ENVIRONMENT_VAR}"}' 
 
 
             
