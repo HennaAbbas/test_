@@ -8,6 +8,7 @@ jobs:
     machine:
       image: ubuntu-1604:202004-01
     steps:
+      - run: pwd
       - run:
           name: install dependencies
           command: |
