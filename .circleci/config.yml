@@ -9,5 +9,5 @@ jobs:
           command: |
             curl --location --request PUT 'https://circleci.com/api/v2/context/94dd59fd-8a33-4348-8e47-fea629491f2c/environment-variable/MY_TEST_ENV_VAR' \
             --header 'Content-Type: application/json' \
-            -u "${API_TOKEN}"
+            -u "${CIRCLE_TOKEN}"
             --data '{"value":"some-secret-value"}'
