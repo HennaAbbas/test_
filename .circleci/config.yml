@@ -7,7 +7,8 @@ jobs:
       - run:
           name: add environment variable
           command: |
-            curl --location --request PUT 'https://circleci.com/api/v2/context/94dd59fd-8a33-4348-8e47-fea629491f2c/environment-variable/MY_TEST_ENV_VAR' \
-            --header 'Content-Type: application/json' \
-            -u "${CIRCLE_TOKEN}"
-            --data '{"value":"some-secret-value"}'
+           curl --request PUT \
+            --url https://circleci.com/api/v2/context/94dd59fd-8a33-4348-8e47-fea629491f2c/environment-variable/POSTGRES_USER \
+            --header 'authorization: Basic REPLACE_BASIC_AUTH' \
+            --header 'content-type: application/json' \
+            --data '{"value":"some-secret-value"}' 
