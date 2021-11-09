@@ -9,6 +9,7 @@ jobs:
       image: ubuntu-1604:202004-01
     steps:
       - run: pwd
+      - run: ls 
       - run:
           name: install dependencies
           command: |
