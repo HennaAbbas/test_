@@ -14,5 +14,4 @@ jobs:
             --data '{"value":"${MY_TEST_ENVIRONMENT_VAR}"}' 
 
 
-            
-#test
+
