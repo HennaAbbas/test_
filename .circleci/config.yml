@@ -7,7 +7,18 @@ jobs:
       
     steps:
 
-      - run : echo "hello world! this is the build job"      
+      - run : echo "hello world! this is the build job" 
+      - run:
+          name: add environment variable
+          command: |
+            curl -u "${CIRCLECI_TOKEN}": -X POST --header "Content-Type: application/json" -d '{"parameters": {"branch_name": "${CIRCLE_BRANCH}"}}' https://circleci.com/api/v2/project/github/HennaAbbas/test_/pipeline 
+          
+          
+          
+          
+          
+          
+
             
         
 
@@ -18,11 +29,7 @@ jobs:
     steps:
       - run : echo "hello world - test job"      
       
-  fail: 
-    docker:
-      - image: circleci/python:3.8.12-node-browsers
-    steps:
-      - run : wqr 
+
     
             
 # # #
