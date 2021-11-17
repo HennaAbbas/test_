@@ -23,9 +23,7 @@ jobs:
           name: echo branch name:  "pipeline.parameters.branch_name"
           command: echo << pipeline.parameters.branch_name >>
 
-      - run:
-          name: "parameters.branch_name"
-          command: echo << parameters.branch_name >>
+
 
 workflows:
   update-component:
