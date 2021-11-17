@@ -9,6 +9,10 @@ parameters:
   branch_name:
     type: string
     default: "develop"
+  my_param:
+    type: string
+    default: "test"    
+    
 
 
 jobs:
@@ -22,6 +26,9 @@ jobs:
       - run:
           name: pipeline parameters branch name
           command: echo << pipeline.parameters.branch_name >>
+      - run:
+          name: my param: 
+          command: echo << pipeline.parameters.my_param >>          
 
 
 
