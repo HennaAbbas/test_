@@ -11,7 +11,10 @@ parameters:
     default: "develop"
   my_param:
     type: string
-    default: "test"    
+    default: "test"  
+  last_commit: 
+    type: string
+    default: "0816ff9b329e63746f394f6061743cdc913ae7c2"
     
 
 
@@ -28,7 +31,8 @@ jobs:
           command: echo << pipeline.parameters.my_branch_name >>
       - run:
           name: my param
-          command: echo << pipeline.parameters.my_param >>          
+          command: echo << pipeline.parameters.my_param >>   
+      - run : echo $LAST_SUCCESSFUL_COMMIT     
 
 
 
@@ -38,4 +42,6 @@ workflows:
     jobs:
       - update:
           name: Update
+          environment:
+            LAST_SUCCESSFUL_COMMIT: << pipeline.parameters.last_commit >>
 
