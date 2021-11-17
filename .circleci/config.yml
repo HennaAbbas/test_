@@ -1,57 +1,38 @@
 version: 2.1
 
+executors:
+  nodejs:
+    docker:
+      - image: cimg/node:16.13.0
+
+parameters:
+  branch_name:
+    type: string
+    default: "develop"
 
 
 jobs:
-  build_and_publish:
-    description: build and publish a new release
-    machine:
-      image: ubuntu-1604:202004-01
+  update:
+    resource_class: small
+    executor: nodejs
+    working_directory: ~/app
     steps:
-      - run: pwd
-      - run: ls 
-      - run:
-          name: install dependencies
-          command: |
-            sleep 500
-#       - run:
-#           name: run tests
-#           command: |
-#             ./ci.sh test
-#       - run:
-#           name: generate package.json version numbers
-#           command: |
-#             ./ci.sh update_package_version
-#       - deploy:
-#           name: deploy with tag or main branch
-#           command: |
-#               ./ci.sh publish
-#
+      - checkout
 
+      - run:
+          name: echo branch name
+          command: echo << pipeline.parameters.branch_name >>
+
+      - run:
+          name: Update script
+          command: ./update.sh << pipeline.parameters.branch_name >>
 
 workflows:
-  build:
+  update-component:
     jobs:
-      - build_and_publish
-
-
-
-# version: 2.1
-# orbs:
-#   android: circleci/android@1.0.3
-
-# jobs:
-#   android-test:
-#     executor:
-#       name: android/android-machine
-#       resource-class: xlarge
-#     steps:
-#       - android/start-emulator-and-run-tests:
-#           system-image: system-images;android-30;google_apis;x86
-# workflows:
-#   build:
-#     jobs:
-#       - android-test          
-
-#
-#
+      - update:
+          name: Update
+          filters:
+            branches:
+              only:
+                - master
