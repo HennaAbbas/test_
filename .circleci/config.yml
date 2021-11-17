@@ -20,9 +20,10 @@ parameters:
 
 jobs:
   update:
-    resource_class: small
     executor: nodejs
     working_directory: ~/app
+    environment: LAST_SUCCESSFUL_COMMIT: << pipeline.parameters.last_commit >>
+      
     steps:
       - checkout
 
@@ -42,6 +43,6 @@ workflows:
     jobs:
       - update:
           name: Update
-          environment:
-            LAST_SUCCESSFUL_COMMIT: << pipeline.parameters.last_commit >>
+         
+            
 
