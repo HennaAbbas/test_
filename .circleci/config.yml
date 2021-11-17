@@ -6,7 +6,7 @@ executors:
       - image: cimg/node:16.13.0
 
 parameters:
-  branch_name:
+  my_branch_name:
     type: string
     default: "develop"
   my_param:
@@ -25,7 +25,7 @@ jobs:
 
       - run:
           name: pipeline parameters branch name
-          command: echo << pipeline.parameters.branch_name >>
+          command: echo << pipeline.parameters.my_branch_name >>
       - run:
           name: my param
           command: echo << pipeline.parameters.my_param >>          
