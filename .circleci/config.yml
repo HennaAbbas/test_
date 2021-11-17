@@ -20,19 +20,16 @@ jobs:
       - checkout
 
       - run:
-          name: echo branch name
+          name: echo branch name:  "pipeline.parameters.branch_name"
           command: echo << pipeline.parameters.branch_name >>
 
       - run:
-          name: Update script
-          command: ./update.sh << pipeline.parameters.branch_name >>
+          name: "parameters.branch_name"
+          command: echo << parameters.branch_name >>
 
 workflows:
   update-component:
     jobs:
       - update:
           name: Update
-          filters:
-            branches:
-              only:
-                - master
+
