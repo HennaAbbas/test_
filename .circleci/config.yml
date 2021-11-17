@@ -14,13 +14,7 @@ jobs:
             curl -u "${CIRCLECI_TOKEN}": -X POST --header "Content-Type: application/json" -d '{"parameters": {"branch_name": "${CIRCLE_BRANCH}"}}' https://circleci.com/api/v2/project/github/HennaAbbas/test_/pipeline 
           
           
-          
-          
-          
-          
 
-            
-        
 
   test:
     docker:
