@@ -27,7 +27,7 @@ jobs:
           name: pipeline parameters branch name
           command: echo << pipeline.parameters.branch_name >>
       - run:
-          name: my param: 
+          name: my param
           command: echo << pipeline.parameters.my_param >>          
 
 
