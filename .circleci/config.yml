@@ -48,7 +48,7 @@
 
 version: '2.1'
 orbs:
-  continuation: circleci/continuation@1.2.3
+  continuation: circleci/continuation@0.2.0
 workflows:
   use-my-orb:
     jobs:
