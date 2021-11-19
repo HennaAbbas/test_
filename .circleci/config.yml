@@ -1,48 +1,56 @@
-version: 2.1
+# version: 2.1
 
-executors:
-  nodejs:
-    docker:
-      - image: cimg/node:16.13.0
+# executors:
+#   nodejs:
+#     docker:
+#       - image: cimg/node:16.13.0
 
-parameters:
-  my_branch_name:
-    type: string
-    default: "develop"
-  my_param:
-    type: string
-    default: "test"  
-  last_commit: 
-    type: string
-    default: "0816ff9b329e63746f394f6061743cdc913ae7c2"
+# parameters:
+#   my_branch_name:
+#     type: string
+#     default: "develop"
+#   my_param:
+#     type: string
+#     default: "test"  
+#   last_commit: 
+#     type: string
+#     default: "0816ff9b329e63746f394f6061743cdc913ae7c2"
     
 
 
-jobs:
-  update:
-    executor: nodejs
-    working_directory: ~/app
-    environment: LAST_SUCCESSFUL_COMMIT: << pipeline.parameters.last_commit >>
+# jobs:
+#   update:
+#     executor: nodejs
+#     working_directory: ~/app
+#     environment: LAST_SUCCESSFUL_COMMIT: << pipeline.parameters.last_commit >>
       
-    steps:
-      - checkout
+#     steps:
+#       - checkout
 
-      - run:
-          name: pipeline parameters branch name
-          command: echo << pipeline.parameters.my_branch_name >>
-      - run:
-          name: my param
-          command: echo << pipeline.parameters.my_param >>   
-      - run : echo $LAST_SUCCESSFUL_COMMIT     
-
-
+#       - run:
+#           name: pipeline parameters branch name
+#           command: echo << pipeline.parameters.my_branch_name >>
+#       - run:
+#           name: my param
+#           command: echo << pipeline.parameters.my_param >>   
+#       - run : echo $LAST_SUCCESSFUL_COMMIT     
 
 
-workflows:
-  update-component:
-    jobs:
-      - update:
-          name: Update
+
+
+# workflows:
+#   update-component:
+#     jobs:
+#       - update:
+#           name: Update
          
             
 
+version: '2.1'
+orbs:
+  continuation: circleci/continuation@1.2.3
+workflows:
+  use-my-orb:
+    jobs:
+      - continuation/continue:
+          configuration_path: ./config.yml
