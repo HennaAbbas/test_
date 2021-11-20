@@ -22,7 +22,7 @@ jobs:
   update:
     executor: nodejs
     working_directory: ~/app
-    environment: LAST_SUCCESSFUL_COMMIT: << pipeline.parameters.last_commit >>
+
       
     steps:
       - checkout
