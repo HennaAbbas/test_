@@ -37,7 +37,7 @@ jobs:
           IS_QUIET: true
           OUTPUT_FILE_NAME: my_file
 #           OUTPUT_FILE_PATH: build
-#           PATH: ~/project
+          PATH: ~/project
 #           TIMEOUT: 10
 
         name: Execute Cloc    
