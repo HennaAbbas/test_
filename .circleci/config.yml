@@ -30,28 +30,7 @@ jobs:
     - run:
         command: |
           sudo npm install -g cloc
-          if [ "$IS_DEBUG" = "1" ]; then
-              echo STARTING......
-              echo "$TIMEOUT"
-              echo "$PATH"
-              echo "$date"
-              current_time=$(date "+%Y.%m.%d-%H.%M.%S")
-              echo "Current Time : $current_time"
-          fi
-          file_name=~/project/"$OUTPUT_FILE_PATH"/cloc/"$OUTPUT_FILE_NAME""$FILE_TYPE"
-          if [ "$IS_DEBUG" = "1" ]; then
-              echo "$file_name"
-          fi
-          echo "export QUIET=" >> $BASH_ENV
-          if [ "$IS_QUIET" = "1" ]; then
-              echo "$IS_QUIET"
-              echo "export QUIET=--quiet" >> $BASH_ENV
-          fi
-          cloc "$PATH" --report-file=${file_name} "$QUIET" --timeout "$TIMEOUT"
-          echo "export FILE_PATH=${file_name}" >> $BASH_ENV
-          if [ "$IS_DEBUG" = "1" ]; then
-              echo ENDING......
-          fi
+
         environment:
           DIFF: ''
           FILE_TYPE: .json
