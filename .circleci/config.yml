@@ -31,7 +31,7 @@ jobs:
         command: |
           sudo npm install -g cloc
         environment:
-          DIFF: ''
+          DIFF: <<parameters.branch_name>>
         
 
 
