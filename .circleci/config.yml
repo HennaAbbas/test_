@@ -30,6 +30,14 @@ jobs:
     - run:
         command: |
           sudo npm install -g cloc
+        environment:
+          DIFF: ''
+          FILE_TYPE: .json
+          IS_DEBUG: true
+          IS_QUIET: true
+          OUTPUT_FILE_NAME: my_file
+          OUTPUT_FILE_PATH: build
+          PATH: ~/project          
 
 
         name: Execute Cloc          
