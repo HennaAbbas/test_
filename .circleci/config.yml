@@ -20,21 +20,21 @@ parameters:
 
 jobs:
   update:
-    executor: nodejs
-    working_directory: ~/app
-
-      
+    docker:
+    - image: cimg/node:17.1.0
     steps:
-      - checkout
-      - run: brew -v 
+    - checkout
+    - run:
+        command: |
+          sudo npm install -g cloc
 
-      - run:
-          name: pipeline parameters branch name
-          command: echo << pipeline.parameters.my_branch_name >>
-      - run:
-          name: my param
-          command: echo << pipeline.parameters.my_param >>   
-      - run : echo $LAST_SUCCESSFUL_COMMIT     
+#       - run:
+#           name: pipeline parameters branch name
+#           command: echo << pipeline.parameters.my_branch_name >>
+#       - run:
+#           name: my param
+#           command: echo << pipeline.parameters.my_param >>   
+#       - run : echo $LAST_SUCCESSFUL_COMMIT     
 
 
 
