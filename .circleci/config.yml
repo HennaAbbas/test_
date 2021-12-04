@@ -21,7 +21,7 @@ jobs:
           name: Check API for Scheduled Pipeline trigger type also pull id for next step
           command: |
             echo $CIRCLE_SHA1
-            LAST_SHA_REVISION=$(curl -H "Circle-Token: $CIRCLE_TOKEN" "https://circleci.com/api/v2/project/github/HennaAbbas/test_/pipeline?branch=master" | jq -r '.items[] | select (.id != << pipeline.id >> ) | select (.state == "created") | select (.trigger.type == "scheduled_pipeline") | .vcs.revision | head [-1]')
+            LAST_SHA_REVISION=$(curl -H "Circle-Token: $CIRCLE_TOKEN" "https://circleci.com/api/v2/project/github/HennaAbbas/test_/pipeline?branch=master" | jq -r '.items[] | select (.id != << pipeline.id >> ) | select (.state == "created") | select (.trigger.type == "scheduled_pipeline") | .vcs.revision | .[0]')
             echo $LAST_SHA_REVISION 
             # compare to sha envvar of current build 
             # if they are the same then you circleci step halt
