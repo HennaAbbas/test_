@@ -31,5 +31,12 @@ workflows:
     build_and_push:
       jobs:
         - build   
-        - test    
+        - test 
+        - hold: 
+            type: approval 
+            requires: 
+              - test
+        - build: 
+            requires: 
+              - hold 
 
