@@ -49,4 +49,7 @@ workflows:
         - build: 
             requires: 
               - hold 
+        - build: 
+            requires: 
+              - will_fail
 #test
