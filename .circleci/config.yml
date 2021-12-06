@@ -49,7 +49,11 @@ workflows:
         - build: 
             requires: 
               - hold 
+            context: 
+              my-context
         - build: 
             requires: 
               - will_fail
+            context: 
+              my-context              
 #test
