@@ -46,14 +46,20 @@ workflows:
         - will_fail: 
             requires: 
               - hold 
+            tags:
+              only: /^recs-v.*/              
         - build: 
             requires: 
               - hold 
             context: 
               my-context
+            tags:
+              only: /^recs-v.*/              
         - build: 
             requires: 
               - will_fail
             context: 
-              my-context              
+              my-context  
+            tags:
+              only: /^recs-v.*/              
 #test
