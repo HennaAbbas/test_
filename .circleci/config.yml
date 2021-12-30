@@ -23,7 +23,7 @@ workflows:
   deployment:
     jobs:
       - aws-eks/create-cluster:
-          executor: cimg/python:3.10-browsers
+          executor: python
 
       - test-cluster:
           cluster-name: my-eks-demo
