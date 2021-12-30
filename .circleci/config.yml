@@ -1,25 +1,33 @@
-version: 2.1
+version: '2.1'
 orbs:
-  aws-ecr: circleci/aws-ecr@7.3.0
-  aws-eks: circleci/aws-eks@2.1.0
-  kubernetes: circleci/kubernetes@1.0.2
+  aws-eks: circleci/aws-eks@2.0
+  kubernetes: circleci/kubernetes@1.0
 jobs:
-  build_and_push:
-    executor: aws-eks/python
+  test-cluster:
+    executor: aws-eks/python3
+    parameters:
+      cluster-name:
+        description: |
+          Name of the EKS cluster
+        type: string
     steps:
-      - setup_remote_docker:
-          docker_layer_caching: true
-      - aws-ecr/build-and-push-image:
-          account-url: AWS_ACCOUNT_URL
-          repo: "service/profiles"
-          region: AWS_DEFAULT_REGION
-          tag: ${CIRCLE_SHA1}
-          dockerfile: Dockerfile
-
+      - kubernetes/install
+      - aws-eks/update-kubeconfig-with-authenticator:
+          cluster-name: << parameters.cluster-name >>
+      - run:
+          command: |
+            kubectl get services
+          name: Test cluster
 workflows:
-  build_and_test_server:
+  deployment:
     jobs:
-      - build_and_push:
-          name: build-and-push
-
-     
+      - aws-eks/create-cluster:
+          cluster-name: my-eks-demo
+      - test-cluster:
+          cluster-name: my-eks-demo
+          requires:
+            - aws-eks/create-cluster
+      - aws-eks/delete-cluster:
+          cluster-name: my-eks-demo
+          requires:
+            - test-cluster
