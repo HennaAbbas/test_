@@ -1,6 +1,6 @@
 version: '2.1'
 orbs:
-  aws-eks: circleci/aws-eks@2.0
+  aws-eks: circleci/aws-eks@2.1.0
   kubernetes: circleci/kubernetes@1.0
 jobs:
   test-cluster:
