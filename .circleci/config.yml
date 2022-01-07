@@ -1,30 +1,117 @@
-version: '2.1'
-orbs:
-  slack: circleci/slack@4.1
+# version: '2.1'
+# orbs:
+#   slack: circleci/slack@4.1
+# jobs:
+#   notify:
+#     docker:
+#       - image: 'cimg/base:stable'
+#     steps:
+#       - slack/notify:
+#           custom: |
+#             {
+#               "blocks": [
+#                 {
+#                   "type": "section",
+#                   "fields": [
+#                     {
+#                       "type": "plain_text",
+#                       "text": "*This is a text notification*",
+#                       "emoji": true
+#                     }
+#                   ]
+#                 }
+#               ]
+#             }
+#           event: always
+# workflows:
+#   send-notification:
+#     jobs:
+#       - notify:
+#           context: slack-secrets
+version: 2
 jobs:
-  notify:
+  test:
     docker:
-      - image: 'cimg/base:stable'
+    - image: circleci/python:3.9.6
+      environment:
+        PIPENV_VENV_IN_PROJECT: true
     steps:
-      - slack/notify:
-          custom: |
-            {
-              "blocks": [
-                {
-                  "type": "section",
-                  "fields": [
-                    {
-                      "type": "plain_text",
-                      "text": "*This is a text notification*",
-                      "emoji": true
-                    }
-                  ]
-                }
-              ]
-            }
-          event: always
+    - add_ssh_keys:
+        fingerprints:
+        - c4:6f:35:b6:b6:fa:17:56:19:eb:ab:6b:86:1e:22:f4
+    - checkout
+    - run: sudo chown -R circleci:circleci /usr/local/bin
+    - restore_cache:
+        key: deps9-{{ .Branch }}-{{ checksum "Pipfile.lock" }}
+    - run:
+        command: |
+          make setup
+    - save_cache:
+        key: deps9-{{ .Branch }}-{{ checksum "Pipfile.lock" }}
+        paths:
+        - venv
+    - run:
+        command: |
+          make test
+    - run:
+        command: |
+          make coverage
+    environment:
+    - CIRCLE_COMPARE_URL: https://github.com/binary-com/python-deriv-api/compare/b40fca1b5ba06a47579f87258f41a50de9fb55fc...ce3286b7f4958c3eb573af5ed3410b8acdb4b70e
+  docs-build:
+    docker:
+    - image: circleci/python:3.9.6
+      environment:
+        PIPENV_VENV_IN_PROJECT: true
+    steps:
+    - checkout
+    - run: sudo chown -R circleci:circleci /usr/local/bin
+    - restore_cache:
+        key: deps9-{{ .Branch }}-{{ checksum "Pipfile.lock" }}
+    - run:
+        command: |
+          make setup
+    - save_cache:
+        key: deps9-{{ .Branch }}-{{ checksum "Pipfile.lock" }}
+        paths:
+        - venv
+    - run:
+        command: |
+          make doc
+          pwd
+    - persist_to_workspace:
+        root: docs/html
+        paths: deriv_api
+    environment:
+    - CIRCLE_COMPARE_URL: https://github.com/binary-com/python-deriv-api/compare/b40fca1b5ba06a47579f87258f41a50de9fb55fc...ce3286b7f4958c3eb573af5ed3410b8acdb4b70e
+  docs-deploy:
+    docker:
+    - image: node:8.10.0
+    steps:
+    - add_ssh_keys:
+        fingerprints:
+        - c4:6f:35:b6:b6:fa:17:56:19:eb:ab:6b:86:1e:22:f4
+    - checkout
+    - attach_workspace:
+        at: docs/html
+    - run:
+        name: Install and configure dependencies
+        command: |
+          npm install -g --silent gh-pages@2.0.1
+          git config --local user.email "sysadmin@binary.com"
+          git config --local user.name "Automated gh-pages deploy"
+    - run:
+        name: Deploy docs to gh-pages branch
+        command: gh-pages --message "[skip ci] Updates" --dist docs/html/deriv_api
+    environment:
+    - CIRCLE_COMPARE_URL: https://github.com/binary-com/python-deriv-api/compare/b40fca1b5ba06a47579f87258f41a50de9fb55fc...ce3286b7f4958c3eb573af5ed3410b8acdb4b70e
 workflows:
-  send-notification:
+  version: 2
+  build:
     jobs:
-      - notify:
-          context: slack-secrets
+    - test
+    - docs-build
+    - docs-deploy:
+        requires:
+        - test
+        - docs-build
