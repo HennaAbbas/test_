@@ -38,7 +38,7 @@ jobs:
     steps:
     - add_ssh_keys:
         fingerprints:
-        - c4:6f:35:b6:b6:fa:17:56:19:eb:ab:6b:86:1e:22:f4
+        - 51:8b:1b:9d:b5:53:cb:4a:f4:51:47:68:d2:ac:52:71
     - checkout
     - run: sudo chown -R circleci:circleci /usr/local/bin
     - restore_cache:
@@ -90,7 +90,7 @@ jobs:
     steps:
     - add_ssh_keys:
         fingerprints:
-        - c4:6f:35:b6:b6:fa:17:56:19:eb:ab:6b:86:1e:22:f4
+        - 51:8b:1b:9d:b5:53:cb:4a:f4:51:47:68:d2:ac:52:71
     - checkout
     - attach_workspace:
         at: docs/html
