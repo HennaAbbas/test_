@@ -33,81 +33,15 @@ jobs:
   test:
     docker:
       - image: circleci/python:3.9.6
-        environment: # environment variables for primary container
-          PIPENV_VENV_IN_PROJECT: true
     steps: # steps that comprise the `build` job
       - add_ssh_keys:
           fingerprints:
             - "51:8b:1b:9d:b5:53:cb:4a:f4:51:47:68:d2:ac:52:71"
       - checkout # check out source code to working directory
-      - run: sudo chown -R circleci:circleci /usr/local/bin
-      - restore_cache:
-      # Read about caching dependencies: https://circleci.com/docs/2.0/caching/
-          key: deps9-{{ .Branch }}-{{ checksum "Pipfile.lock" }}
-      - run:
-          command: |
-            make setup
-      - save_cache: # cache Python dependencies using checksum of Pipfile as the cache-key
-          key: deps9-{{ .Branch }}-{{ checksum "Pipfile.lock" }}
-          paths:
-            - "venv"
-      - run:
-          command: |
-            make test
-      - run:
-          command: |
-            make coverage
-  docs-build:
-    docker:
-      - image: circleci/python:3.9.6
-        environment: # environment variables for primary container
-          PIPENV_VENV_IN_PROJECT: true
-    steps:
-      - checkout
-      - run: sudo chown -R circleci:circleci /usr/local/bin
-      - restore_cache:
-          key: deps9-{{ .Branch }}-{{ checksum "Pipfile.lock" }}
-      - run:
-         command: |
-           make setup
-      - save_cache:
-          key: deps9-{{ .Branch }}-{{ checksum "Pipfile.lock" }}
-          paths:
-            - "venv"
-      - run:
-          command: |
-            make doc
-            pwd
-      - persist_to_workspace:
-          root: docs/html
-          paths: deriv_api
-  docs-deploy:
-    docker:
-      - image: node:8.10.0
-    steps:
-      - add_ssh_keys:
-          fingerprints:
-            - "51:8b:1b:9d:b5:53:cb:4a:f4:51:47:68:d2:ac:52:71"
-      - checkout
-      - attach_workspace:
-          at: docs/html
-      - run:
-          name: Install and configure dependencies
-          command: |
-            npm install -g --silent gh-pages@2.0.1
-            git config --local user.email "sysadmin@binary.com"
-            git config --local user.name "Automated gh-pages deploy"
-      - run:
-          name: Deploy docs to gh-pages branch
-          command: gh-pages --message "[skip ci] Updates" --dist docs/html/deriv_api
-
+      
 workflows:
   version: 2
   build:
     jobs:
       - test
-      - docs-build
-      - docs-deploy:
-          requires:
-            - test
-            - docs-build
+
