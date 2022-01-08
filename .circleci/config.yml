@@ -38,6 +38,7 @@ jobs:
           fingerprints:
             - "85:eb:b7:76:37:d7:b7:1f:74:d6:fa:1b:28:ee:b3:73"
       - checkout # check out source code to working directory
+      - run : echo $CIRCLE_WORKING_DIRECTORY
       
 workflows:
   version: 2
