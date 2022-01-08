@@ -9,7 +9,7 @@ jobs:
 #           command: |
 #           puts "hello"
      - run:
-        shell: /usr/local/bin/rub
+        shell: /usr/local/bin/ruby
         command: |
           puts "hello"          
       
