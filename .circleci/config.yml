@@ -1,68 +1,16 @@
-version: 2.1
-
+version: 2
 jobs:
-  build:
-    docker:
-      - image: cimg/python:3.8.12-browsers
-      
-    steps:
-
-      - run : echo "hello world! this is the build job" 
-      - run:
-          name: add environment variable
-          command: |
-            curl -u "${CIRCLECI_TOKEN}": -X POST --header "Content-Type: application/json" -d '{"parameters": {"branch_name": "${CIRCLE_BRANCH}"}}' https://circleci.com/api/v2/project/github/HennaAbbas/test_/pipeline 
-          
-          #
-
-
   test:
     docker:
-      - image: circleci/python:3.8.12-node-browsers
+      - image: cimg/ruby:3.1
+    steps: # steps that comprise the `build` job
+      - run: 
+          shell: /usr/local/bin/rub
+          command: |
+          puts "hello"
       
-    steps:
-      - run : echo "hello world - test job"      
-      
-  will_fail:
-    docker:
-      - image: circleci/python:3.8.12-node-browsers
-      
-    steps:
-      - run : wqr       
-      
-
-    
-            
-# # #
 workflows:
-    build_and_push:
-      jobs:
-        - build   
-        - test 
-        - hold: 
-            type: approval 
-            requires: 
-              - test
-        - will_fail: 
-            requires: 
-              - hold 
-            filters:   
-              tags:
-                only: /^recs-v.*/              
-        - build: 
-            requires: 
-              - hold 
-            context: 
-              my-context
-            filters:   
-              tags:
-                only: /^recs-v.*/               
-        - build: 
-            requires: 
-              - will_fail
-            context: 
-              my-context  
-            filters:   
-              tags:
-                only: /^recs-v.*/              
-#test
+  version: 2
+  build:
+    jobs:
+      - test
