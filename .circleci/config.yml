@@ -28,6 +28,7 @@
 #     jobs:
 #       - notify:
 #           context: slack-secrets
+---
 version: 2
 jobs:
   test:
