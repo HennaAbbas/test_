@@ -47,6 +47,7 @@ jobs:
           command: apk add git
 
       - checkout
+      - run: sleep 500
 #   test:
 #     docker:
 #       - image: circleci/python:3.9.6
