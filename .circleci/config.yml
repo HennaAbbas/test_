@@ -42,6 +42,11 @@ jobs:
     working_directory:  ~/addons-release-tests/
     steps:
       - run: python --version
+      - run:
+          name: Upgrade pip
+          command: pip install --upgrade pip --user      
+
+      - run: python --version          
 
 
   test:
