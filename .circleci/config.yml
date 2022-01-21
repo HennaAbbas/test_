@@ -29,8 +29,20 @@
 #       - notify:
 #           context: slack-secrets
 
-version: 2
+
+version: 2.1
+orbs:
+  win: circleci/windows@2.4.1
 jobs:
+  # run collections tests in a separate serial job to make serial workflows more granular
+  collections_serial_tests:
+    executor:
+      name: win/default
+      size: "medium"
+    working_directory:  ~/addons-release-tests/
+    steps:
+      - checkout
+      - run: python --version
 
 
   test:
@@ -63,5 +75,6 @@ workflows:
   build:
     jobs:
       - test
+      - collections_serial_tests
 #test      
 
