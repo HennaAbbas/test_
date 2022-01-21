@@ -41,7 +41,6 @@ jobs:
       size: "medium"
     working_directory:  ~/addons-release-tests/
     steps:
-      - checkout
       - run: python --version
 
 
@@ -54,8 +53,8 @@ jobs:
           name: Install Git Client
           command: apk add git
 
-      - checkout
-      - run: sleep 500
+#       - checkout
+#       - run: sleep 500
 
       
 workflows:
