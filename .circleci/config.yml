@@ -49,26 +49,14 @@ jobs:
     docker:
       - image: docker:20.10.12
     steps:
-#       - run:
-#             name: Install OpenSSH 8.1p1
-#             command: |
-#               sudo apt-get update
-#               mkdir ~/tempdownload; cd ~/tempdownload; wget https://cdn.openbsd.org/pub/OpenBSD/OpenSSH/portable/openssh-8.1p1.tar.gz; tar zxvf openssh-8.1p1.tar.gz; cd openssh-8.1p1 && ./configure && make && sudo make install
+
       - run:
           name: Install Git Client
           command: apk add git
 
       - checkout
       - run: sleep 500
-#   test:
-#     docker:
-#       - image: circleci/python:3.9.6
-#     steps: # steps that comprise the `build` job
-#       - add_ssh_keys:
-#           fingerprints:
-#             - "85:eb:b7:76:37:d7:b7:1f:74:d6:fa:1b:28:ee:b3:73"
-#       - checkout # check out source code to working directory
-#       - run : echo $CIRCLE_WORKING_DIRECTORY
+
       
 workflows:
   version: 2
