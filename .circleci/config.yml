@@ -46,7 +46,7 @@ jobs:
 #           name: Upgrade pip
 #           command: pip install --upgrade pip --user      
 
-      - run: pip3 install python 3.9
+      - run: pip install python 3.9
       
 
 
