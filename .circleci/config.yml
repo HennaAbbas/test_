@@ -46,7 +46,7 @@ jobs:
           name: Upgrade pip
           command: pip install --upgrade pip --user      
 
-      - run: -m pip install python 3.7.0
+      - run: pip3 install python 3.9
       
 
 
