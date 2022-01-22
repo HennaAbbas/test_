@@ -46,27 +46,28 @@ jobs:
           name: Upgrade pip
           command: pip install --upgrade pip --user      
 
-      - run: python --version          
+      - run: py --list      
+      
 
 
-  test:
-    docker:
-      - image: docker:20.10.12
-    steps:
+#   test:
+#     docker:
+#       - image: docker:20.10.12
+#     steps:
 
-      - run:
-          name: Install Git Client
-          command: apk add git
+#       - run:
+#           name: Install Git Client
+#           command: apk add git
 
-#       - checkout
-#       - run: sleep 500
+# #       - checkout
+# #       - run: sleep 500
 
       
 workflows:
   version: 2
   build:
-    jobs:
-      - test
+#     jobs:
+#       - test
       - collections_serial_tests
 #test      
 
