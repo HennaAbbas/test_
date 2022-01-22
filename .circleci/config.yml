@@ -46,7 +46,8 @@ jobs:
 #           name: Upgrade pip
 #           command: pip install --upgrade pip --user      
 
-      - run: sudo pip install python 3.9.0
+      - run: py -m pip install --upgrade python.
+      - run: python --version      
       
 
 
