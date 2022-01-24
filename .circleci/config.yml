@@ -5,11 +5,9 @@ jobs:
       - image: cimg/ruby:3.1
     steps: # steps that comprise the `build` job
      - run: echo "hello world!"      
-     - add_ssh_keys: 
-    steps:
-      - add_ssh_keys:
-          fingerprints:
-            - "00:00:12:3a:05:f7:87:4b:5a:fe:4c:5c:6d:14:a7:06"     
+     - add_ssh_keys:
+         fingerprints:
+           - "00:00:12:3a:05:f7:87:4b:5a:fe:4c:5c:6d:14:a7:06"     
         
       
 workflows:
