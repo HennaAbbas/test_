@@ -4,14 +4,7 @@ jobs:
     docker:
       - image: cimg/ruby:3.1
     steps: # steps that comprise the `build` job
-#       - run: 
-#           shell: /usr/local/bin/rub
-#           command: |
-#           puts "hello"
-     - run:
-        shell: /usr/local/bin/ruby
-        command: |
-          puts "hello"          
+     - run: echo "hello world!"      
       
 workflows:
   version: 2
