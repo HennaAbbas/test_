@@ -59,8 +59,8 @@
 #       - collections_serial_tests:
 #           filters:
 #             branches:
-                  ignore:                 # options are: ignore/only
-                    - master  
+#                   ignore:                 # options are: ignore/only
+#                     - master  
 #test      
 
 version: 2.1
@@ -70,7 +70,8 @@ workflows:
       - build-and-test-android:   # job name
           filters:
             branches:
-              ignore: master                 # you can reverse by adding: only: - /circleci-.*/
+               ignore:                 # options are: ignore/only
+                  - master                  # you can reverse by adding: only: - /circleci-.*/
       
 orbs: 
   node: circleci/node@5.0.0
