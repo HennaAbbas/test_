@@ -71,7 +71,7 @@ workflows:
           filters:
             branches:
                ignore:                 # options are: ignore/only
-                  - master                  # you can reverse by adding: only: - /circleci-.*/
+                  - none                  # you can reverse by adding: only: - /circleci-.*/
       
 orbs: 
   node: circleci/node@5.0.0
