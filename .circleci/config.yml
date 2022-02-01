@@ -4,7 +4,12 @@ jobs:
     docker:
       - image: cimg/python:3.9.10-browsers
     steps: # steps that comprise the `build` job
-     - run: echo "hello world!"      
+      - run:
+          name: "Install backend dependencies"
+          command: |
+            python3.9 -m venv venv
+            source venv/bin/activate
+            pip3.9 install -r requirements-dev.txt      
 
         
       
