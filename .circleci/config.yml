@@ -85,6 +85,7 @@ jobs:
 
     steps:
       - checkout  # Checkout the code as the first step.
+      - run: sleep 500 ;      
       - run:
           name: '[swift] Download SwiftFormat'
           command: |
@@ -100,7 +101,7 @@ jobs:
 #       - node/install:
 #           install-yarn: true
 #           node-version: '16.0.0'
-      - run: sleep 500 ;
+
 #           name: Checking the node , yarn and java version
 #           command: | 
 #             node -v && yarn -v && java --version && sudo ln -s "$(which node)" /usr/local/bin/node
