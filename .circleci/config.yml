@@ -93,11 +93,14 @@ jobs:
                 apt-get update && apt-get install --no-install-recommends -y curl unzip
                 curl -sSLO https://github.com/nicklockwood/SwiftFormat/releases/download/${SWIFTFORMAT_VERSION}/swiftformat_linux.zip
               fi
-            fi      
+            fi   
+            
+            
+            
 #       - node/install:
 #           install-yarn: true
 #           node-version: '16.0.0'
-#       - run:
+      - run: sleep 500 ;
 #           name: Checking the node , yarn and java version
 #           command: | 
 #             node -v && yarn -v && java --version && sudo ln -s "$(which node)" /usr/local/bin/node
