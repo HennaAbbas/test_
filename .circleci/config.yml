@@ -81,7 +81,11 @@ jobs:
   build-and-test-android:
     docker: # executor:
       #- image: cimg/openjdk:17.0.1  # image name & value:
-      - image: cimg/android:2021.12.2 
+#       - image: cimg/android:2021.12.2 
+      - image: acme-private/private-image:321
+        auth:
+          username: mydockerhub-user  # can specify string literal values
+          password: $DOCKERHUB_PASSWORD      
 
     steps:
       - checkout  # Checkout the code as the first step.
