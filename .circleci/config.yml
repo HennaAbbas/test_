@@ -80,37 +80,42 @@ orbs:
 jobs:
   build-and-test-android:
     docker: # executor:
-      #- image: cimg/openjdk:17.0.1  # image name & value:
-#       - image: cimg/android:2021.12.2 
-      - image: eu.gcr.io/in2plane-cloud/docker-circleci:v1.8.2
-        auth:
-          username: mydockerhub-user  # can specify string literal values
-          password: $DOCKERHUB_PASSWORD      
+      - image: cimg/openjdk:17.0.1  # image name & value:
+
 
     steps:
       - checkout  # Checkout the code as the first step.
-      - node/install:
-          install-yarn: true
-          node-version: '16.0.0'
       - run:
-          name: Checking the node , yarn and java version
-          command: | 
-            node -v && yarn -v && java --version && sudo ln -s "$(which node)" /usr/local/bin/node
-      - run:
-          name: Install node_modules
-          command: | 
-           ls -al && yarn install
-      - run:
-          name: Add SDK root to EnvVariables
-          command: | 
-           export ANDROID_SDK_ROOT=/home/circleci/android-sdk
-      - run:
-          name: Clean the gradle solution
-          command: | 
-           cd android && sudo chmod +x gradlew && ls -al && sudo ./gradlew clean
-      - run:
-          name: Assemble release build
-          command: | 
-           cd android && ls -al && sudo ./gradlew assembleRelease
+          name: '[swift] Download SwiftFormat'
+          command: |
+            if [ -n "${SWIFTFORMAT_VERSION}" ]; then
+              if [ ! -f $HOME/bin/swiftformat/swiftformat ]; then
+                apt-get update && apt-get install --no-install-recommends -y curl unzip
+                curl -sSLO https://github.com/nicklockwood/SwiftFormat/releases/download/${SWIFTFORMAT_VERSION}/swiftformat_linux.zip
+              fi
+            fi      
+#       - node/install:
+#           install-yarn: true
+#           node-version: '16.0.0'
+#       - run:
+#           name: Checking the node , yarn and java version
+#           command: | 
+#             node -v && yarn -v && java --version && sudo ln -s "$(which node)" /usr/local/bin/node
+#       - run:
+#           name: Install node_modules
+#           command: | 
+#            ls -al && yarn install
+#       - run:
+#           name: Add SDK root to EnvVariables
+#           command: | 
+#            export ANDROID_SDK_ROOT=/home/circleci/android-sdk
+#       - run:
+#           name: Clean the gradle solution
+#           command: | 
+#            cd android && sudo chmod +x gradlew && ls -al && sudo ./gradlew clean
+#       - run:
+#           name: Assemble release build
+#           command: | 
+#            cd android && ls -al && sudo ./gradlew assembleRelease
 
 #test
