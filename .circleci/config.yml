@@ -2,16 +2,9 @@ version: 2
 jobs:
   test:
     docker:
-      - image: cimg/python:3.9.10-browsers
-    steps: # steps that comprise the `build` job
-      - run: ls
-      - run: pwd
-      - run:
-          name: "Install backend dependencies"
-          command: |
-            python3.9 -m venv venv
-            source venv/bin/activate
-            pip3.9 install -r requirements-dev.txt      
+      - image: ubuntu-2004:202201-01
+    steps: # 
+      - run: which python   
 
         
       
