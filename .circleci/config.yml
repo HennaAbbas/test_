@@ -1,7 +1,6 @@
 version: 2
 jobs:
   test:
-  build:
     machine:
       image: ubuntu-2004:202201-01
     steps: # 
