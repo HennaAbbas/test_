@@ -6,7 +6,7 @@ jobs:
     steps:
       - checkout
       - run: python --version 
-      - run: sudo pip install python 2.7
+      - run: sudo apt-get python 2.7
       - run: python --version       
 
         
