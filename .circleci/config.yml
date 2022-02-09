@@ -1,36 +1,20 @@
 # version: 2
-# jobs:
-#   test:
-#     machine:
-#       image: ubuntu-2004:202201-01
-#     steps: # 
-#       - run: which python   
+jobs:
+  build:
+    docker:
+      - image: cimg/python:3.10.2
+    steps:
+      - checkout
+      - run: python --version 
+      - run: pip install python 2.7
+      - run: python --version       
 
         
       
-# workflows:
-#   version: 2
-#   build:
-#     jobs:
-#       - test
-
-
-version: '2.1'
-orbs:
-  python: circleci/python@1.0.0
-jobs:
-  publish:
-    executor: python/default
-    steps:
-      - checkout
-      - python/dist
-      - run: which python
-      - run: pip install twine && twine upload dist/*
 workflows:
-  main:
+  version: 2
+  build:
     jobs:
-      - python/test:
-          args: '--dev'
-          pkg-manager: pipenv
-          test-tool: pytest
-      - publish
+      - build
+
+
