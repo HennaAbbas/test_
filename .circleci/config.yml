@@ -24,6 +24,7 @@ jobs:
     steps:
       - checkout
       - python/dist
+      - run: which python
       - run: pip install twine && twine upload dist/*
 workflows:
   main:
