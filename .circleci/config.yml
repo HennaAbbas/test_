@@ -12,6 +12,10 @@ jobs:
       - run:
           name: Check installed python verion
           command: python --version
+      - run:
+          name: Check all installed python verions
+          command: py --list            
+   
 workflows:
   main:
     jobs:
