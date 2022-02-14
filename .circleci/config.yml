@@ -2,19 +2,12 @@ version: 2.1
 orbs:
   win: circleci/windows@2.4.1
 jobs:
-  # run collections tests in a separate serial job to make serial workflows more granular
-  build:
+  install_python_3
     executor:
       name: win/default
-      size: "medium"
     steps:
-      - checkout
-      - run:
-          name: Check installed python verion
-          command: python --version
-      - run:
-          name: Check all installed python verions
-          command: py --list            
+      - run: choco install python --version=3.9.0
+      - run: python --version        
    
 workflows:
   main:
