@@ -6,7 +6,7 @@ jobs:
   build:
     executor:
       name: win/default
-      version: "previous"
+      version: "stable"
       size: "medium"
     steps:
       - checkout
