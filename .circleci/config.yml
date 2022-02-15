@@ -5,8 +5,8 @@ jobs:
   # run collections tests in a separate serial job to make serial workflows more granular
   build:
     executor:
-      name: win/default previous
-      version: previous
+      name: win/default:previous
+#       version: previous
       size: "medium"
     steps:
       - checkout
