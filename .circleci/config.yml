@@ -1,29 +1,46 @@
-version: 2.1
-commands:
-  list-files:
-    parameters:
-      all:
-        description: include all files
-        type: boolean
-        default: false
-      short:
-        description: Keep list of files short
-        type: boolean
-        default: true
-    steps:
-      - run: ls <<# parameters.all >> -a <</ parameters.all >><<^ parameters.short >> -l <</ parameters.short >>
+# version: 2.1
+# commands:
+#   list-files:
+#     parameters:
+#       all:
+#         description: include all files
+#         type: boolean
+#         default: false
+#       short:
+#         description: Keep list of files short
+#         type: boolean
+#         default: true
+#     steps:
+#       - run: ls <<# parameters.all >> -a <</ parameters.all >><<^ parameters.short >> -l <</ parameters.short >>
 
-jobs:
-  build:
-    docker:
-      - image: cimg/node:12.18
-    steps:
-      - checkout
-      - list-files
+# jobs:
+#   build:
+#     docker:
+#       - image: cimg/node:12.18
+#     steps:
+#       - checkout
+#       - list-files
 
   
       
+# workflows:
+#     build_and_push:
+#       jobs:
+#         - build
+version: 2.1
+jobs:
+  build:
+    parameters:
+      p:
+        type: boolean
+        default: true
+
+    machine: true
+    steps:
+      - checkout
+      - run : echo << parameters.p >>
 workflows:
-    build_and_push:
-      jobs:
-        - build
+  workflow:
+    jobs:
+      - build:
+          p: y
