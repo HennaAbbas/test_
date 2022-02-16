@@ -1,56 +1,29 @@
 version: 2.1
-orbs:
-  jira: circleci/jira@1.3.1
-defaults: &defaults
-  environment:
-    EXTERNAL_REGISTRY_BASE_DOMAIN: '771535030486.dkr.ecr.us-east-1.amazonaws.com'
-    DOCKERTAG: 'gmr'
-    DATABASE_HOST: '127.0.0.1'
-    DATABASE_NAME: 'gmr_test'
-    DATABASE_USERNAME: 'gmr'
-    DATABASE_PASSWORD: ''
-    CYPRESS_PROJECT_ID: '161f641b-e850-400b-93e7-99172e71404b'
-    AIRBRAKE_PROJECT_ID: '141108'
-    AIRBRAKE_PROJECT_KEY: '0348bbc44df91bb9b438e91257b61bfb'
-    REPOSITORY: 'https://github.com/verticalfox/VF'
-    CC_TEST_REPORTER_ID: '933e544533c78f2eb4de16e8225814c443716d0b297d2958c6e8cd26a6a816b0'
-
-references:
-  deploy_job_defaults: &deploy_job_defaults
-    <<: *defaults
-    docker:
-    - image: circleci/ruby:2.6.5-buster-node
-    
-  deploy_steps: &deploy_steps
+commands:
+  list-files:
+    parameters:
+      all:
+        description: include all files
+        type: boolean
+        default: false
+      short:
+        description: Keep list of files short
+        type: boolean
+        default: n
     steps:
-    - run: echo "deploy steps"
-    - jira/notify:
-          issue_regexp: '[A-Z]{2,30}-[0-9]+'
-          environment_type: development
-          job_type: deployment    
-    
-    
+      - run: ls <<# parameters.all >> -a <</ parameters.all >><<^ parameters.short >> -l <</ parameters.short >>
+
 jobs:
-  deploy-dev:
-#     steps: 
-#       - run: echo "running steps..."
-#       - jira/notify:
-#               issue_regexp: '[A-Z]{2,30}-[0-9]+'
-#               environment_type: development
-#               job_type: deployment
-      
-    <<: *deploy_job_defaults
-    environment:
-      CONTEXT: development
-      ENVIRONMENT: development
-    <<: *deploy_steps
-      
-      
+  build:
+    docker:
+      - image: cimg/node:12.18
+    steps:
+      - checkout
+      - list-files
+
   
       
-
 workflows:
-  build:
-    jobs:
-      - deploy-dev
-
+    build_and_push:
+      jobs:
+        - build
