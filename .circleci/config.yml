@@ -1,6 +1,7 @@
 version: 2.1
 orbs:
   win: circleci/windows@2.4.1
+  browser-tools: circleci/browser-tools@1.2.4 
 jobs:
   # run collections tests in a separate serial job to make serial workflows more granular
   build:
@@ -10,14 +11,13 @@ jobs:
       size: "medium"
     steps:
       - checkout
+      - browser-tools/install-chrome
+      - browser-tools/install-chromedriver
       - run:
-          name: Check installed python verion
-          command: python --version
-      - run:
-          name: Check all installed python verions
-          command: py --list            
-      - run: choco install python --version=3.9.0
-      - run: python --version       
+          command: |
+            google-chrome --version
+            chromedriver --version
+          name: Check install     
 workflows:
   main:
     jobs:
