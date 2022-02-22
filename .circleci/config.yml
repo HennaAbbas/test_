@@ -80,7 +80,7 @@ orbs:
 jobs:
   build-and-test-android:
     docker: # executor:
-      - image: cimg/openjdk:17.0.1  # image name & value:
+      - image: circleci/python:3.6  # image name & value:
 
 
     steps:
