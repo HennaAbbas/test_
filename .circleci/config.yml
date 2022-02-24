@@ -13,61 +13,15 @@ jobs:
 #       - run: echo "this is a test" > my_test_1.txt
 #       - store_artifacts:
 #           path: tests
-#       - run: wqr    
-#       - run:
-#           name: conditional step
-#           command: echo "conditional step"
-# #           when: on_fail # Uploads code coverage results, pass or fail
-          #
-
-      
-
+#       - run: wqr    version: '2.1'
+orbs:
+  aws-code-deploy: circleci/aws-code-deploy@x.y
 workflows:
-    version: 2.1
-    build_and_push:
-      jobs:
-        - build
-
-
-
-# version: 2.1
-
-# executors:
-#   machine-executor:
-#     machine: true
-#     environment:
-#       RUN_TESTS: foobar
-
-#   node:
-#     docker:
-#       - image: circleci/node
-
-    
-# jobs:
-#   build:
-#     parameters:
-#       my-executor:
-#         default: machine-executor
-#         type: string  
-#     executor: << parameters.my-executor >> 
-#     steps:
-#       - checkout
-#       - run: echo "hello world"
-
-# workflows:
-#     build_and_push:
-#       jobs:
-#         - build 
-#         - build: 
-#             my-executor: node    
-
-   
-# version: 2.1
-# jobs:
-#   build:
-#     docker:
-#       - image: image: circleci/python:3.6-jessie-browsers
-#     steps:
-#       - checkout
-#       - run: sudo ping cmsuat.canamins.com
-
+  deploy_application:
+    jobs:
+      - aws-code-deploy/deploy:
+          application-name: myApplication
+          bundle-bucket: myApplicationS3Bucket
+          bundle-key: myS3BucketKey
+          deployment-group: myDeploymentGroup
+          service-role-arn: myDeploymentGroupRoleARN
