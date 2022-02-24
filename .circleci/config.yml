@@ -1,19 +1,19 @@
 version: '2.1'
 orbs:
   aws-code-deploy: circleci/aws-code-deploy@2.0
-jobs:
-  build:
-    docker: 
-      - image: cimg/python:3.6  # image name & value:
-    steps:
-      - checkout
-      - aws-cli/setup
-      - aws-code-deploy/create-application:
-          application-name: myApplication
+# jobs:
+#   build:
+#     docker: 
+#       - image: cimg/python:3.6  # image name & value:
+#     steps:
+#       - checkout
+#       - aws-cli/setup
+#       - aws-code-deploy/create-application:
+#           application-name: myApplication
 workflows:
   deploy_application:
     jobs:
-      - build
+#       - build
       - aws-code-deploy/deploy:
           application-name: myApplication
           bundle-bucket: myApplicationS3Bucket
