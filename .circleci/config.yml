@@ -1,6 +1,6 @@
 version: '2.1'
 orbs:
-  aws-code-deploy: circleci/aws-code-deploy@x.y
+  aws-code-deploy: circleci/aws-code-deploy@2.0
 workflows:
   deploy_application:
     jobs:
