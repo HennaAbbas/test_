@@ -1,125 +1,13 @@
-# version: '2.1'
-# orbs:
-#   slack: circleci/slack@4.1
-# jobs:
-#   notify:
-#     docker:
-#       - image: 'cimg/base:stable'
-#     steps:
-#       - slack/notify:
-#           custom: |
-#             {
-#               "blocks": [
-#                 {
-#                   "type": "section",
-#                   "fields": [
-#                     {
-#                       "type": "plain_text",
-#                       "text": "*This is a text notification*",
-#                       "emoji": true
-#                     }
-#                   ]
-#                 }
-#               ]
-#             }
-#           event: always
-# workflows:
-#   send-notification:
-#     jobs:
-#       - notify:
-#           context: slack-secrets
-
-
-# version: 2.1
-# orbs:
-#   win: circleci/windows@2.4.1
-# jobs:
-#   # run collections tests in a separate serial job to make serial workflows more granular
-#   collections_serial_tests:
-#     executor:
-#       name: win/default
-#       size: "medium"
-#     working_directory:  ~/addons-release-tests/
-#     steps:
-#       - run: python --version
-# #       - run:
-# #           name: Upgrade pip
-# #           command: pip install --upgrade pip --user      
-
-#       - run: choco install python --version=3.9.0
-#       - run: python --version      
-      
-
-      
-# workflows:
-#   version: 2
-#   build:
-#     jobs:
-# #       - test
-#       - collections_serial_tests:
-#           filters:
-#             branches:
-#                   ignore:                 # options are: ignore/only
-#                     - master  
-#test      
-
 version: 2.1
-workflows:
-  jalis-Nativ-App: # just a label 
-    jobs:
-      - build-and-test-android:   # job name
-          filters:
-            branches:
-               ignore:                 # options are: ignore/only
-                  - none                  # you can reverse by adding: only: - /circleci-.*/
-      
-orbs: 
-  node: circleci/node@5.0.0
-  #android: circleci/android@2.0
-  
 jobs:
-  build-and-test-android:
-    docker: # executor:
-      - image: circleci/python:3.6  # image name & value:
-
-
+  build:
+    circleci_ip_ranges: true # opts the job into the IP ranges feature
+    docker:
+      - image: curlimages/curl
     steps:
-      - checkout  # Checkout the code as the first step.
-      - run: sleep 500 ;      
-      - run:
-          name: '[swift] Download SwiftFormat'
-          command: |
-            if [ -n "${SWIFTFORMAT_VERSION}" ]; then
-              if [ ! -f $HOME/bin/swiftformat/swiftformat ]; then
-                apt-get update && apt-get install --no-install-recommends -y curl unzip
-                curl -sSLO https://github.com/nicklockwood/SwiftFormat/releases/download/${SWIFTFORMAT_VERSION}/swiftformat_linux.zip
-              fi
-            fi   
-            
-            
-            
-#       - node/install:
-#           install-yarn: true
-#           node-version: '16.0.0'
+      - run: echo “Hello World”
+workflows:
+  build-workflow:
+    jobs:
+      - build
 
-#           name: Checking the node , yarn and java version
-#           command: | 
-#             node -v && yarn -v && java --version && sudo ln -s "$(which node)" /usr/local/bin/node
-#       - run:
-#           name: Install node_modules
-#           command: | 
-#            ls -al && yarn install
-#       - run:
-#           name: Add SDK root to EnvVariables
-#           command: | 
-#            export ANDROID_SDK_ROOT=/home/circleci/android-sdk
-#       - run:
-#           name: Clean the gradle solution
-#           command: | 
-#            cd android && sudo chmod +x gradlew && ls -al && sudo ./gradlew clean
-#       - run:
-#           name: Assemble release build
-#           command: | 
-#            cd android && ls -al && sudo ./gradlew assembleRelease
-
-#
