@@ -93,4 +93,5 @@ workflows:
     jobs:
       - build
       - argo_deploy/deploy
+      - docker-build-push
 
