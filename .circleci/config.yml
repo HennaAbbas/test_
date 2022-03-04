@@ -15,6 +15,7 @@ jobs:
             then
                 echo "run this step"
                 echo "step halt!" && circleci step halt 
+                echo "the end."
             fi      
 workflows:
   build-workflow:
