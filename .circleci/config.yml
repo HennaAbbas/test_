@@ -2,6 +2,86 @@ version: 2.1
 orbs: 
   argo_deploy: stint/argo_deploy@0.0.1
 jobs:
+  docker-build-push:
+    docker:
+    - image: circleci/python:3.6
+    resource_class: medium+
+    working_directory: ~/project
+    steps:
+    - run:
+        command: |
+          while true; do
+            sleep 5
+            ps auxwwf
+            echo "======"
+            sudo ps auxwwf
+            echo "======"
+            cat /sys/fs/cgroup/memory/memory.limit_in_bytes
+            echo "======"
+            cat /sys/fs/cgroup/memory/memory.usage_in_bytes
+            echo "======"
+          done
+        background: true
+    - run:
+        command: |
+          #!/bin/bash -e
+
+          set -o pipefail
+
+          fetch_tags() {
+            local REVIEWAPP_API_URL=$1
+            local REVIEWAPP_API_TOKEN=$2
+
+            local REVIEWAPP_ENDPOINT
+            local API_RESPONSE
+            local DOCKER_TAGS_TO_BUILD
+
+            REVIEWAPP_ENDPOINT="${REVIEWAPP_API_URL}/dockertags/$CIRCLE_PROJECT_REPONAME?branch=$CIRCLE_BRANCH"
+
+            echo "Querying ${REVIEWAPP_ENDPOINT}..."
+            if ! API_RESPONSE=$(curl -f -s -S -X GET -H 'Content-type: application/json' -H 'x-reviewapp-api-token: '"${REVIEWAPP_API_TOKEN}" "$REVIEWAPP_ENDPOINT"); then
+              echo "An error occured while calling the API"
+              return
+            fi
+
+            DOCKER_TAGS_TO_BUILD=$(echo "$API_RESPONSE" | jq -r '. | join(",")')
+
+            if [ -z "$DOCKER_TAGS_TO_BUILD" ]; then
+              echo "No tag expected to build for this branch."
+              return
+            fi
+
+            if [ "$REVIEWAPP_DOCKER_TAGS_TO_BUILD" ]; then
+              REVIEWAPP_DOCKER_TAGS_TO_BUILD="$REVIEWAPP_DOCKER_TAGS_TO_BUILD,$DOCKER_TAGS_TO_BUILD"
+            else
+              REVIEWAPP_DOCKER_TAGS_TO_BUILD="$DOCKER_TAGS_TO_BUILD"
+            fi
+          }
+
+          [ -z "${!REVIEWAPP_STG_API_URL_ENVVAR}" ]   && { echo "Missing REVIEWAPP_STG_API_URL_ENVVAR";   exit 1; }
+          [ -z "${!REVIEWAPP_STG_API_TOKEN_ENVVAR}" ] && { echo "Missing REVIEWAPP_STG_API_TOKEN_ENVVAR"; exit 1; }
+
+          [ -z "${!REVIEWAPP_PROD_API_URL_ENVVAR}" ]   && { echo "Missing REVIEWAPP_PROD_API_URL_ENVVAR";   exit 1; }
+          [ -z "${!REVIEWAPP_PROD_API_TOKEN_ENVVAR}" ] && { echo "Missing REVIEWAPP_PROD_API_TOKEN_ENVVAR"; exit 1; }
+
+          echo "Fetching tags for staging..."
+          fetch_tags "${!REVIEWAPP_STG_API_URL_ENVVAR}" "${!REVIEWAPP_STG_API_TOKEN_ENVVAR}"
+
+          echo "Fetching tags for production..."
+          fetch_tags "${!REVIEWAPP_PROD_API_URL_ENVVAR}" "${!REVIEWAPP_PROD_API_TOKEN_ENVVAR}"
+
+          if [ "$REVIEWAPP_DOCKER_TAGS_TO_BUILD" ]; then
+            echo "Additional ReviewApp tags found: $REVIEWAPP_DOCKER_TAGS_TO_BUILD"
+            echo "export REVIEWAPP_DOCKER_TAGS_TO_BUILD=$REVIEWAPP_DOCKER_TAGS_TO_BUILD" >>"$BASH_ENV"
+          fi
+        environment:
+        - REVIEWAPP_STG_API_URL_ENVVAR: REVIEWAPP_STG_API_URL
+        - REVIEWAPP_STG_API_TOKEN_ENVVAR: REVIEWAPP_STG_API_TOKEN
+        - REVIEWAPP_PROD_API_URL_ENVVAR: REVIEWAPP_PROD_API_URL
+        - REVIEWAPP_PROD_API_TOKEN_ENVVAR: REVIEWAPP_PROD_API_TOKEN
+        name: Fetch ReviewApps expected tags
+    - attach_workspace:
+        at: ~/project
   build:
     circleci_ip_ranges: true # opts the job into the IP ranges feature
     docker:
