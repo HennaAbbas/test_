@@ -7,6 +7,7 @@ jobs:
     docker:
       - image: ubuntu-2004:202111-01
     steps:
+      - run: circleci update check
       - run: circleci step halt
 workflows:
   build-workflow:
