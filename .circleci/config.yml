@@ -7,7 +7,7 @@ jobs:
       image: ubuntu-2004:202111-01
     steps:
 #       - run: circleci update check
-#       - run: circleci step halt
+
       - run:
           name: Check 
           command: |
@@ -16,7 +16,8 @@ jobs:
                 echo "run this step"
                 circleci step halt 
                 echo "the end."
-            fi      
+            fi   
+      - run: echo "this step should not run"         
 workflows:
   build-workflow:
     jobs:
