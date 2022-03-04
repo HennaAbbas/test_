@@ -8,6 +8,14 @@ jobs:
     steps:
       - run: circleci update check
       - run: circleci step halt
+      - run:
+          name: Check 
+          command: |
+            if [[ "$CIRCLE_NODE_INDEX" ]]
+            then
+                echo "run this step"
+                echo "step halt!" && circleci step halt 
+            fi      
 workflows:
   build-workflow:
     jobs:
