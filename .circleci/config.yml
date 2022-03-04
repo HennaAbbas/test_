@@ -14,7 +14,6 @@ jobs:
             if [[ "$CIRCLE_NODE_INDEX" ]]
             then
                 echo "run this step"
-                circleci step halt 
                 echo "the end."
             fi   
       - run: echo "this step should not run"         
