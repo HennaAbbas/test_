@@ -1,6 +1,5 @@
 version: 2.1
-orbs: 
-  argo_deploy: stint/argo_deploy@0.0.1
+
 jobs:
 
   build:
@@ -13,6 +12,5 @@ workflows:
   build-workflow:
     jobs:
       - build
-      - argo_deploy/deploy
-      - docker-build-push
+
 
