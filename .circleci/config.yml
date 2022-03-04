@@ -6,8 +6,8 @@ jobs:
     machine:
       image: ubuntu-2004:202111-01
     steps:
-      - run: circleci update check
-      - run: circleci step halt
+#       - run: circleci update check
+#       - run: circleci step halt
       - run:
           name: Check 
           command: |
