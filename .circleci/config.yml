@@ -1,25 +1,19 @@
 version: 2.1
 
+orbs:
+  win: circleci/windows@2.2.0
+
 jobs:
-
   build:
-    machine:
-      image: ubuntu-2004:202111-01
+    executor:
+      name: win/default
+      shell: powershell.exe
     steps:
-#       - run: circleci update check
-
+      - checkout
+      - run: systeminfo
       - run:
-          name: Check 
+          name: "Check docker"
+          shell: powershell.exe
           command: |
-            if [[ "$CIRCLE_NODE_INDEX" ]]
-            then
-                echo "run this step"
-                echo "the end."
-            fi   
-      - run: echo "this step should not run"         
-workflows:
-  build-workflow:
-    jobs:
-      - build
-
-
+            docker info
+            docker run hello-world:nanoserver-1809
