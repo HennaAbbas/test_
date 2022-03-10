@@ -4,7 +4,7 @@ jobs:
     machine:
       image: ubuntu-1604-cuda-11.1:202012-01
     steps:
-      - run: echo $SSH_CONFIG_DIR
+      - run: cat ~/.ssh/known_hosts
 
 
 
