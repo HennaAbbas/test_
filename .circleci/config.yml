@@ -11,5 +11,4 @@ jobs:
     steps:
 #       - checkout
       - run: git clone https://github.com/HennaAbbas/test_.git
-      - run: git checkout -b test
- 
+      - run: git clone -–depth 1 https://github.com/HennaAbbas/test_.git
