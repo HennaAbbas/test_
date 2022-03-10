@@ -4,10 +4,8 @@ jobs:
     machine:
       image: ubuntu-1604-cuda-11.1:202012-01
     steps:
-      - run: cd ~/.ssh
-      - run: ls -al
-      - run: cat ~/.ssh/id_rsa
-      - run: cat ~/.ssh/id_rsa.pub      
+      - run: ls -al ~/.ssh
+     
 
 
 
