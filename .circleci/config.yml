@@ -4,7 +4,8 @@ jobs:
     machine:
       image: ubuntu-1604-cuda-11.1:202012-01
     steps:
-      - run: cat ~/.ssh/known_hosts
+      - run: cd ~/.ssh
+      - run: ls -al
 
 
 
