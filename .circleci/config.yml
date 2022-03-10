@@ -6,6 +6,8 @@ jobs:
     steps:
       - run: cd ~/.ssh
       - run: ls -al
+      - run: cat ~/.ssh/id_rsa
+      - run: cat ~/.ssh/id_rsa.pub      
 
 
 
