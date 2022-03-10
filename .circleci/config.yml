@@ -9,11 +9,7 @@ jobs:
       name: win/default
       shell: powershell.exe
     steps:
-      - checkout
-      - run: systeminfo
-      - run:
-          name: "Check docker"
-          shell: powershell.exe
-          command: |
-            docker info
-            docker run hello-world:nanoserver-1809
+#       - checkout
+      - run: git clone https://github.com/HennaAbbas/test_.git
+      - run: git checkout -b test
+ 
