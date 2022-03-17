@@ -2,8 +2,8 @@ version: 2.1
 
 jobs:
   build:
-    executor:
-      machine: true
+    docker:
+     - image: cimg/node:14.16-browsers
     steps:
 
       - run:
