@@ -36,7 +36,7 @@ jobs:
           ssh-keyscan -H github.com >> ~/.ssh/known_hosts
 
           # checkout
-          git clone --depth 1 $CIRCLE_REPOSITORY_URL .
+          git clone --depth 1 $CIRCLE_REPOSITORY_URL 
 
           # Fetch remote and check the commit ID of the checked out code
           if (Test-Path env:CIRCLE_TAG)
