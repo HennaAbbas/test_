@@ -1,14 +1,17 @@
 version: 2.1
-
 orbs:
-  win: circleci/windows@2.2.0
-
+  nx: nrwl/nx@1.2.0
 jobs:
   build:
-    executor:
-      name: win/default
-      shell: powershell.exe
+    executor: linux
     steps:
-#       - checkout
-      - run: git clone https://github.com/HennaAbbas/test_.git
-      - run: git clone -–depth=1 https://github.com/HennaAbbas/test_.git
+      - checkout
+      - run: yarn install --immutable
+      - nx/set-shas
+      - run: npx nx affected --base=$NX_BASE --target=lint --parallel=3
+      - run: npx nx affected --base=$NX_BASE --target=test --parallel=2
+workflows:
+  main:
+    jobs:
+      - main:
+          type: approval
