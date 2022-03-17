@@ -1,5 +1,8 @@
 version: 2.1
 
+orbs:
+  win: circleci/windows@2.2.0
+
 jobs:
   build:
     docker:
@@ -14,23 +17,14 @@ jobs:
             
       - run: echo $NX_MAIN_BRANCH  
   build_and_test_whisper_packet_dlls:
-    machine:
-      image: windows-server-2019-vs2019:stable
+    executor:
+      name: win/default
+      shell: powershell.exe
     environment:
     - WHISPER_PROD: 0
     - RELEASE: 0
     - RELEASE_NAME: 12.0.188.1-liberato_shallowCheckout-cbe350dd-DEV
     steps:
-    - run:
-        name: Install dotnet with SDK
-        command: |
-          choco install dotnetfx --version 4.6 -y --allow-downgrade
-          choco install dotnetcore-sdk --version 3.1.413 --x86 -y
-    - run:
-        name: Install cmake
-        command: |
-          choco install cmake --version 3.18.4 -y
-          refreshenv
     - run:
         name: Checkout code (windows)
         command: |
