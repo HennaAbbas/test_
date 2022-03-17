@@ -1,9 +1,9 @@
 version: 2.1
-orbs:
-  nx: nrwl/nx@1.2.0
+
 jobs:
   build:
-    executor: linux
+    executor:
+      machine: true
     steps:
 
       - run:
