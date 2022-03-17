@@ -17,7 +17,5 @@ jobs:
 workflows:
   main:
     jobs:
-      - main:
-          type: approval
       - build
           
