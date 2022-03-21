@@ -2,18 +2,22 @@ version: 2.1
 
 orbs:
   win: circleci/windows@2.2.0
+  nx: nrwl/nx@1.2.2
+  
 
 jobs:
   build:
     docker:
      - image: cimg/node:14.16-browsers
     steps:
+      - nx/set-shas:
+          main-branch-name: << pipeline.git.branch >>
 
-      - run:
-          name: Update PATH and Define Environment Variable at Runtime
-          command: |
-            eecho "NX_MAIN_BRANCH: $CIRCLE_BRANCH"
-            echo "export NX_MAIN_BRANCH='$CIRCLE_BRANCH'" >>$BASH_ENV  
+#       - run:
+#           name: Update PATH and Define Environment Variable at Runtime
+#           command: |
+#             echo "NX_MAIN_BRANCH: $CIRCLE_BRANCH"
+#             echo "export NX_MAIN_BRANCH='$CIRCLE_BRANCH'" >>$BASH_ENV  
             
       - run: echo $NX_MAIN_BRANCH  
   build_and_test_whisper_packet_dlls:
