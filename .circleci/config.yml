@@ -18,10 +18,10 @@ jobs:
     machine:
       image: ubuntu-2004:202201-02
     resource_class: medium
-    working_directory: ~/bil
+
     steps:
-    - checkout
-    - run: npm install --global serverless@2.5.0
+      - checkout
+      - run: npm install --global serverless@2.5.0
 
 #       - run:
 #           name: Update PATH and Define Environment Variable at Runtime
