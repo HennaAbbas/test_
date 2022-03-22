@@ -10,8 +10,8 @@ jobs:
     docker:
      - image: cimg/node:14.16-browsers
     steps:
-      - nx/set-shas:
-          main-branch-name: << pipeline.git.branch >>
+      - nx/set-shas
+#           main-branch-name: << pipeline.git.branch >>
           
           
   test:
