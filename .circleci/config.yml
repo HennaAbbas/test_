@@ -22,6 +22,8 @@ jobs:
     steps:
       - checkout
       - run: npm install --global serverless@2.5.0
+      - nx/set-shas:
+          main-branch-name: << pipeline.git.branch >>      
 
 #       - run:
 #           name: Update PATH and Define Environment Variable at Runtime
