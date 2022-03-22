@@ -11,7 +11,7 @@ jobs:
      - image: cimg/node:14.16-browsers
     steps:
       - nx/set-shas
-#           main-branch-name: << pipeline.git.branch >>
+          main-branch-name: my_branch
           
           
   test:
