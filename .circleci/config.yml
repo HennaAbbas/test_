@@ -10,8 +10,7 @@ jobs:
     docker:
      - image: cimg/node:14.16-browsers
     steps:
-      - nx/set-shas
-          main-branch-name: my_branch
+      - run: echo "hello world"
           
           
 #   test:
