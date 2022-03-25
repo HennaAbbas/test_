@@ -27,7 +27,7 @@ workflows:
           filters:
             branches:
               only:
-                - /release/.*/
+                - /^release.*/
     jobs:
       - build
           
