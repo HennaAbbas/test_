@@ -26,7 +26,8 @@ workflows:
           cron: "* * * * 1-5"
           filters:
             branches:
-              - /release/.*/
+              only:
+                - /release/.*/
     jobs:
       - build
           
