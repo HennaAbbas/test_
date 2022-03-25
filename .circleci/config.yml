@@ -14,16 +14,14 @@ jobs:
           main-branch-name: my_branch
           
           
-  test:
-    machine:
-      image: ubuntu-2004:202201-02
-    resource_class: medium
+#   test:
+#     machine:
+#       image: ubuntu-2004:202201-02
+#     resource_class: medium
 
-    steps:
-      - checkout
-      - run: npm install --global serverless@2.5.0
-      - nx/set-shas:
-          main-branch-name: << pipeline.git.branch >>      
+#     steps:
+#       - checkout
+   
 
 #       - run:
 #           name: Update PATH and Define Environment Variable at Runtime
@@ -89,6 +87,15 @@ workflows:
   main:
     jobs:
       - build
-      - test
-#       - build_and_test_whisper_packet_dlls
+
+  nightly:
+    triggers:
+      - schedule:
+          #every weekday at 6am
+          cron: "* * * * 1-5"
+          filters:
+            branches:
+                - /release/.*/
+    jobs:
+      - build
           
