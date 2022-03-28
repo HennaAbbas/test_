@@ -27,7 +27,7 @@ workflows:
           filters:
             branches:
               only:
-                - test
+                - /^release/
                 
     jobs:
       - build
