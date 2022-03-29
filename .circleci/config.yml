@@ -12,9 +12,16 @@ jobs:
      - image: cimg/node:14.16-browsers
     steps:
       - run: echo "hello world"
-
+  test:
+    docker:
+     - image: cimg/node:14.16-browsers
+    steps:
+      - run: echo "hello world"
 workflows:
   version: 2
+  test_workflow: 
+    jobs:
+      - test
   # Triggered remotely from the API to deploy to a scrum environment
   cypress-next-sanity-staging:
       when:
