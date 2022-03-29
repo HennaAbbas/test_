@@ -3,7 +3,7 @@ parameters:
   api_trigger:
     type: boolean
     default: false
-  cypress_next_sanity:
+  run_cypress_next_sanity_staging:
     type: boolean
     default: false
 jobs: 
