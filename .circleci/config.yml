@@ -1,36 +1,2810 @@
 version: 2.1
+parameters:
+  api_trigger:
+    type: boolean
+    default: false
+  jzb_args:
+    type: string
+    # empty body i.e "{}"
+    default: "eJyqruUCAAAA__8BAAD__wJ4AQM"
+  cypress_staging_regression:
+    type: boolean
+    default: false
+  cypress_next_sanity_staging:
+    type: boolean
+    default: false
+  cypress_next_sanity:
+    type: boolean
+    default: false
+  cypress_next_reg:
+    type: boolean
+    default: false
+  cypress_regression:
+    type: boolean
+    default: false
+  cypress_analytics_regression:
+    type: boolean
+    default: false
+  cypress_wip:
+    type: boolean
+    default: false
+  cypress_free_regression:
+    type: boolean
+    default: false
+  cypress_adopt_regression:
+    type: boolean
+    default: false
+  cypress_adoptv2_regression:
+    type: boolean
+    default: false
+  cypress_feedback_voc_regression:
+    type: boolean
+    default: false
+  cypress_feedback_voc_regression_staging:
+    type: boolean
+    default: false
+  cypress_feedback_or_voc:
+    type: string
+    default: ''
+  reporter_options_project_id:
+    type: string
+    default: '8'
+  reporter_options_suite_id:
+    type: string
+    default: '43'
+  reporter_options_run_id:
+    type: string
+    default: ''
+  run_nightly_magic:
+    type: boolean
+    default: false
+  run_cypress_next_sanity:
+    type: boolean
+    default: false
+  run_cypress_wip:
+    type: boolean
+    default: false
+  run_cypress_next_sanity_staging:
+    type: boolean
+    default: false
+  run_cypress_staging_regression:
+    type: boolean
+    default: false
+  run_cypress_adopt_regression:
+    type: boolean
+    default: false
+  run_cypress_free_regression:
+    type: boolean
+    default: false
+  run_cypress_analytics_regression:
+    type: boolean
+    default: false
+  run_cypress_regression:
+    type: boolean
+    default: false
+  run_cypress_smoke:
+    type: boolean
+    default: false
+  run_cypress_next_reg:
+    type: boolean
+    default: false
+  run_veracode_scan1:
+    type: boolean
+    default: false
+  run_veracode_scan2:
+    type: boolean
+    default: false
+  run_nightly_eu_dev:
+    type: boolean
+    default: false
+  run_nightly_freeze:
+    type: boolean
+    default: false
+  run_nightly_perfserf:
+    type: boolean
+    default: false
+  run_nightly_mobile_plat:
+    type: boolean
+    default: false
+  run_nightly_mobile_hummus:
+    type: boolean
+    default: false
+  run_nightly_mobile_guides:
+    type: boolean
+    default: false
+  run_nightly_helix:
+    type: boolean
+    default: false
+  run_nightly_apollo:
+    type: boolean
+    default: false
+  run_nightly_ionchef:
+    type: boolean
+    default: false
+  run_nightly_atlas:
+    type: boolean
+    default: false
+  run_nightly_wildings:
+    type: boolean
+    default: false
+  run_nightly_security:
+    type: boolean
+    default: false
+  run_nightly_batman:
+    type: boolean
+    default: false
+  run_nightly_link:
+    type: boolean
+    default: false
+  run_nightly_armada:
+    type: boolean
+    default: false
+  run_nightly_ml:
+    type: boolean
+    default: false
+  run_nightly_scrum_ops:
+    type: boolean
+    default: false
+  run_nightly_dap:
+    type: boolean
+    default: false
+  run_nightly_voc:
+    type: boolean
+    default: false
+  run_nightly_calypso:
+    type: boolean
+    default: false
+  schedule_trigger:
+    type: boolean
+    default: false
+  run_cypress_smoke_staging:
+    type: boolean
+    default: false
+commands:
+  apitest_setup:
+    description: "setup common to httpexpect-based apitests"
+    steps:
+      - run:
+          name: prepare gcloud credentials
+          command: |
+            echo $GCR_JSON_KEY_FILE > "gcloud_key_file.json";
+            gcloud auth activate-service-account --key-file=gcloud_key_file.json
+      - run:
+          name: download user login info
+          command: gsutil cat gs://pendo-test-skynet/auto-users-test.json > auto-users-test.json
+
+  local_pendo_host_setup:
+    description: "Add local.pendo.io to /etc/hosts"
+    steps:
+      - run:
+          name: update host file
+          command: |
+            echo 127.0.0.1 local.pendo.io | tee -a /etc/hosts
+            cat /etc/hosts
+  slack_update:
+    description: "Send status to Slack"
+    parameters:
+      channel:
+        type: string
+        default: ""
+    steps:
+      - slack/status:
+          webhook: $SLACK_WEBHOOK
+          channel: << parameters.channel >>
+          fail_only: true
+          only_for_branches: staging
+          failure_message: ':red_circle: Job [$CIRCLE_JOB] has failed!'
+  setup_gosec_storage:
+    description: "Setup gosec storage"
+    steps:
+      - store_artifacts:
+          path: src/gosec
+  slurp_jzb_args:
+    description: "takes jzb argument string from API invocation, and for each argument sets it as an environment variable"
+    parameters:
+      jzb_string:
+        type: string
+        # empty body i.e "{}"
+        default: "eJyqruUCAAAA__8BAAD__wJ4AQM"
+    steps:
+      - run:
+          name: decode jzb and set environment from API call
+          command: |
+            json=$(echo "<< parameters.jzb_string >>" | jzb -x)
+            for val in $(echo "${json}" | jq -r "to_entries|map(\"\(.key|ascii_upcase)=\(.value|tostring)\")|.[]" ); do
+                # sanity checking measure. Circle considers any non-empty string truthy, even if it is "false". Doing this in-case someone uses one of these in a when/unless clause
+                if [[ "${val}" =~ =false ]]; then
+                  val=$(echo "${val}" | sed s/false//)
+                fi
+                echo "got argument pair $val"
+                echo "export ARG_$val" >> $BASH_ENV
+            done
+  export_working_project:
+    description: "Sets $PROJECT using the specified gae project, otherwise falls back to $GOOGLE_PROJECT_ID"
+    parameters:
+      project:
+        type: string
+        default: ""
+    steps:
+      - run:
+          name: compute working project
+          command: |
+            override_project=<< parameters.project >>
+            if [ -n "$override_project" ]; then
+              echo "Setting project from override parameter with value of << parameters.project >>"
+              echo "export PROJECT=<< parameters.project >>" >> $BASH_ENV
+            elif [ -n "$ARG_GCP_ENV" ]; then
+              echo "Setting project from api parameter with value of ${ARG_GCP_ENV}"
+              echo "export PROJECT=${ARG_GCP_ENV}" >> $BASH_ENV
+            else
+              # GOOGLE_PROJECT_ID set by the context
+              echo "Setting project from context variable with value of $GOOGLE_PROJECT_ID"
+              echo "export PROJECT=$GOOGLE_PROJECT_ID" >> $BASH_ENV
+            fi
+  download_po:
+    description: "Download po from github"
+    parameters:
+      version:
+        type: string
+        default: latest
+    steps:
+      - run:
+          name: download po linux amd64
+          command: |
+            mkdir -p /home/circleci/bin
+            po_version=<< parameters.version >>
+            if [ -z "$po_version" ] || [ "$po_version" == "latest" ]; then
+              release_url="https://api.github.com/repos/pendo-io/pendo-ci/releases/latest"
+            else
+              release_url="https://api.github.com/repos/pendo-io/pendo-ci/releases/tags/$po_version"
+            fi
+            echo "$release_url"
+            asset=$(curl -H "Authorization: token $GITHUB_TOKEN" -s $release_url | jq '.assets[] | select(.name == "po_linux_amd64") | .id')
+
+            curl -sL -H "Accept:application/octet-stream" https://$GITHUB_TOKEN:@api.github.com/repos/pendo-io/pendo-ci/releases/assets/${asset} -o /home/circleci/bin/po
+            chmod a+x /home/circleci/bin/po
+            po version
+  download_jzb:
+    description: "Download jzb from github"
+    steps:
+      - run:
+          name: download jzb linux amd64
+          command: |
+            wget -O /tmp/jzb-linux.tar https://github.com/pendo-io/jzb/releases/download/v1.0.3/jzb-linux.tar
+            tar -xvf /tmp/jzb-linux.tar -C /tmp
+            mkdir -p /home/circleci/bin
+            mv /tmp/dist/linux/jzb /home/circleci/bin/jzb
+            chmod +x /home/circleci/bin/jzb
+            jzb --version
+  setup_artifactory:
+      description: "Setup Artifactory Config"
+      steps:
+        - run:
+            name: setup artifactory
+            command: |
+              echo "Configuring npm client for @pendo artifactory packages..."
+              if [ -z "$ARTIFACTORY_TOKEN" ]; then
+                echo "ARTIFACTORY_TOKEN NOT SET" && exit 1;
+              else
+                echo "@pendo:registry=https://pendo.jfrog.io/artifactory/api/npm/web/" > ~/.npmrc;
+                echo "//pendo.jfrog.io/artifactory/api/npm/web/:_authToken=${ARTIFACTORY_TOKEN}" >> ~/.npmrc
+                echo "//pendo.jfrog.io/artifactory/api/npm/web/:email=team-ops@pendo.io" >> ~/.npmrc
+                echo "//pendo.jfrog.io/artifactory/api/npm/web/:always-auth=true" >> ~/.npmrc
+                echo "npm client configured successfully!";
+              fi
+  gh-known-hosts:
+        description: add github's public keys to known_hosts file
+        steps:
+          - run:
+              name: add github known host public key
+              command: |
+                mkdir -p ~/.ssh
+                touch ~/.ssh/known_hosts
+                cat >> ~/.ssh/known_hosts \<<EOF
+                github.com ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAq2A7hRGmdnm9tUDbO9IDSwBK6TbQa+PXYPCPy6rbTrTtw7PHkccKrpp0yVhp5HdEIcKr6pLlVDBfOLX9QUsyCOV0wzfjIJNlGEYsdlLJizHhbn2mUjvSAHQqZETYP81eFzLQNnPHt4EVVUh7VfDESU84KezmD5QlWpXLmvU31/yMf+Se8xhHTvKSCZIFImWwoG6mbUoWf9nzpIoaSjB+weqqUUmpaaasXVal72J+UX2B+2RPW3RcT0eOzQgqlJL3RKrTJvdsjE3JEAvGq3lGHSZXy28G3skua2SmVi/w4yCE6gbODqnTWlg7+wC604ydGXA8VJiS5ap43JXiUFFAaQ==
+                github.com ssh-dss AAAAB3NzaC1kc3MAAACBANGFW2P9xlGU3zWrymJgI/lKo//ZW2WfVtmbsUZJ5uyKArtlQOT2+WRhcg4979aFxgKdcsqAYW3/LS1T2km3jYW/vr4Uzn+dXWODVk5VlUiZ1HFOHf6s6ITcZvjvdbp6ZbpM+DuJT7Bw+h5Fx8Qt8I16oCZYmAPJRtu46o9C2zk1AAAAFQC4gdFGcSbp5Gr0Wd5Ay/jtcldMewAAAIATTgn4sY4Nem/FQE+XJlyUQptPWMem5fwOcWtSXiTKaaN0lkk2p2snz+EJvAGXGq9dTSWHyLJSM2W6ZdQDqWJ1k+cL8CARAqL+UMwF84CR0m3hj+wtVGD/J4G5kW2DBAf4/bqzP4469lT+dF2FRQ2L9JKXrCWcnhMtJUvua8dvnwAAAIB6C4nQfAA7x8oLta6tT+oCk2WQcydNsyugE8vLrHlogoWEicla6cWPk7oXSspbzUcfkjN3Qa6e74PhRkc7JdSdAlFzU3m7LMkXo1MHgkqNX8glxWNVqBSc0YRdbFdTkL0C6gtpklilhvuHQCdbgB3LBAikcRkDp+FCVkUgPC/7Rw==
+                EOF
+  get-cluster-credentials:
+    description: download cluster credentials
+    parameters:
+      cluster_name:
+        type: string
+        default: ""
+      cluster_project:
+        type: string
+        default: ""
+      cluster_zone:
+        type: string
+        default: ""
+    steps:
+      - run:
+          name: get cluster credentials
+          command: |
+            cluster_name=<< parameters.cluster_name >>
+            if [ -n "$cluster_name" ]; then
+              echo $GCLOUD_SERVICE_KEY | gcloud auth activate-service-account --key-file=-
+              gcloud container clusters get-credentials << parameters.cluster_name >> --project << parameters.cluster_project >> --zone << parameters.cluster_zone >>
+            else
+              echo no cluster_name was provided, skipping getting cluster credentials
+            fi
 
 orbs:
-  win: circleci/windows@2.2.0
-  nx: nrwl/nx@1.2.2
-  
+  gcp-gcr: circleci/gcp-gcr@0.12.0
+  cypress: cypress-io/cypress@1.29.0
+  slack: circleci/slack@3.4.2
+executors:
+  image-build-executor:
+    parameters:
+      size:
+        type: enum
+        enum: ["medium", "large"]
+        default: "medium"
+    resource_class: << parameters.size >>
+    working_directory: /home/circleci/pendo-io/pendo-appengine
+    machine:
+      image: ubuntu-2004:202201-02
+  deploy-executor:
+    resource_class: "medium"
+    working_directory: /home/circleci/pendo-io/pendo-appengine
+    docker:
+      - image: gcr.io/pendo-dev/circle-runtime:latest
+        auth:
+          username: _json_key
+          password: $GCR_JSON_KEY_FILE
+    environment:
+      GOROOT: /usr/local/go
+  generic-executor:
+    resource_class: "small"
+    working_directory: /home/circleci/pendo-io/pendo-appengine
+    docker:
+      - image: cimg/base:2021.02
+  kitchen-sink:
+    parameters:
+      size:
+        type: enum
+        enum: ["small", "large", "xlarge"]
+        default: "small"
+    docker:
+      - image: gcr.io/pendo-dev/pendo-wercker:2022.01.11
+        auth:
+          username: _json_key
+          password: $GCR_JSON_KEY_FILE
+    working_directory: ~/pendo-io/pendo-appengine
+    resource_class: << parameters.size >>
+  cypress-run-executor:
+    resource_class: "large"
+    docker:
+      - image: 'cypress/base:12'
+    parameters:
+      project_id:
+        type: string
+      suite_id:
+        type: string
+      run_id:
+        type: string
+    environment:
+      CYPRESS_reporter_options_project_id: << parameters.project_id >>
+      CYPRESS_reporter_options_suite_id: << parameters.suite_id >>
+      CYPRESS_reporter_options_run_id: << parameters.run_id >>
 
 jobs:
-  build:
-    docker:
-     - image: cimg/node:14.16-browsers
+  setup:
+    executor:
+      name: kitchen-sink
+      size: large
+    parallelism: 1
     steps:
-      - run: echo "hello world"
-          
-               
+      - checkout:
+          path: ~/pendo-io/pendo-appengine
 
+      - run:
+          name: Unroll symlinks
+          command: |
+            for symlink in $( find modules -type l ); do tgt=$( readlink -f $symlink );rm $symlink; cp -av $tgt $symlink; done
+
+      - run:
+          name: run gofmt and importcheck
+          command: |
+            cd ~/pendo-io/pendo-appengine
+            function allgofiles() {
+              find apitests src tools \
+                -not -path "*src/pendo.io/forks/*" \
+                -not -path "*apitests/vendor/*" \
+                -not -path "*src/vendor/*" \
+                -not -path "*src/pendo.io/web/selectors/epparser.go" \
+                -not -path "*src/pendo.io/web/selectors/cssparser.go" \
+                -not -path "*src/pendo.io/aggregation/expr.go" \
+                -type f -name "*.go" -print0; \
+            }
+            FMTFILES=$( allgofiles | xargs --null -P8 -n32 gofmt -l )
+            if [[ -n "$FMTFILES" ]]; then
+              echo "gofmt errors:"
+              echo "$FMTFILES"
+              exit 1
+            else
+              echo "gofmt OK"
+            fi
+            if ! IMPERRS=$( allgofiles | xargs --null awk -f tools/importcheck.awk ); then
+              echo "Import ordering errors:"
+              echo "$IMPERRS"
+              exit 1
+            else
+              echo "Go imports OK"
+            fi
+
+      - run:
+          name: check entity kinds
+          command: |
+            cd src
+            go generate -mod vendor github.com/pendo-io/pendo-appengine/src/pendo.io/model
+            if git status | grep entitykinds; then
+              echo "entitykinds.go must be generated by running 'go generate -mod vendor github.com/pendo-io/pendo-appengine/src/pendo.io/model'"
+              exit 1
+            fi
+            cd ..
+
+      - run:
+          name: Generate release-details
+          command: |
+            ./prebuild.sh ~/pendo-io/pendo-appengine
+
+      - gh-known-hosts
+      - local_pendo_host_setup
+      - setup_artifactory
+
+      - restore_cache:
+          name: restore node modules from cache
+          keys:
+            - nodemodules-cache-{{ checksum "package-lock.json" }}
+
+      - run:
+          name: install node modules if needed
+          command: |
+            if $(stat /root/pendo-io/pendo-appengine/node_modules &>/dev/null); then
+              echo "node_modules already restored"
+            else
+              npm ci
+            fi
+
+      - save_cache:
+          name: save node modules to cache
+          key: nodemodules-cache-{{ checksum "package-lock.json" }}
+          paths:
+            - /root/pendo-io/pendo-appengine/node_modules
+
+      - run:
+          name: postinstall
+          command: |
+            npm run postinstall
+
+      - run:
+          name: bundle js libs
+          command: |
+            npm run build
+
+      - run:
+          name: create version file for use by other jobs
+          command: |
+            echo -n "$(date +%Y%m%dt%H%M)-$(git rev-parse HEAD | head -c8) " > version.txt
+
+      - persist_to_workspace:
+          root: .
+          paths:
+            - .
+
+  gosec:
+    executor: kitchen-sink
+    steps:
+      - checkout:
+          path: ~/pendo-io/pendo-appengine
+      - run:
+          name: run gosec scan
+          command: |
+            cd src
+            mkdir gosec
+            gosec -exclude=G101,G103,G104,G505,G601 -exclude-dir=tools -exclude-dir=vendor -fmt=html -out=gosec/results.html ./...
+
+      - setup_gosec_storage
+
+      - slack/status:
+          webhook: $SLACK_WEBHOOK
+          channel: security-alerts
+          fail_only: true
+          only_for_branches: staging
+          failure_message: ':red_circle: Job [$CIRCLE_JOB] has failed!'
+
+  frontend-test:
+    executor: << parameters.executor >>
+    parallelism: 2
+    # in order to make executor size parameterizable, also have to make
+    # the executor itself a parameter so that I can pass executor parameters
+    # in the workflow declaration
+    parameters:
+      executor:
+        type: executor
+    steps:
+      - attach_workspace:
+          at: ~/pendo-io/pendo-appengine
+
+      - run:
+          name: run frontend lint
+          command: |
+            if [[ $CIRCLE_BRANCH != master && $CIRCLE_BRANCH != staging && $CIRCLE_BRANCH != prod && $CIRCLE_BRANCH != prod-aggs ]]; then
+              npm run lint:ci
+            fi
+      - run:
+          name: run jest tests
+          command: |
+            if [ $CIRCLE_NODE_INDEX -eq 0 ]; then
+              npm run test:unit:jest -- --maxWorkers 2
+            fi
+
+      - run:
+          name: run karma tests
+          command: |
+            if [ $CIRCLE_NODE_INDEX -eq 1 ]; then
+              npm run test:unit:karma
+            fi
+
+  backend-test:
+    executor: << parameters.executor >>
+    parallelism: 2
+    # in order to make executor size parameterizable, also have to make
+    # the executor itself a parameter so that I can pass executor parameters
+    # in the workflow declaration
+    parameters:
+      executor:
+        type: executor
+    steps:
+      - attach_workspace:
+          at: ~/pendo-io/pendo-appengine
+      - gcp-gcr/gcr-auth
+      - run:
+          name: go version
+          command: go version
+      - run:
+          name: run go vet
+          command: |
+            if [ $CIRCLE_NODE_INDEX -eq 0 ]; then
+              bash -x ./vet.sh
+            fi
+
+      - run:
+          name: run backend go tests
+          command: |
+            export INDEX_READER_CREDS=${HOME}/gcloud-service-key.json
+            if [ $CIRCLE_NODE_INDEX -eq 1 ]; then
+              ./gotests --coverage --skip-gotesti --test-prod-indexes
+            fi
+
+  config-test:
+    executor:
+      name: generic-executor
+    parameters:
+      po_version:
+        type: string
+        default: latest
+    steps:
+      - attach_workspace:
+          at: ~/pendo-io/pendo-appengine
+      - download_po:
+          version: << parameters.po_version >>
+      - gh-known-hosts
+      - run:
+          name: show app.yaml diff
+          command: |
+            AUTH="Authorization: token ${GITHUB_TOKEN}"
+            if [ -z "${CIRCLE_PULL_REQUEST}" ] ; then
+              # No PR
+              exit 0
+            fi
+            PULL_NUMBER=${CIRCLE_PULL_REQUEST#https://github.com/pendo-io/pendo-appengine/pull/}
+            PR_INFO=$(curl -H "${AUTH}" -s https://api.github.com/repos/pendo-io/pendo-appengine/pulls/${PULL_NUMBER})
+            PR_BASE=$(echo ${PR_INFO} | jq -r .base.sha)
+            if [ -z "${PR_BASE}" ] ; then
+              echo Unable to determine Pull Request base
+              exit 1
+            fi
+            git config core.pager cat
+            CHANGED_FILES=$(git diff --name-only $( git merge-base ${PR_BASE} HEAD ) | grep ^hiera || true)
+            if [ -z "${CHANGED_FILES}" ] ; then
+              echo No changes to hiera/
+              exit 0
+            fi
+            DIFF=$(tools/appyamldiff.sh -b ${PR_BASE})
+            if [ -z "${DIFF}" ]; then
+              echo No rendered config change
+              exit 0
+            fi
+
+            PR_COMMENTS_HREF=$(echo ${PR_INFO} | jq -r ._links.comments.href) # URL to post comments
+            MESSAGE=$(tempfile)
+
+            cat > ${MESSAGE} \<<-EOF
+            Rendered \`app.yaml\` configuration changes
+            Changed files:
+            \`\`\`
+            ${CHANGED_FILES}
+            \`\`\`
+            Result in:
+            \`\`\`diff
+            ${DIFF}
+            \`\`\`
+            Generated in CircleCI Job [${CIRCLE_JOB} ${CIRCLE_BUILD_NUM}](${CIRCLE_BUILD_URL})
+            EOF
+
+            # Look for an existing comment
+            COMMENT_HREF=$(curl -H "${AUTH}" -s ${PR_COMMENTS_HREF} | jq -r '.[]|select(.user.login=="pendozer" and (.body|startswith("Rendered `app.yaml` configuration changes")))|.url')
+
+            if [ -z "${COMMENT_HREF}" ]; then
+              # No comment yet
+              jq -cRsr '{body:.}|@json' ${MESSAGE} | curl -H "${AUTH}" -H "Content-Type: application/json" -s ${PR_COMMENTS_HREF} -d @-
+            else
+              # update existing comment
+              jq -cRsr '{body:.}|@json' ${MESSAGE} | curl -H "${AUTH}" -H "Content-Type: application/json" -s -X PATCH ${COMMENT_HREF} -d @-
+            fi
+
+  test-aggs:
+    executor: kitchen-sink
+    working_directory: ~/pendo-io/pendo-appengine/apitests
+    steps:
+      - apitest_setup
+      - attach_workspace:
+          at: ~/pendo-io/pendo-appengine
+      - run:
+          name: run test-aggs
+          command: go test -v -parallel 4 apitests/core/aggregations
+      - store_artifacts:
+          path: artifacts
+      - slack_update:
+          channel: "aggs-monitoring"
+
+  test-automagical:
+    executor: kitchen-sink
+    steps:
+      - run:
+          name: Run Test-Automagical
+          command: |
+            curl -X POST -u $AUTOMAGICAL_TOKEN: --header "Content-Type: application/json" -d '{"branch": "master", "parameters": { "run_test_ci": true } }' https://circleci.com/api/v2/project/github/pendo-io/automagical/pipeline
+  build-push:
+    executor:
+      name: image-build-executor
+      size: medium
+    parallelism: << parameters.parallelism >>
+    parameters:
+      services:
+        type: string
+        default: "all" # a comma separated list of services
+      project:
+        type: string
+        default: "" # Will default to $GOOGLE_PROJECT_ID
+      parallelism:
+        type: integer
+        default: 1
+      po_version:
+        type: string
+        default: latest
+    steps:
+      - attach_workspace:
+          at: ~/pendo-io/pendo-appengine
+      - gcp-gcr/gcr-auth
+      - download_jzb
+      - slurp_jzb_args:
+          jzb_string: << pipeline.parameters.jzb_args >>
+      - export_working_project:
+          project: << parameters.project >>
+      - download_po:
+          version: << parameters.po_version >>
+      - run:
+          name: Image build with po
+          command: |
+            po --yes build --project $PROJECT --services << parameters.services >> --worker $CIRCLE_NODE_INDEX --maxWorkers $CIRCLE_NODE_TOTAL
+
+  remote-deploy:
+    executor: kitchen-sink
+    parameters:
+      dev_env:
+        type: string
+      api_branch:
+        type: string
+        default: "master"
+    steps:
+      - run:
+          name: kick off remote deploy to << parameters.dev_env >>
+          command: |
+            args='{"gcp_env":"<< parameters.dev_env >>"}'
+            jzb=$(echo "${args}" | jzb -c)
+            curl -u ${CIRCLECI_TOKEN}: \
+                 -X POST --header "Content-Type: application/json" \
+                 -d "{
+                      \"parameters\": {
+                        \"api_trigger\": true,
+                        \"jzb_args\": \"${jzb}\"
+                      },
+                      \"branch\": \"<< parameters.api_branch >>\"
+                    }" https://circleci.com/api/v2/project/gh/pendo-io/pendo-appengine/pipeline
+
+  deploy:
+    executor:
+      name: deploy-executor
+    parallelism: 1
+    parameters:
+      version:
+        type: string
+        # 'predetermined' will use the version found in version.txt
+        default: "auto" # will default to YYYYMMDDtHHMM
+      services:
+        type: string
+        default: "all" # a comma separated list of services
+      project:
+        type: string
+        default: "" # Will default to $GOOGLE_PROJECT_ID
+      po_version:
+        type: string
+        default: latest
+      cluster_name:
+        type: string
+        default: ""
+      cluster_project:
+        type: string
+        default: ""
+      cluster_zone:
+        type: string
+        default: ""
+    steps:
+      - attach_workspace:
+          at: ~/pendo-io/pendo-appengine
+      - gcp-gcr/gcr-auth
+      - slurp_jzb_args:
+          jzb_string: << pipeline.parameters.jzb_args >>
+      - export_working_project:
+          project: << parameters.project >>
+      - download_po:
+          version: << parameters.po_version >>
+      - gh-known-hosts
+      - get-cluster-credentials:
+          cluster_name: << parameters.cluster_name >>
+          cluster_project: << parameters.cluster_project >>
+          cluster_zone: << parameters.cluster_zone >>
+      - run:
+          name: Deploy with po
+          command: |
+            promote_args=""
+            if [ "${CIRCLE_BRANCH}" == "master" ] ||
+              [ "${CIRCLE_BRANCH}" == "staging" ]; then
+              promote_args="--promote"
+            fi
+            version=<< parameters.version >>
+            if [ "${version}" == "predetermined" ]; then
+              version=$(cat version.txt)
+              echo "Will use version $version from version.txt"
+            elif [ "${version}" == "aggtest" ]; then
+              upgrade_args="--upgrade"
+            fi
+
+            po --yes build-deploy $promote_args $upgrade_args --project $PROJECT --services << parameters.services >> --version $version --concurrency 5
+
+      - run:
+          name: Deploy dispatch.yaml in non-prod
+          command: |
+            if [ "${CIRCLE_BRANCH}" == "master" ] ||
+              [ "${CIRCLE_BRANCH}" == "staging" ]; then
+              # Generate and deploy dispatch yaml for scrum nightlies, pendo-dev, and
+              # pendo-test deploys - which all run "from" staging and master branches
+              export GOOGLE_APPLICATION_CREDENTIALS=${HOME}/gcloud-service-key.json
+              po dispatch --project $PROJECT
+            fi
+  deploy-indexes:
+    executor:
+      name: deploy-executor
+    resource_class: small
+    parallelism: 1
+    parameters:
+      project:
+        type: string
+        default: "" # Will default to $GOOGLE_PROJECT_ID
+    steps:
+      - attach_workspace:
+          at: ~/pendo-io/pendo-appengine
+      - gcp-gcr/gcr-auth
+      - run:
+          name: Deploy index.yaml
+          command: |
+            # deploy indexes
+            gcloud --project << parameters.project >> -q datastore indexes create src/appengine/index.yaml
+            gcloud --project << parameters.project >> -q datastore indexes list --format json > indexes.json
+            # output index status and those that are not ready
+            cat indexes.json | jq 'reduce .[] as $item ({}; .[$item.state] += 1)'
+            cat indexes.json | jq '.[] | select(.state!="READY")'
+
+  flip:
+    executor:
+      name: deploy-executor
+    parallelism: 1
+    parameters:
+      version:
+        type: string
+        default: "predetermined" # will use the version found in version.txt
+      services:
+        type: string
+        default: "all" # a comma separated list of services
+      project:
+        type: string
+        default: "" # Will default to $GOOGLE_PROJECT_ID
+      concurrency:
+        description: "number of threads to run shifts concurrently"
+        type: integer
+        default: 5
+      po_version:
+        type: string
+        default: latest
+      cluster_name:
+        type: string
+        default: ""
+      cluster_project:
+        type: string
+        default: ""
+      cluster_zone:
+        type: string
+        default: ""
+
+    steps:
+      - attach_workspace:
+          at: ~/pendo-io/pendo-appengine
+      - gcp-gcr/gcr-auth
+      - download_jzb
+      - slurp_jzb_args:
+          jzb_string: << pipeline.parameters.jzb_args >>
+      - export_working_project:
+          project: << parameters.project >>
+      - download_po:
+          version: << parameters.po_version >>
+      - get-cluster-credentials:
+          cluster_name: << parameters.cluster_name >>
+          cluster_project: << parameters.cluster_project >>
+          cluster_zone: << parameters.cluster_zone >>
+
+      - run:
+          name: Shift services with po
+          command: |
+            version=<< parameters.version >>
+            if [ "${version}" == "predetermined" ]; then
+              version=$(cat version.txt)
+              echo "Will use version $version from version.txt"
+            fi
+            export GOOGLE_APPLICATION_CREDENTIALS=${HOME}/gcloud-service-key.json
+            po --yes shift --project $PROJECT --services << parameters.services >> --version $version --concurrency << parameters.concurrency >>
+
+  mock:
+    docker:
+      - image: docker:stable-git
+    resource_class: small
+    steps:
+      - run:
+          name: mock job
+          command: |
+            echo this is where we would do something real
+
+  run-veracode-scan-1:
+    executor:
+      name: deploy-executor
+    steps:
+      - checkout:
+          path: ~/pendo-io/pendo-appengine
+      - run:
+          name: "Running veracode scan"
+          command: |
+              # App Id for pendo-appengine
+              export VERACODE_APP_ID=493642 && ./.circleci/veracode-scan.sh
+      - store_artifacts:
+          path: ./veracode
+      - slack/status:
+          webhook: $SLACK_WEBHOOK
+          channel: security-alerts
+          fail_only: true
+          only_for_branches: master
+          failure_message: ':red_circle: Job [$CIRCLE_JOB] has failed!'
+
+  run-veracode-scan-2:
+    executor:
+      name: deploy-executor
+    steps:
+      - checkout:
+          path: ~/pendo-io/pendo-appengine
+      - run:
+          name: "Downloading PDF of Veracode Results"
+          command: |
+              # App Id for pendo-appengine
+              export VERACODE_APP_ID=493642 && ./.circleci/veracode-upload-pdf.sh
+      - run:
+          name: "Upload results to JIRA"
+          command: ./.circleci/create-compliance-jira-ticket.sh
+      - store_artifacts:
+          path: ./veracode
+      - slack/status:
+          webhook: $SLACK_WEBHOOK
+          channel: security-alerts
+          fail_only: true
+          only_for_branches: master
+          failure_message: ':red_circle: Job [$CIRCLE_JOB] has failed!'
+
+# Anchors used in workflows
+cypress-install-dev: &cypress-install-dev
+  post-checkout:
+      - gh-known-hosts
+      - setup_artifactory
+  context:
+      - core-dev
+      - artifactory-web
+
+cypress-run-dev-local: &cypress-run-dev-local
+  requires:
+      - cypress/install
+  attach-workspace: true
+  build: npm run build
+  config: 'baseUrl=https://localhost:3000/'
+  context: core-dev
+  executor:
+      name: cypress-run-executor
+      project_id: << pipeline.parameters.reporter_options_project_id >>
+      suite_id: << pipeline.parameters.reporter_options_suite_id >>
+      run_id: << pipeline.parameters.reporter_options_run_id >>
+  parallel: true
+  record: true
+  start: npm run start --env=dev --mode=production
+  store_artifacts: true
+  wait-on: '-c .circleci/cypress-wait-on.config.js https-get://localhost:3000/'
+
+cypress-run-dev-remote: &cypress-run-dev-remote
+  requires:
+      - cypress/install
+  attach-workspace: true
+  context: core-dev
+  parallel: true
+  record: true
+  store_artifacts: true
+
+cypress-install-test: &cypress-install-test
+  post-checkout:
+      - gh-known-hosts
+      - setup_artifactory
+  context:
+      - core-test
+      - artifactory-web
+
+cypress-run-test-local: &cypress-run-test-local
+  requires:
+      - cypress/install
+  attach-workspace: true
+  config: 'baseUrl=https://localhost:3000/'
+  context: core-test
+  executor:
+      name: cypress-run-executor
+      project_id: << pipeline.parameters.reporter_options_project_id >>
+      suite_id: << pipeline.parameters.reporter_options_suite_id >>
+      run_id: << pipeline.parameters.reporter_options_run_id >>
+  parallel: true
+  record: true
+  start: npm run start --env=test --mode=production
+  store_artifacts: true
+  wait-on: '-c .circleci/cypress-wait-on.config.js https-get://localhost:3000/'
+
+cypress-run-test-remote: &cypress-run-test-remote
+  requires:
+      - cypress/install
+  record: true
+  attach-workspace: true
+  executor:
+      name: cypress-run-executor
+      project_id: << pipeline.parameters.reporter_options_project_id >>
+      suite_id: << pipeline.parameters.reporter_options_suite_id >>
+      run_id: << pipeline.parameters.reporter_options_run_id >>
+  parallel: true
+  context: core-test
+  store_artifacts: true
+
+# Anchors for Cypress Next
+cypress-next-cleanup: &cypress-next-cleanup
+  name: Clean up Cypress subs
+  when: always
+  command: npm run cypress:cleanup -- --env=$CYPRESS_NEXT_ENV
+
+cypress-next-batman: &cypress-next-batman
+  name: Batman - Regression Next
+  env: 'grepTags=@batman,grepOmitFiltered=true'
+
+cypress-next-voyager: &cypress-next-voyager
+  name: Voyager - Regression Next
+  env: 'grepTags=@voyager,grepOmitFiltered=true'
+
+cypress-next-constellation: &cypress-next-constellation
+  name: Constellation - Regression Next
+  env: 'grepTags=@constellation,grepOmitFiltered=true'
+
+filter-master: &filter-master
+  filters:
+    branches:
+      only: master
+nightly-dev-build-push: &nightly-dev-build-push
+  context: core-dev
+  parallelism: 1
+  requires:
+    - setup
+nightly-dev-deploy: &nightly-dev-deploy
+  context: core-dev
+  requires:
+    - build-push
+dev-deploy-indexes: &dev-deploy-indexes
+  context: core-dev
+  requires:
+    - setup
+catchall-services-prod: &catchall-services-prod
+  services: "agentlogs,apiv1,bq-stream,bundler2,default,deleter,eventhub,jobs-bulkdelete,jobs-preemptible,jobs-large,jobs-neartime,jobs-rebuild,jobs-reprocess,jobs-rowmerge,jobs-schedule,jobs-silofiles,jobs-small,jobs-snapshot,jobs-timespan,jobs-whsync,jobs-itemseen,jobs-interactive,mapreduce,monitor,webhooks-filter,webhooks-poll,webhooks-sender,slack-unfurl-processor,slack-unfurl-sender"
 workflows:
-  main:
+  version: 2
+  # Triggered remotely from the API to deploy to a scrum environment
+  api-deploy:
+    when:
+      and:
+        - << pipeline.parameters.api_trigger >>
+        - not: << pipeline.parameters.cypress_next_sanity >>
+        - not: << pipeline.parameters.cypress_next_sanity_staging >>
+        - not: << pipeline.parameters.cypress_next_reg >>
+        - not: << pipeline.parameters.cypress_staging_regression >>
+        - not: << pipeline.parameters.cypress_regression >>
+        - not: << pipeline.parameters.cypress_free_regression >>
+        - not: << pipeline.parameters.cypress_analytics_regression >>
+        - not: << pipeline.parameters.cypress_adopt_regression >>
+        - not: << pipeline.parameters.cypress_wip >>
+        - not: << pipeline.parameters.cypress_adoptv2_regression >>
+        - not: << pipeline.parameters.cypress_feedback_voc_regression >>
+        - not: << pipeline.parameters.cypress_feedback_voc_regression_staging >>
+        - not: << pipeline.parameters.cypress_feedback_or_voc >>
     jobs:
-      - build
-
-  nightly:
-    triggers:
-      - schedule:
-          #every weekday at 6am
-          cron: "* * * * 1-5"
+      - setup:
+          context: artifactory-web
           filters:
             branches:
               only:
-                - test
-                
+                - master
+      - build-push:
+          context: core-dev
+          requires:
+            - setup
+      - deploy:
+          context: core-dev
+          requires:
+            - build-push
+
+  # Nightly deploys to keep development environments up-to-date
+  nightly-magic:
+    when:
+      and: [<<pipeline.parameters.run_nightly_magic>>, <<pipeline.parameters.api_trigger>>]
     jobs:
-      - build
+      - setup:
+          context: artifactory-web
+          <<: *filter-master
+      - build-push:
+          <<: *nightly-dev-build-push
+          project: pendo-magic
+      - deploy:
+          <<: *nightly-dev-deploy
+          project: pendo-magic
 
+  nightly-calypso:
+   when:
+    and: [<<pipeline.parameters.run_nightly_calypso>>, <<pipeline.parameters.api_trigger>>]
+   jobs:
+      - setup:
+          context: artifactory-web
+          <<: *filter-master
+      - build-push:
+          <<: *nightly-dev-build-push
+          project: pendo-calypso
+      - deploy:
+          <<: *nightly-dev-deploy
+          project: pendo-calypso
 
-#test
+  nightly-voc:
+    when:
+      and: [<<pipeline.parameters.run_nightly_voc>>, <<pipeline.parameters.api_trigger>>]
+    jobs:
+      - setup:
+          context: artifactory-web
+          <<: *filter-master
+      - build-push:
+          <<: *nightly-dev-build-push
+          project: pendo-voc
+      - deploy:
+          <<: *nightly-dev-deploy
+          project: pendo-voc
+
+  nightly-dap:
+    when:
+      and: [<<pipeline.parameters.run_nightly_dap>>, <<pipeline.parameters.api_trigger>>]
+    jobs:
+      - setup:
+          context: artifactory-web
+          <<: *filter-master
+      - build-push:
+          <<: *nightly-dev-build-push
+          project: pendo-dap
+      - deploy:
+          <<: *nightly-dev-deploy
+          project: pendo-dap
+
+  nightly-scrum-ops:
+    when:
+      and: [<<pipeline.parameters.run_nightly_scrum_ops>>, <<pipeline.parameters.api_trigger>>]
+    jobs:
+      - setup:
+          context: artifactory-web
+          <<: *filter-master
+      - build-push:
+          <<: *nightly-dev-build-push
+          project: pendo-scrum-ops
+      - deploy:
+          <<: *nightly-dev-deploy
+          project: pendo-scrum-ops
+          cluster_name: "pendo-scrum-gke"
+          cluster_project: "pendo-scrum-gke"
+          cluster_zone: "us-central1-a"
+
+  nightly-ml:
+    when:
+      and: [<<pipeline.parameters.run_nightly_ml>>, <<pipeline.parameters.api_trigger>>]
+    jobs:
+      - setup:
+          context: artifactory-web
+          <<: *filter-master
+      - build-push:
+          <<: *nightly-dev-build-push
+          project: pendo-ml
+      - deploy:
+          <<: *nightly-dev-deploy
+          project: pendo-ml
+
+  nightly-armada:
+    when:
+      and: [<<pipeline.parameters.run_nightly_armada>>, <<pipeline.parameters.api_trigger>>]
+    jobs:
+      - setup:
+          context: artifactory-web
+          <<: *filter-master
+      - build-push:
+          <<: *nightly-dev-build-push
+          project: pendo-armada
+      - deploy:
+          <<: *nightly-dev-deploy
+          project: pendo-armada
+
+  nightly-link:
+    when:
+      and: [<<pipeline.parameters.run_nightly_link>>, <<pipeline.parameters.api_trigger>>]
+    jobs:
+      - setup:
+          context: artifactory-web
+          <<: *filter-master
+      - build-push:
+          <<: *nightly-dev-build-push
+          project: pendo-link
+      - deploy:
+          <<: *nightly-dev-deploy
+          project: pendo-link
+
+  nightly-batman:
+    when:
+      and: [<<pipeline.parameters.run_nightly_batman>>, <<pipeline.parameters.api_trigger>>]
+    jobs:
+      - setup:
+          context: artifactory-web
+          <<: *filter-master
+      - build-push:
+          <<: *nightly-dev-build-push
+          project: pendo-batman
+      - deploy:
+          <<: *nightly-dev-deploy
+          project: pendo-batman
+
+  nightly-security:
+    when:
+      and: [<<pipeline.parameters.run_nightly_security>>, <<pipeline.parameters.api_trigger>>]
+    jobs:
+      - setup:
+          context: artifactory-web
+          <<: *filter-master
+      - build-push:
+          name: build-push-gae
+          <<: *nightly-dev-build-push
+          project: pendo-security
+      - deploy:
+          name: deploy-gae
+          <<: *nightly-dev-deploy
+          project: pendo-security
+          requires:
+            - build-push-gae
+      - build-push:
+          name: build-push-k8s
+          <<: *nightly-dev-build-push
+          project: pendo-security
+          services: "jobs-timespan"
+      - deploy:
+          name: deploy-k8s
+          <<: *nightly-dev-deploy
+          project: pendo-security
+          services: "jobs-timespan"
+          cluster_name: "pendo-scrum-gke"
+          cluster_project: "pendo-scrum-gke"
+          cluster_zone: "us-central1-a"
+          requires:
+            - build-push-k8s
+
+  nightly-wildlings:
+    when:
+      and: [<<pipeline.parameters.run_nightly_wildings>>, <<pipeline.parameters.api_trigger>>]
+    jobs:
+      - setup:
+          context: artifactory-web
+          <<: *filter-master
+      - build-push:
+          <<: *nightly-dev-build-push
+          project: pendo-wildlings
+      - deploy:
+          <<: *nightly-dev-deploy
+          project: pendo-wildlings
+
+  nightly-atlas:
+    when:
+      and: [<<pipeline.parameters.run_nightly_atlas>>, <<pipeline.parameters.api_trigger>>]
+    jobs:
+      - setup:
+          context: artifactory-web
+          <<: *filter-master
+      - build-push:
+          <<: *nightly-dev-build-push
+          project: pendo-atlas
+      - deploy:
+          <<: *nightly-dev-deploy
+          project: pendo-atlas
+
+  nightly-ionchef:
+    when:
+      and: [<<pipeline.parameters.run_nightly_ionchef>>, <<pipeline.parameters.api_trigger>>]
+    jobs:
+      - setup:
+          context: artifactory-web
+          <<: *filter-master
+      - build-push:
+          <<: *nightly-dev-build-push
+          project: pendo-ionchef
+      - deploy:
+          <<: *nightly-dev-deploy
+          project: pendo-ionchef
+          cluster_name: "pendo-scrum-gke"
+          cluster_project: "pendo-scrum-gke"
+          cluster_zone: "us-central1-a"
+
+  nightly-apollo:
+    when:
+      and: [<<pipeline.parameters.run_nightly_apollo>>, <<pipeline.parameters.api_trigger>>]
+    jobs:
+      - setup:
+          context: artifactory-web
+          <<: *filter-master
+      - build-push:
+          <<: *nightly-dev-build-push
+          project: pendo-apollo
+      - deploy:
+          <<: *nightly-dev-deploy
+          project: pendo-apollo
+
+  nightly-helix:
+    when:
+      and: [<<pipeline.parameters.run_nightly_helix>>, <<pipeline.parameters.api_trigger>>]
+    jobs:
+      - setup:
+          context: artifactory-web
+          <<: *filter-master
+      - build-push:
+          <<: *nightly-dev-build-push
+          project: pendo-helix
+      - deploy:
+          <<: *nightly-dev-deploy
+          project: pendo-helix
+
+  nightly-pendo-mobile-guides:
+    when:
+      and: [<<pipeline.parameters.run_nightly_mobile_guides>>, <<pipeline.parameters.api_trigger>>]
+    jobs:
+      - setup:
+          context: artifactory-web
+          <<: *filter-master
+      - build-push:
+          <<: *nightly-dev-build-push
+          project: pendo-mobile-guides
+      - deploy:
+          <<: *nightly-dev-deploy
+          project: pendo-mobile-guides
+
+  nightly-pendo-mobile-hummus:
+    when:
+      and: [<<pipeline.parameters.run_nightly_mobile_hummus>>, <<pipeline.parameters.api_trigger>>]
+    jobs:
+      - setup:
+          context: artifactory-web
+          <<: *filter-master
+      - build-push:
+          <<: *nightly-dev-build-push
+          project: pendo-mobile-hummus
+      - deploy:
+          <<: *nightly-dev-deploy
+          project: pendo-mobile-hummus
+
+  nightly-pendo-mobile-plat:
+    when:
+      and: [<<pipeline.parameters.run_nightly_mobile_plat>>, <<pipeline.parameters.api_trigger>>]
+    jobs:
+      - setup:
+          context: artifactory-web
+          <<: *filter-master
+      - build-push:
+          <<: *nightly-dev-build-push
+          project: pendo-mobile-plat
+      - deploy:
+          <<: *nightly-dev-deploy
+          project: pendo-mobile-plat
+
+  nightly-pendo-perfserf:
+    when:
+      and: [<<pipeline.parameters.run_nightly_perfserf>>, <<pipeline.parameters.api_trigger>>]
+    jobs:
+      - setup:
+          context: artifactory-web
+          <<: *filter-master
+      - build-push:
+          <<: *nightly-dev-build-push
+          project: pendo-perfserf
+      - deploy:
+          <<: *nightly-dev-deploy
+          project: pendo-perfserf
+
+  nightly-pendo-freeze:
+    when:
+      and: [<<pipeline.parameters.run_nightly_freeze>>, <<pipeline.parameters.api_trigger>>]
+    jobs:
+      - setup:
+          context: artifactory-web
+          <<: *filter-master
+      - build-push:
+          <<: *nightly-dev-build-push
+          project: pendo-freeze
+      - deploy:
+          <<: *nightly-dev-deploy
+          project: pendo-freeze
+
+  nightly-pendo-eu-dev:
+    when:
+      and: [<<pipeline.parameters.run_nightly_eu_dev>>, <<pipeline.parameters.api_trigger>>]
+    jobs:
+      - setup:
+          context: artifactory-web
+          <<: *filter-master
+      - build-push:
+          <<: *nightly-dev-build-push
+          project: pendo-eu-dev
+      - deploy:
+          <<: *nightly-dev-deploy
+          project: pendo-eu-dev
+
+  # weekly Veracode scan part 1, trigger Veracode scan to start
+  veracode-scan-1:
+    when:
+      and: [<<pipeline.parameters.run_veracode_scan1>>, <<pipeline.parameters.api_trigger>>]
+    jobs:
+      - run-veracode-scan-1:
+          context: veracode
+          <<: *filter-master
+
+  # weekly Veracode scan part 2, download PDF of results and upload to JIRA
+  veracode-scan-2:
+    when:
+      and: [<<pipeline.parameters.run_veracode_scan2>>, <<pipeline.parameters.api_trigger>>]
+    jobs:
+      - run-veracode-scan-2:
+          context: veracode
+          <<: *filter-master
+
+  master:
+    unless: << pipeline.parameters.api_trigger >>
+    jobs:
+      - setup:
+          context: artifactory-web
+          filters:
+            branches:
+              only:
+                - master
+      - frontend-test:
+          executor:
+            name: kitchen-sink
+            size: large
+          requires:
+            - setup
+      - backend-test:
+          context: prod-test-runner
+          executor:
+            name: kitchen-sink
+            size: xlarge
+          requires:
+            - setup
+      - config-test:
+          context: core-dev
+          requires:
+            - setup
+      - build-push:
+          parallelism: 2
+          requires:
+            - setup
+          context: core-dev
+      - deploy:
+          name: master-deploy
+          requires:
+            - frontend-test
+            - backend-test
+            - config-test
+            - build-push
+          context: core-dev
+          cluster_name: "pendo-scrum-gke"
+          cluster_project: "pendo-scrum-gke"
+          cluster_zone: "us-central1-a"
+      - deploy-indexes:
+          name: deploy-indexes-pendo-io
+          project: pendo-io
+          context: core-prod
+          requires:
+            - setup
+      - deploy-indexes:
+          name: deploy-indexes-pendo-eu
+          project: pendo-eu
+          context: core-prod
+          requires:
+            - setup
+      - deploy-indexes:
+          name: deploy-indexes-pendo-us1
+          project: pendo-us1
+          context: core-prod
+          requires:
+            - setup
+      - deploy-indexes:
+          name: deploy-indexes-pendo-gov-prod
+          project: pendo-gov-prod
+          context: core-prod
+          requires:
+            - setup
+      - deploy-indexes:
+          name: deploy-indexes-pendo-test
+          project: pendo-test
+          context: core-test
+          requires:
+            - setup
+      - deploy-indexes:
+          <<: *dev-deploy-indexes
+          project: pendo-dev
+      - deploy-indexes:
+          <<: *dev-deploy-indexes
+          project: pendo-apollo
+      - deploy-indexes:
+          <<: *dev-deploy-indexes
+          project: pendo-armada
+      - deploy-indexes:
+          <<: *dev-deploy-indexes
+          project: pendo-atlas
+      - deploy-indexes:
+          <<: *dev-deploy-indexes
+          project: pendo-batman
+      - deploy-indexes:
+          <<: *dev-deploy-indexes
+          project: pendo-freeze
+      - deploy-indexes:
+          <<: *dev-deploy-indexes
+          project: pendo-ionchef
+      - deploy-indexes:
+          <<: *dev-deploy-indexes
+          project: pendo-link
+      - deploy-indexes:
+          <<: *dev-deploy-indexes
+          project: pendo-magic
+      - deploy-indexes:
+          <<: *dev-deploy-indexes
+          project: pendo-mobile-guides
+      - deploy-indexes:
+          <<: *dev-deploy-indexes
+          project: pendo-mobile-plat
+      - deploy-indexes:
+          <<: *dev-deploy-indexes
+          project: pendo-perfserf
+      - deploy-indexes:
+          <<: *dev-deploy-indexes
+          project: pendo-security
+      - deploy-indexes:
+          <<: *dev-deploy-indexes
+          project: pendo-wildlings
+
+  staging-mainline:
+    unless: << pipeline.parameters.api_trigger >>
+    jobs:
+      - setup:
+          context: artifactory-web
+          filters:
+            branches:
+              only:
+                - staging
+      - frontend-test:
+          executor:
+            name: kitchen-sink
+            size: large
+          requires:
+            - setup
+      - backend-test:
+          context: prod-test-runner
+          executor:
+            name: kitchen-sink
+            size: xlarge
+          requires:
+            - setup
+      - config-test:
+          context: core-dev
+          requires:
+            - setup
+      - gosec:
+          name: staging-gosec-scan
+          requires:
+            - setup
+      - build-push:
+          parallelism: 5
+          requires:
+            - setup
+          context: core-test
+          services: "agentlogs,aggregations,aggregations-batch,apiv1,apiv1-aggregations,bq-stream,bundler2,data,default,deleter,eventhub,forwarder,guides,jobs-large,jobs-bulkdelete,jobs-preemptible,jobs-neartime,jobs-rebuild,jobs-reprocess,jobs-rowmerge,jobs-schedule,jobs-silofiles,jobs-small,jobs-snapshot,jobs-timespan,jobs-whsync,jobs-itemseen,jobs-interactive,mapreduce,monitor,neweventhandler0,neweventhandler1,newevent-sync,ptm,webhooks-filter,webhooks-poll,webhooks-sender,slack-unfurl-processor,slack-unfurl-sender"
+      - deploy:
+          name: staging-deploy
+          requires:
+            - frontend-test
+            - backend-test
+            - config-test
+            - build-push
+          context: core-test
+          services: "agentlogs,aggregations,aggregations-batch,apiv1,apiv1-aggregations,bq-stream,bundler2,data,default,deleter,eventhub,forwarder,guides,jobs-large,jobs-bulkdelete,jobs-preemptible,jobs-neartime,jobs-rebuild,jobs-reprocess,jobs-rowmerge,jobs-schedule,jobs-silofiles,jobs-small,jobs-snapshot,jobs-timespan,jobs-whsync,jobs-itemseen,jobs-interactive,mapreduce,monitor,neweventhandler0,neweventhandler1,newevent-sync,ptm,webhooks-filter,webhooks-poll,webhooks-sender,slack-unfurl-processor,slack-unfurl-sender"
+          cluster_name: pendo-test-gke
+          cluster_project: pendo-test-gke
+          cluster_zone: us-central1-a
+      - test-automagical:
+          requires:
+            - staging-deploy
+      - test-aggs:
+          requires:
+            - staging-deploy
+
+  prod-mainline-deploy:
+    unless: << pipeline.parameters.api_trigger >>
+    jobs:
+      - setup:
+          context: artifactory-web
+          filters:
+            branches:
+              only:
+                - prod
+      - build-push: # Build images and push them to gcr.io/pendo-io-jobs-gke
+          name: build-push-pendo-io-jobs-gke
+          parallelism: 5
+          requires:
+            - setup
+          context: core-prod
+          services: "agentlogs,apiv1,bq-stream,bundler2,data,default,deleter,eventhub,forwarder,guides,jobs-large,jobs-neartime,jobs-rebuild,jobs-bulkdelete,jobs-preemptible,jobs-reprocess,jobs-rowmerge,jobs-schedule,jobs-silofiles,jobs-small,jobs-snapshot,jobs-timespan,jobs-whsync,jobs-itemseen,jobs-interactive,mapreduce,monitor,neweventhandler0,neweventhandler1,neweventhandler2,neweventhandler3,neweventhandler4,neweventhandler5,neweventhandler6,neweventhandler7,neweventhandler-x,newevent-sync,ptm,webhooks-filter,webhooks-poll,webhooks-sender,slack-unfurl-processor,slack-unfurl-sender"
+      - build-push: # Build images and push them to gcr.io/pendo-eu-jobs-gke
+          name: build-push-pendo-eu-jobs-gke
+          parallelism: 5
+          project: pendo-eu
+          requires:
+            - setup
+          context: core-prod
+          services: "agentlogs,apiv1,bq-stream,bundler2,data,default,deleter,eventhub,forwarder,guides,jobs-large,jobs-neartime,jobs-rebuild,jobs-bulkdelete,jobs-preemptible,jobs-reprocess,jobs-rowmerge,jobs-schedule,jobs-silofiles,jobs-small,jobs-snapshot,jobs-timespan,jobs-whsync,jobs-itemseen,jobs-interactive,mapreduce,monitor,neweventhandler0,neweventhandler1,newevent-sync,ptm,webhooks-filter,webhooks-poll,webhooks-sender,slack-unfurl-processor,slack-unfurl-sender"
+      - build-push: # Build images and push them to gcr.io/pendo-us1-jobs-gke
+          name: build-push-pendo-us1-jobs-gke
+          parallelism: 5
+          project: pendo-us1
+          requires:
+            - setup
+          context: core-prod
+          services: "agentlogs,apiv1,bq-stream,bundler2,data,default,deleter,eventhub,forwarder,guides,jobs-large,jobs-neartime,jobs-rebuild,jobs-bulkdelete,jobs-preemptible,jobs-reprocess,jobs-rowmerge,jobs-schedule,jobs-silofiles,jobs-small,jobs-snapshot,jobs-timespan,jobs-whsync,jobs-itemseen,jobs-interactive,mapreduce,monitor,neweventhandler0,neweventhandler1,newevent-sync,ptm,webhooks-filter,webhooks-poll,webhooks-sender,slack-unfurl-processor,slack-unfurl-sender"
+      - build-push: # Build images and push them to gcr.io/pendo-gov-prod-jobs-gke
+          name: build-push-pendo-gov-prod-jobs-gke
+          parallelism: 5
+          project: pendo-gov-prod
+          requires:
+            - setup
+          context: core-prod
+          services: "agentlogs,apiv1,bq-stream,bundler2,data,default,deleter,eventhub,forwarder,guides,jobs-large,jobs-neartime,jobs-rebuild,jobs-bulkdelete,jobs-preemptible,jobs-reprocess,jobs-rowmerge,jobs-schedule,jobs-silofiles,jobs-small,jobs-snapshot,jobs-timespan,jobs-whsync,jobs-itemseen,jobs-interactive,mapreduce,monitor,neweventhandler0,neweventhandler1,newevent-sync,ptm,webhooks-filter,webhooks-poll,webhooks-sender,slack-unfurl-processor,slack-unfurl-sender"
+      - hold:
+          name: deploy-approval-default-only
+          type: approval
+          requires:
+            - setup
+          context: core-prod
+      - deploy: # Deploy US
+          name: us-default-deploy
+          requires:
+            - deploy-approval-default-only
+          context: core-prod
+          services: "default"
+          version: "predetermined"
+      - deploy: # Deploy EU
+          name: eu-default-deploy
+          project: pendo-eu
+          requires:
+            - deploy-approval-default-only
+          context: core-prod
+          services: "default"
+          version: "predetermined"
+      - deploy: # Deploy US1
+          name: us1-default-deploy
+          project: pendo-us1
+          requires:
+            - deploy-approval-default-only
+          context: core-prod
+          services: "default"
+          version: "predetermined"
+      - deploy: # Deploy gov-prod
+          name: gov-prod-default-deploy
+          project: pendo-gov-prod
+          requires:
+            - deploy-approval-default-only
+          context: core-prod
+          services: "default"
+          version: "predetermined"
+      - hold:
+          name: shift-approval-default-only
+          type: approval
+          requires:
+            - us-default-deploy
+            - eu-default-deploy
+            - us1-default-deploy
+            - gov-prod-default-deploy
+          context: core-prod
+      - flip:
+          name: us-shift-default-only
+          project: pendo-io
+          version: "predetermined"
+          context: core-prod
+          services: "default"
+          requires:
+            - shift-approval-default-only
+      - flip:
+          name: eu-shift-default-only
+          project: pendo-eu
+          version: "predetermined"
+          context: core-prod
+          services: "default"
+          requires:
+            - shift-approval-default-only
+      - flip:
+          name: us1-shift-default-only
+          project: pendo-us1
+          version: "predetermined"
+          context: core-prod
+          services: "default"
+          requires:
+            - shift-approval-default-only
+      - flip:
+          name: gov-prod-shift-default-only
+          project: pendo-gov-prod
+          version: "predetermined"
+          context: core-prod
+          services: "default"
+          requires:
+            - shift-approval-default-only
+      - hold:
+          name: deploy-catchall-approval
+          type: approval
+          requires:
+            - build-push-pendo-io-jobs-gke
+            - build-push-pendo-eu-jobs-gke
+            - build-push-pendo-us1-jobs-gke
+            - build-push-pendo-gov-prod-jobs-gke
+          context: core-prod
+      - hold:
+          name: deploy-dataprocessing-approval
+          type: approval
+          requires:
+            - build-push-pendo-io-jobs-gke
+            - build-push-pendo-eu-jobs-gke
+            - build-push-pendo-us1-jobs-gke
+            - build-push-pendo-gov-prod-jobs-gke
+          context: core-prod
+      - deploy: # Deploy US
+          name: us-deploy
+          requires:
+            - deploy-catchall-approval
+          context: core-prod
+          cluster_name: pendo-io-jobs-gke
+          cluster_project: pendo-io-jobs-gke
+          cluster_zone: us-central1
+          version: "predetermined"
+          <<: *catchall-services-prod
+      - deploy: # Deploy EU
+          name: eu-deploy
+          project: pendo-eu
+          requires:
+            - deploy-catchall-approval
+          context: core-prod
+          cluster_name: pendo-eu-jobs-gke
+          cluster_project: pendo-eu-jobs-gke
+          cluster_zone: europe-west3
+          version: "predetermined"
+          <<: *catchall-services-prod
+      - deploy: # Deploy US1
+          name: us1-deploy
+          project: pendo-us1
+          requires:
+            - deploy-catchall-approval
+          context: core-prod
+          cluster_name: pendo-us1-jobs-gke
+          cluster_project: pendo-us1-jobs-gke
+          cluster_zone: us-east4
+          version: "predetermined"
+          <<: *catchall-services-prod
+      - deploy: # Deploy gov-prod
+          name: gov-prod-deploy
+          project: pendo-gov-prod
+          requires:
+            - deploy-catchall-approval
+          context: core-prod
+          cluster_name: pendo-gov-prod-jobs-gke
+          cluster_project: pendo-gov-prod-jobs-gke
+          cluster_zone: us-central1
+          version: "predetermined"
+          <<: *catchall-services-prod
+      - hold:
+          name: shift-approval-catchall
+          type: approval
+          requires:
+            - us-deploy
+            - eu-deploy
+            - us1-deploy
+            - gov-prod-deploy
+          context: core-prod
+      - flip:
+          name: us-shift-catchall
+          project: pendo-io
+          version: "predetermined"
+          context: core-prod
+          cluster_name: pendo-io-jobs-gke
+          cluster_project: pendo-io-jobs-gke
+          cluster_zone: us-central1
+          concurrency: 7
+          <<: *catchall-services-prod
+          requires:
+            - shift-approval-catchall
+      - flip:
+          name: eu-shift-catchall
+          project: pendo-eu
+          version: "predetermined"
+          context: core-prod
+          cluster_name: pendo-eu-jobs-gke
+          cluster_project: pendo-eu-jobs-gke
+          cluster_zone: europe-west3
+          concurrency: 5
+          <<: *catchall-services-prod
+          requires:
+            - shift-approval-catchall
+      - flip:
+          name: us1-shift-catchall
+          project: pendo-us1
+          version: "predetermined"
+          context: core-prod
+          cluster_name: pendo-us1-jobs-gke
+          cluster_project: pendo-us1-jobs-gke
+          cluster_zone: us-east4
+          concurrency: 3
+          <<: *catchall-services-prod
+          requires:
+            - shift-approval-catchall
+      - flip:
+          name: gov-prod-shift-catchall
+          project: pendo-gov-prod
+          version: "predetermined"
+          context: core-prod
+          cluster_name: pendo-gov-prod-jobs-gke
+          cluster_project: pendo-gov-prod-jobs-gke
+          cluster_zone: us-central1
+          concurrency: 3
+          <<: *catchall-services-prod
+          requires:
+            - shift-approval-catchall
+      - deploy: # Deploy US
+          name: us-dataprocessing-deploy
+          requires:
+            - deploy-dataprocessing-approval
+          context: core-prod
+          services: "data,forwarder,guides,neweventhandler0,neweventhandler1,neweventhandler2,neweventhandler3,neweventhandler4,neweventhandler5,neweventhandler6,neweventhandler7,neweventhandler-x,newevent-sync,ptm"
+      - deploy: # Deploy EU
+          name: eu-dataprocessing-deploy
+          project: pendo-eu
+          requires:
+            - deploy-dataprocessing-approval
+          context: core-prod
+          services: "data,forwarder,guides,neweventhandler0,neweventhandler1,newevent-sync,ptm"
+      - deploy: # Deploy US1
+          name: us1-dataprocessing-deploy
+          project: pendo-us1
+          requires:
+            - deploy-dataprocessing-approval
+          context: core-prod
+          services: "data,forwarder,guides,neweventhandler0,neweventhandler1,newevent-sync,ptm"
+      - deploy: # Deploy gov-prod
+          name: gov-prod-dataprocessing-deploy
+          project: pendo-gov-prod
+          requires:
+            - deploy-dataprocessing-approval
+          context: core-prod
+          services: "data,forwarder,guides,neweventhandler0,neweventhandler1,newevent-sync,ptm"
+
+  prod-aggs-deploy:
+    unless: << pipeline.parameters.api_trigger >>
+    jobs:
+      - setup:
+          context: artifactory-web
+          filters:
+            branches:
+              only:
+                - prod-aggs
+      - build-push: # Build images and push them to gcr.io/pendo-io-jobs-gke
+          name: build-push-pendo-io-jobs-gke-aggs
+          parallelism: 1
+          requires:
+            - setup
+          context: core-prod
+          services: "aggregations,aggregations-batch,apiv1-aggregations"
+      - build-push: # Build images and push them to gcr.io/pendo-us1-jobs-gke
+          name: build-push-pendo-us1-jobs-gke-aggs
+          project: pendo-us1
+          parallelism: 1
+          requires:
+            - setup
+          context: core-prod
+          services: "aggregations,aggregations-batch,apiv1-aggregations"
+      - build-push: # Build images and push them to gcr.io/pendo-gov-prod-jobs-gke
+          name: build-push-pendo-gov-prod-jobs-gke-aggs
+          project: pendo-gov-prod
+          parallelism: 1
+          requires:
+            - setup
+          context: core-prod
+          services: "aggregations,aggregations-batch,apiv1-aggregations"
+      - build-push: # Build images and push them to gcr.io/pendo-eu-jobs-gke
+          name: build-push-pendo-eu-jobs-gke-aggs
+          project: pendo-eu
+          parallelism: 1
+          requires:
+            - setup
+          context: core-prod
+          services: "aggregations,aggregations-batch,apiv1-aggregations"
+      # aggregations
+      - hold:
+          name: aggregations-deploy-approval
+          type: approval
+          requires:
+            - build-push-pendo-io-jobs-gke-aggs
+            - build-push-pendo-us1-jobs-gke-aggs
+            - build-push-pendo-eu-jobs-gke-aggs
+            - build-push-pendo-gov-prod-jobs-gke-aggs
+          context: core-prod
+      - deploy: # Deploy US
+          name: us-aggregations-deploy
+          project: pendo-io
+          version: "predetermined"
+          requires:
+            - aggregations-deploy-approval
+          context: core-prod
+          services: "aggregations"
+      - deploy: # Deploy EU
+          name: eu-aggregations-deploy
+          project: pendo-eu
+          version: "predetermined"
+          requires:
+            - aggregations-deploy-approval
+          context: core-prod
+          services: "aggregations"
+      - deploy: # Deploy US1
+          name: us1-aggregations-deploy
+          project: pendo-us1
+          version: "predetermined"
+          requires:
+            - aggregations-deploy-approval
+          context: core-prod
+          services: "aggregations"
+      - deploy: # Deploy gov-prod
+          name: gov-prod-aggregations-deploy
+          project: pendo-gov-prod
+          version: "predetermined"
+          requires:
+            - aggregations-deploy-approval
+          context: core-prod
+          services: "aggregations"
+      - hold:
+          name: aggregations-flip-approval
+          type: approval
+          requires:
+            - us-aggregations-deploy
+            - eu-aggregations-deploy
+            - us1-aggregations-deploy
+            - gov-prod-aggregations-deploy
+      - flip:
+          name: us-aggregations-flip
+          project: pendo-io
+          version: "predetermined"
+          context: core-prod
+          services: "aggregations"
+          requires:
+            - aggregations-flip-approval
+      - flip:
+          name: eu-aggregations-flip
+          project: pendo-eu
+          version: "predetermined"
+          context: core-prod
+          services: "aggregations"
+          requires:
+            - aggregations-flip-approval
+      - flip:
+          name: us1-aggregations-flip
+          project: pendo-us1
+          version: "predetermined"
+          context: core-prod
+          services: "aggregations"
+          requires:
+            - aggregations-flip-approval
+      - flip:
+          name: gov-prod-aggregations-flip
+          project: pendo-gov-prod
+          version: "predetermined"
+          context: core-prod
+          services: "aggregations"
+          requires:
+            - aggregations-flip-approval
+      # aggregations-batch
+      - hold:
+          name: aggregations-batch-deploy-approval
+          type: approval
+          requires:
+            - build-push-pendo-io-jobs-gke-aggs
+            - build-push-pendo-us1-jobs-gke-aggs
+            - build-push-pendo-eu-jobs-gke-aggs
+            - build-push-pendo-gov-prod-jobs-gke-aggs
+          context: core-prod
+      - deploy: # Deploy US
+          name: us-aggregations-batch-deploy
+          project: pendo-io
+          version: "predetermined"
+          requires:
+            - aggregations-batch-deploy-approval
+          context: core-prod
+          services: "aggregations-batch"
+      - deploy: # Deploy EU
+          name: eu-aggregations-batch-deploy
+          project: pendo-eu
+          version: "predetermined"
+          requires:
+            - aggregations-batch-deploy-approval
+          context: core-prod
+          services: "aggregations-batch"
+      - deploy: # Deploy US1
+          name: us1-aggregations-batch-deploy
+          project: pendo-us1
+          version: "predetermined"
+          requires:
+            - aggregations-batch-deploy-approval
+          context: core-prod
+          services: "aggregations-batch"
+#      - deploy: # Deploy gov-prod     #Remove comments when DEVOPS-3277 complete
+#          name: gov-prod-aggregations-batch-deploy
+#          project: pendo-gov-prod
+#          version: "predetermined"
+#          requires:
+#            - aggregations-batch-deploy-approval
+#          context: core-prod
+#          services: "aggregations-batch"
+      - hold:
+          name: aggregations-batch-flip-approval
+          type: approval
+          requires:
+            - us-aggregations-batch-deploy
+            - eu-aggregations-batch-deploy
+            - us1-aggregations-batch-deploy
+#            - gov-prod-aggregations-batch-deploy   #Remove comments when DEVOPS-3277 complete
+      - flip:
+          name: us-aggregations-batch-flip
+          project: pendo-io
+          version: "predetermined"
+          context: core-prod
+          services: "aggregations-batch"
+          requires:
+            - aggregations-batch-flip-approval
+      - flip:
+          name: eu-aggregations-batch-flip
+          project: pendo-eu
+          version: "predetermined"
+          context: core-prod
+          services: "aggregations-batch"
+          requires:
+            - aggregations-batch-flip-approval
+      - flip:
+          name: us1-aggregations-batch-flip
+          project: pendo-us1
+          version: "predetermined"
+          context: core-prod
+          services: "aggregations-batch"
+          requires:
+            - aggregations-batch-flip-approval
+#      - flip:     #Remove comments when DEVOPS-3277 complete
+#          name: gov-prod-aggregations-batch-flip
+#          project: pendo-gov-prod
+#          version: "predetermined"
+#          context: core-prod
+#          services: "aggregations-batch"
+#          requires:
+#            - aggregations-batch-flip-approval
+      # apiv1-aggregations
+      - hold:
+          name: apiv1-aggregations-deploy-approval
+          type: approval
+          requires:
+            - build-push-pendo-io-jobs-gke-aggs
+            - build-push-pendo-us1-jobs-gke-aggs
+            - build-push-pendo-eu-jobs-gke-aggs
+            - build-push-pendo-gov-prod-jobs-gke-aggs
+          context: core-prod
+      - deploy: # Deploy US
+          name: us-apiv1-aggregations-deploy
+          project: pendo-io
+          version: "predetermined"
+          requires:
+            - apiv1-aggregations-deploy-approval
+          context: core-prod
+          services: "apiv1-aggregations"
+      - deploy: # Deploy EU
+          name: eu-apiv1-aggregations-deploy
+          project: pendo-eu
+          version: "predetermined"
+          requires:
+            - apiv1-aggregations-deploy-approval
+          context: core-prod
+          services: "apiv1-aggregations"
+      - deploy: # Deploy US1
+          name: us1-apiv1-aggregations-deploy
+          project: pendo-us1
+          version: "predetermined"
+          requires:
+            - apiv1-aggregations-deploy-approval
+          context: core-prod
+          services: "apiv1-aggregations"
+      - deploy: # Deploy gov-prod
+          name: gov-prod-apiv1-aggregations-deploy
+          project: pendo-gov-prod
+          version: "predetermined"
+          requires:
+            - apiv1-aggregations-deploy-approval
+          context: core-prod
+          services: "apiv1-aggregations"
+      - hold:
+          name: apiv1-aggregations-flip-approval
+          type: approval
+          requires:
+            - us-apiv1-aggregations-deploy
+            - eu-apiv1-aggregations-deploy
+            - us1-apiv1-aggregations-deploy
+            - gov-prod-apiv1-aggregations-deploy
+      - flip:
+          name: us-apiv1-aggregations-flip
+          project: pendo-io
+          version: "predetermined"
+          context: core-prod
+          services: "apiv1-aggregations"
+          requires:
+            - apiv1-aggregations-flip-approval
+      - flip:
+          name: eu-apiv1-aggregations-flip
+          project: pendo-eu
+          version: "predetermined"
+          context: core-prod
+          services: "apiv1-aggregations"
+          requires:
+            - apiv1-aggregations-flip-approval
+      - flip:
+          name: us1-apiv1-aggregations-flip
+          project: pendo-us1
+          version: "predetermined"
+          context: core-prod
+          services: "apiv1-aggregations"
+          requires:
+            - apiv1-aggregations-flip-approval
+      - flip:
+          name: gov-prod-apiv1-aggregations-flip
+          project: pendo-gov-prod
+          version: "predetermined"
+          context: core-prod
+          services: "apiv1-aggregations"
+          requires:
+            - apiv1-aggregations-flip-approval
+
+  dev:
+    unless: << pipeline.parameters.api_trigger >>
+    jobs:
+      - setup:
+          context: artifactory-web
+          filters:
+            branches:
+              ignore:
+                - master
+                - staging
+                - prod
+                - prod-aggs
+      - frontend-test:
+          executor:
+            name: kitchen-sink
+            size: large
+          requires:
+            - setup
+      - backend-test:
+          context: prod-test-runner
+          executor:
+            name: kitchen-sink
+            size: xlarge
+          requires:
+            - setup
+      - config-test:
+          context: core-dev
+          requires:
+            - setup
+      - deploy:
+          name: "default-deploy-auto-dev"
+          filters:
+            branches:
+              only:
+                - /^.*auto-(dev|batman|wildlings|magic|ionchef|atlas|apollo|link|armada|calypso|voc|ml|helix|perfserf)$/
+          context: core-dev
+          version: "$(echo ${CIRCLE_BRANCH,,} | sed -r 's/-auto-[a-z]+$//')"
+          project: "pendo-$(echo ${CIRCLE_BRANCH} | sed -rn 's@.*-auto-([a-z]+)$@\\1@p')"
+          services: "default"
+          requires:
+            - setup
+      - deploy: # use a separate job because pendo-test requires a different context
+          name: "default-deploy-auto-test"
+          filters:
+            branches:
+              only:
+                - /^.*auto-test$/
+          context: core-test
+          version: "$(echo ${CIRCLE_BRANCH,,} | sed -r 's/-auto-[a-z]+$//')"
+          services: "default"
+          requires:
+            - setup
+
+  prod-fe-be-aggtest:
+    unless: << pipeline.parameters.api_trigger >>
+    jobs:
+      - setup:
+          context: artifactory-web
+          filters:
+            branches:
+              only: # future prod branches can be added here
+                - prod
+                - prod-aggs
+      - frontend-test:
+          executor:
+            name: kitchen-sink
+            size: large
+          requires:
+            - setup
+      - backend-test:
+          context: prod-test-runner
+          executor:
+            name: kitchen-sink
+            size: xlarge
+          requires:
+            - setup
+      - config-test:
+          context: core-dev
+          requires:
+            - setup
+      - build-push:
+          parallelism: 1
+          filters:
+            branches:
+              only: prod-aggs
+          requires:
+            - setup
+          context: core-test
+          services: aggregations,aggregations-batch
+          project: pendo-test
+      - build-push:
+          name: build-push-dev
+          parallelism: 1
+          filters:
+            branches:
+              only: prod-aggs
+          requires:
+            - setup
+          context: core-dev
+          services: aggregations,aggregations-batch
+          project: pendo-dev
+      - deploy:
+          name: aggtest-deploy-staging
+          filters:
+            branches:
+              only: prod-aggs
+          context: core-test
+          version: aggtest
+          services: "aggregations,aggregations-batch"
+          requires:
+            - setup
+            - build-push
+      - deploy:
+          name: aggtest-deploy-dev
+          filters:
+            branches:
+              only: prod-aggs
+          context: core-dev
+          version: aggtest
+          services: "aggregations,aggregations-batch"
+          requires:
+            - setup
+            - build-push-dev
+  cypress-next-regression:
+    when:
+      and: [<<pipeline.parameters.run_cypress_next_reg>>, <<pipeline.parameters.api_trigger>>]
+    jobs:
+      - cypress/install:
+          <<: *cypress-install-dev
+      - cypress/run:
+          <<: *cypress-run-dev-remote
+          <<: *cypress-next-batman
+          parallelism: 2
+          spec: cypress/integration/next/regression/**/*
+          config-file: cypress/environment-configs/dev.json
+          group: 'Batman Regression [Next] - Dev'
+          tags: 'batman,regression-next,dev'
+          post-steps:
+              - run:
+                  <<: *cypress-next-cleanup
+      - cypress/run:
+          <<: *cypress-run-dev-remote
+          <<: *cypress-next-voyager
+          parallelism: 2
+          spec: cypress/integration/next/regression/**/*
+          config-file: cypress/environment-configs/dev.json
+          group: 'Voyager Regression [Next] - Dev'
+          tags: 'voyager,regression-next,dev'
+          post-steps:
+              - run:
+                  <<: *cypress-next-cleanup
+      - cypress/run:
+          <<: *cypress-run-dev-remote
+          <<: *cypress-next-constellation
+          parallelism: 2
+          spec: cypress/integration/next/regression/**/*
+          config-file: cypress/environment-configs/dev.json
+          group: 'Constellation Regression [Next] - Dev'
+          tags: 'constellation,regression-next,dev'
+          post-steps:
+              - run:
+                  <<: *cypress-next-cleanup
+  cypress-next-regression-triggered:
+    when:
+      and: [<<pipeline.parameters.cypress_next_reg>>, <<pipeline.parameters.api_trigger>>]
+    jobs:
+      - cypress/install:
+          <<: *cypress-install-dev
+      - cypress/run:
+          <<: *cypress-run-dev-local
+          <<: *cypress-next-batman
+          parallelism: 2
+          spec: cypress/integration/next/regression/**/*
+          config-file: cypress/environment-configs/dev.json
+          group: 'Batman Regression [Next] - Dev'
+          tags: 'batman,regression-next,dev'
+          post-steps:
+              - run:
+                  <<: *cypress-next-cleanup
+      - cypress/run:
+          <<: *cypress-run-dev-local
+          <<: *cypress-next-voyager
+          parallelism: 2
+          spec: cypress/integration/next/regression/**/*
+          config-file: cypress/environment-configs/dev.json
+          group: 'Voyager Regression [Next] - Dev'
+          tags: 'voyager,regression-next,dev'
+          post-steps:
+              - run:
+                  <<: *cypress-next-cleanup
+      - cypress/run:
+          <<: *cypress-run-dev-local
+          <<: *cypress-next-constellation
+          parallelism: 2
+          spec: cypress/integration/next/regression/**/*
+          config-file: cypress/environment-configs/dev.json
+          group: 'Constellation Regression [Next] - Dev'
+          tags: 'constellation,regression-next,dev'
+          post-steps:
+              - run:
+                  <<: *cypress-next-cleanup
+  cypress-next-sanity:
+    when:
+      and: [<<pipeline.parameters.run_cypress_next_sanity>>, <<pipeline.parameters.api_trigger>>]
+    jobs:
+      - cypress/install:
+          <<: *cypress-install-dev
+      - cypress/run:
+          <<: *cypress-run-dev-remote
+          name: Cypress Next Sanity
+          parallelism: 1
+          spec: cypress/integration/next/sanity/**/*
+          config-file: cypress/environment-configs/dev.json
+          group: 'Sanity [Next] - Dev'
+          tags: 'sanity-next,dev'
+          post-steps:
+              - run:
+                  name: Clean up Cypress subs
+                  when: always
+                  command: npm run cypress:cleanup -- --env=dev
+  cypress-next-sanity-triggered:
+    when:
+      and: [ << pipeline.parameters.api_trigger>>, << pipeline.parameters.cypress_next_sanity >> ]
+    jobs:
+      - cypress/install:
+          <<: *cypress-install-dev
+      - cypress/run:
+          <<: *cypress-run-dev-remote
+          name: Cypress Next Sanity
+          parallelism: 1
+          spec: cypress/integration/next/sanity/**/*
+          config-file: cypress/environment-configs/dev.json
+          group: 'Sanity [Next] - Dev'
+          tags: 'sanity-next,dev'
+          post-steps:
+              - run:
+                  name: Clean up Cypress subs
+                  when: always
+                  command: npm run cypress:cleanup -- --env=dev
+  cypress-next-smoke:
+    when:
+      and: [<<pipeline.parameters.run_cypress_smoke>>, <<pipeline.parameters.api_trigger>>]
+    jobs:
+      - cypress/install:
+          <<: *cypress-install-dev
+      - cypress/run:
+          <<: *cypress-run-dev-remote
+          name: Cypress Next Smoke
+          parallelism: 1
+          spec: cypress/integration/next/smoke/**/*
+          config-file: cypress/environment-configs/dev.json
+          group: 'Smoke [Next] - Dev'
+          tags: 'smoke-next,dev'
+          post-steps:
+              - run:
+                  name: Clean up Cypress subs
+                  when: always
+                  command: npm run cypress:cleanup -- --env=dev
+  cypress-next-smoke-staging:
+    when:
+      and: [<<pipeline.parameters.run_cypress_smoke_staging>>, <<pipeline.parameters.api_trigger>>]
+    jobs:
+      - cypress/install:
+          <<: *cypress-install-test
+      - cypress/run:
+          <<: *cypress-run-test-remote
+          name: Cypress Next Smoke
+          parallelism: 1
+          spec: cypress/integration/next/smoke/**/*
+          config-file: cypress/environment-configs/test.json
+          group: 'Smoke [Next] - Staging'
+          tags: 'smoke-next,staging'
+          post-steps:
+              - run:
+                  name: Clean up Cypress subs
+                  when: always
+                  command: npm run cypress:cleanup -- --env=test
+  cypress-regression:
+    when:
+      and: [<<pipeline.parameters.run_cypress_regression>>, <<pipeline.parameters.api_trigger>>]
+    jobs:
+      - cypress/install:
+          <<: *cypress-install-dev
+      - cypress/run:
+          <<: *cypress-run-dev-remote
+          name: Cypress Dev regression
+          parallelism: 13
+          spec: cypress/integration/regression/**/*
+          config-file: cypress/environment-configs/dev/core-admin.json
+          group: 'Dev regression'
+          tags: 'regression,dev'
+  cypress-regression-triggered:
+    when:
+      and: [ << pipeline.parameters.api_trigger>>, << pipeline.parameters.cypress_regression >> ]
+    jobs:
+      - cypress/install:
+          <<: *cypress-install-dev
+      - cypress/run:
+          <<: *cypress-run-dev-local
+          name: Cypress Dev regression
+          requires:
+            - cypress/install
+          parallelism: 13
+          spec: cypress/integration/regression/**/*
+          config-file: cypress/environment-configs/dev/core-admin.json
+          group: 'Dev regression'
+          tags: 'regression,dev'
+  cypress-analytics-regression:
+    when:
+      and: [<<pipeline.parameters.run_cypress_analytics_regression>>, <<pipeline.parameters.api_trigger>>]
+    jobs:
+      - cypress/install:
+          <<: *cypress-install-dev
+      - cypress/run:
+          <<: *cypress-run-dev-remote
+          name: Cypress Analytics Dev regression
+          parallelism: 7
+          spec: cypress/integration/analytics-regression/**/*
+          config-file: cypress/environment-configs/dev/core-analytics-admin.json
+          group: 'Dev Analytics regression'
+          tags: 'analytics-regression,dev'
+  cypress-analytics-regression-triggered:
+    when:
+      and: [ << pipeline.parameters.api_trigger>>, << pipeline.parameters.cypress_analytics_regression >> ]
+    jobs:
+      - cypress/install:
+          <<: *cypress-install-dev
+      - cypress/run:
+          <<: *cypress-run-dev-local
+          name: Cypress Analytics Dev regression
+          parallelism: 7
+          spec: cypress/integration/analytics-regression/**/*
+          config-file: cypress/environment-configs/dev/core-analytics-admin.json
+          group: 'Dev Analytics regression'
+          tags: 'analytics-regression,dev'
+  cypress-free-regression:
+    when:
+      and: [<<pipeline.parameters.run_cypress_free_regression>>, <<pipeline.parameters.api_trigger>>]
+    jobs:
+      - cypress/install:
+          <<: *cypress-install-dev
+      - cypress/run:
+          <<: *cypress-run-dev-remote
+          name: Cypress Free Regression
+          parallelism: 6
+          spec: cypress/integration/pendo-free/**/*
+          config-file: cypress/environment-configs/dev/pendo-free.json
+          group: 'Dev Free regression'
+          tags: 'free-regression,dev'
+  cypress-free-regression-triggered:
+    when:
+      and: [ << pipeline.parameters.api_trigger>>, << pipeline.parameters.cypress_free_regression >> ]
+    jobs:
+      - cypress/install:
+          <<: *cypress-install-dev
+      - cypress/run:
+          <<: *cypress-run-dev-local
+          name: Cypress Free Regression
+          parallelism: 6
+          spec: cypress/integration/pendo-free/**/*
+          config-file: cypress/environment-configs/dev/pendo-free.json
+          group: 'Dev Free regression'
+          tags: 'free-regression,dev'
+  cypress-adopt-regression:
+    when:
+      and: [<<pipeline.parameters.run_cypress_adopt_regression>>, <<pipeline.parameters.api_trigger>>]
+    jobs:
+      - cypress/install:
+          <<: *cypress-install-dev
+      - cypress/run:
+          <<: *cypress-run-dev-remote
+          name: Cypress Adopt regression
+          parallelism: 7
+          spec: cypress/integration/adopt/**/*
+          config-file: cypress/environment-configs/dev/adopt.json
+          group: 'Dev Adopt regression'
+          tags: 'adopt-regression,dev'
+  cypress-adopt-regression-triggered:
+    when:
+      and: [ << pipeline.parameters.api_trigger>>, << pipeline.parameters.cypress_adopt_regression >> ]
+    jobs:
+      - cypress/install:
+          <<: *cypress-install-dev
+      - cypress/run:
+          <<: *cypress-run-dev-local
+          name: Cypress Adopt regression
+          parallelism: 7
+          spec: cypress/integration/adopt/adoptv1/**/*
+          config-file: cypress/environment-configs/dev/adopt.json
+          group: 'Dev Adopt regression'
+          tags: 'adopt-regression,dev'
+  cypress-adoptv2-regression-triggered:
+    when:
+      and: [ << pipeline.parameters.api_trigger>>, << pipeline.parameters.cypress_adoptv2_regression >> ]
+    jobs:
+      - cypress/install:
+          <<: *cypress-install-dev
+      - cypress/run:
+          <<: *cypress-run-dev-local
+          name: Cypress Adopt regression
+          parallelism: 7
+          spec: cypress/integration/adopt/adoptv2/**/*
+          config-file: cypress/environment-configs/dev/adopt.json
+          group: 'Dev Adopt regression'
+          tags: 'adopt-regression,dev'
+  cypress-staging-regression:
+      when:
+        and: [<<pipeline.parameters.run_cypress_staging_regression>>, <<pipeline.parameters.api_trigger>>]
+      jobs:
+        - cypress/install:
+            <<: *cypress-install-test
+        - cypress/run:
+            <<: *cypress-run-test-remote
+            name: Cypress Analytics Regression Staging
+            parallelism: 5
+            spec: cypress/integration/analytics-regression/**/*
+            config-file: cypress/environment-configs/test/core-analytics-admin.json
+            group: 'Staging Analytics Regression'
+            tags: 'staging, staging-regression'
+        - cypress/run:
+            <<: *cypress-run-test-remote
+            name: Cypress Adopt Regression Staging
+            parallelism: 6
+            spec: cypress/integration/adopt/**/*
+            config-file: cypress/environment-configs/test/adopt.json
+            group: 'Staging Adopt Regression'
+            tags: 'staging, staging-regression'
+        - cypress/run:
+            <<: *cypress-run-test-remote
+            name: Cypress Regression Staging
+            parallelism: 9
+            spec: cypress/integration/regression/**/*
+            config-file: cypress/environment-configs/test/core-admin.json
+            group: 'Staging Regression'
+            tags: 'staging, staging-regression'
+        - cypress/run:
+            <<: *cypress-run-test-remote
+            name: Cypress Pendo-Free Regression Staging
+            parallelism: 13
+            spec: cypress/integration/pendo-free/**/*
+            config-file: cypress/environment-configs/test/pendo-free.json
+            group: 'Staging Pendo-Free Regression'
+            tags: 'staging, staging-regression'
+        - cypress/run:
+            <<: *cypress-run-test-remote
+            <<: *cypress-next-batman
+            parallelism: 2
+            spec: cypress/integration/next/regression/**/*
+            config-file: cypress/environment-configs/test.json
+            group: 'Batman Regression [Next] - Staging'
+            tags: 'staging, staging-regression, regression-next, batman'
+            post-steps:
+                - run:
+                    <<: *cypress-next-cleanup
+        - cypress/run:
+            <<: *cypress-run-test-remote
+            <<: *cypress-next-voyager
+            parallelism: 2
+            spec: cypress/integration/next/regression/**/*
+            config-file: cypress/environment-configs/test.json
+            group: 'Voyager Regression [Next] - Staging'
+            tags: 'staging, staging-regression, regression-next, voyager'
+            post-steps:
+                - run:
+                    <<: *cypress-next-cleanup
+        - cypress/run:
+            <<: *cypress-run-test-remote
+            <<: *cypress-next-constellation
+            parallelism: 2
+            spec: cypress/integration/next/regression/**/*
+            config-file: cypress/environment-configs/test.json
+            group: 'Constellation Regression [Next] - Staging'
+            tags: 'staging, staging-regression, regression-next, constellation'
+            post-steps:
+                - run:
+                    <<: *cypress-next-cleanup
+  cypress-staging-regression-triggered:
+    when:
+      and: [ << pipeline.parameters.api_trigger>>, << pipeline.parameters.cypress_staging_regression >> ]
+    jobs:
+      - cypress/install:
+          <<: *cypress-install-test
+      - cypress/run:
+          <<: *cypress-run-test-remote
+          name: Cypress Analytics Regression Staging
+          parallelism: 5
+          spec: cypress/integration/analytics-regression/**/*
+          config-file: cypress/environment-configs/test/core-analytics-admin.json
+          group: 'Staging Analytics Regression'
+          tags: 'staging, staging-regression'
+      - cypress/run:
+          <<: *cypress-run-test-remote
+          name: Cypress Adopt Regression Staging
+          parallelism: 6
+          spec: cypress/integration/adopt/**/*
+          config-file: cypress/environment-configs/test/adopt.json
+          group: 'Staging Adopt Regression'
+          tags: 'staging, staging-regression'
+      - cypress/run:
+          <<: *cypress-run-test-remote
+          name: Cypress Regression Staging
+          parallelism: 9
+          spec: cypress/integration/regression/**/*
+          config-file: cypress/environment-configs/test/core-admin.json
+          group: 'Staging Regression'
+          tags: 'staging, staging-regression'
+      - cypress/run:
+          <<: *cypress-run-test-remote
+          name: Cypress Pendo-Free Regression Staging
+          parallelism: 13
+          spec: cypress/integration/pendo-free/**/*
+          config-file: cypress/environment-configs/test/pendo-free.json
+          group: 'Staging Pendo-Free Regression'
+          tags: 'staging, staging-regression'
+      - cypress/run:
+          <<: *cypress-run-test-remote
+          <<: *cypress-next-batman
+          parallelism: 2
+          spec: cypress/integration/next/regression/**/*
+          config-file: cypress/environment-configs/test.json
+          group: 'Batman Regression [Next] - Staging'
+          tags: 'staging, staging-regression, regression-next, batman'
+          post-steps:
+              - run:
+                  <<: *cypress-next-cleanup
+      - cypress/run:
+          <<: *cypress-run-test-remote
+          <<: *cypress-next-voyager
+          parallelism: 2
+          spec: cypress/integration/next/regression/**/*
+          config-file: cypress/environment-configs/test.json
+          group: 'Voyager Regression [Next] - Staging'
+          tags: 'staging, staging-regression, regression-next, voyager'
+          post-steps:
+              - run:
+                  <<: *cypress-next-cleanup
+      - cypress/run:
+          <<: *cypress-run-test-remote
+          <<: *cypress-next-constellation
+          parallelism: 2
+          spec: cypress/integration/next/regression/**/*
+          config-file: cypress/environment-configs/test.json
+          group: 'Constellation Regression [Next] - Staging'
+          tags: 'staging, staging-regression, regression-next, constellation'
+          post-steps:
+              - run:
+                  <<: *cypress-next-cleanup
+  cypress-next-sanity-staging:
+      when:
+        and: [<<pipeline.parameters.run_cypress_next_sanity_staging>>, <<pipeline.parameters.api_trigger>>]
+      jobs:
+        - cypress/install:
+            <<: *cypress-install-test
+        - cypress/run:
+            <<: *cypress-run-test-remote
+            name: Cypress Next Sanity Staging
+            parallelism: 11
+            spec: cypress/integration/next/sanity/**/*
+            config-file: cypress/environment-configs/test.json
+            group: 'Sanity [Next] - Staging'
+            tags: 'staging, sanity-next-staging'
+            post-steps:
+             - run:
+                 name: Clean up Cypress subs
+                 when: always
+                 command: npm run cypress:cleanup -- --env=test
+  cypress-next-sanity-staging-triggered:
+    when:
+      and: [ << pipeline.parameters.api_trigger>>, << pipeline.parameters.cypress_next_sanity_staging >> ]
+    jobs:
+      - cypress/install:
+          <<: *cypress-install-test
+      - cypress/run:
+          <<: *cypress-run-test-local
+          name: Cypress Next Sanity Staging
+          parallelism: 11
+          spec: cypress/integration/next/sanity/**/*
+          config-file: cypress/environment-configs/test.json
+          group: 'Sanity [Next] - Staging'
+          tags: 'staging, sanity-next-staging'
+          post-steps:
+             - run:
+                 name: Clean up Cypress subs
+                 when: always
+                 command: npm run cypress:cleanup -- --env=test
+  cypress-wip:
+    when:
+      and: [<<pipeline.parameters.run_cypress_wip>>, <<pipeline.parameters.api_trigger>>]
+    jobs:
+      - cypress/install:
+          <<: *cypress-install-dev
+      - cypress/run:
+          <<: *cypress-run-dev-remote
+          name: Cypress WIP regression
+          parallelism: 2
+          spec: cypress/integration/wip/regression/**/*
+          config-file: cypress/environment-configs/dev/core-admin.json
+          group: 'Dev WIP regression'
+          tags: 'wip'
+      - cypress/run:
+          <<: *cypress-run-dev-remote
+          name: Cypress WIP Analytics regression
+          parallelism: 2
+          spec: cypress/integration/wip/analytics-regression/**/*
+          config-file: cypress/environment-configs/dev/core-analytics-admin.json
+          group: 'Dev WIP Analytics regression and Sanity'
+          tags: 'wip'
+      - cypress/run:
+          <<: *cypress-run-dev-remote
+          name: Cypress WIP Sanity
+          parallelism: 2
+          spec: cypress/integration/wip/sanity/**/*
+          config-file: cypress/environment-configs/dev/core-admin.json
+          group: 'Dev WIP Sanity'
+          tags: 'wip'
+  cypress-wip-triggered:
+    when:
+      and: [ << pipeline.parameters.api_trigger>>, << pipeline.parameters.cypress_wip >> ]
+    jobs:
+      - cypress/install:
+          <<: *cypress-install-dev
+      - cypress/run:
+          <<: *cypress-run-dev-local
+          name: Cypress WIP regression
+          parallelism: 2
+          spec: cypress/integration/wip/regression/**/*
+          config-file: cypress/environment-configs/dev/core-admin.json
+          group: 'Dev WIP regression'
+          tags: 'wip'
+      - cypress/run:
+          <<: *cypress-run-dev-local
+          name: Cypress WIP Analytics regression
+          parallelism: 2
+          spec: cypress/integration/wip/analytics-regression/**/*
+          config-file: cypress/environment-configs/dev/core-analytics-admin.json
+          group: 'Dev WIP Analytics regression and Sanity'
+          tags: 'wip'
+      - cypress/run:
+          <<: *cypress-run-dev-local
+          name: Cypress WIP Sanity
+          parallelism: 2
+          spec: cypress/integration/wip/sanity/**/*
+          config-file: cypress/environment-configs/dev/core-admin.json
+          group: 'Dev WIP Sanity'
+          tags: 'wip'
+  cypress-feedback-voc-dev-triggered:
+    when:
+      and: [ << pipeline.parameters.api_trigger>>, << pipeline.parameters.cypress_feedback_voc_regression >> ]
+    jobs:
+      - cypress/install:
+          <<: *cypress-install-dev
+      - cypress/run:
+          <<: *cypress-run-dev-local
+          name: Feedback Regression
+          parallelism: 5
+          spec: cypress/integration/feedback-voc/<<  pipeline.parameters.cypress_feedback_or_voc  >>/**/*
+          config-file: cypress/environment-configs/dev/feedback-voc.json
+          group: 'Dev Feedback VOC Regression'
+          tags: '<<  pipeline.parameters.cypress_feedback_or_voc  >>-regression,dev'
+  cypress-feedback-voc-staging-triggered:
+    when:
+      and: [ << pipeline.parameters.api_trigger>>, << pipeline.parameters.cypress_feedback_voc_regression_staging >> ]
+    jobs:
+      - cypress/install:
+          <<: *cypress-install-test
+      - cypress/run:
+          <<: *cypress-run-test-local
+          name: Cypress Staging Regression
+          parallelism: 7
+          spec: cypress/integration/feedback-voc/<<  pipeline.parameters.cypress_feedback_or_voc  >>/**/*
+          config-file: cypress/environment-configs/test/feedback-voc.json
+          group: 'Staging Feedback VOC Regression'
+          tags: '<<  pipeline.parameters.cypress_feedback_or_voc  >>-regression,staging'
