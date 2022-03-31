@@ -39,5 +39,8 @@ jobs:
             google-chrome --version
             chromedriver --version
           name: Check install
-workflows: null
+workflows:
+  main:
+    jobs:
+      - test
 
