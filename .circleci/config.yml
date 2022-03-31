@@ -1,25 +1,43 @@
-version: 2.1
+# version: 2.1
+# orbs:
+#   win: circleci/windows@2.4.1
+#   browser-tools: circleci/browser-tools@1.2.4 
+# jobs:
+#   # run collections tests in a separate serial job to make serial workflows more granular
+#   build:
+#     executor:
+#       name: win/default
+#       version: "stable"
+#       size: "medium"
+#     steps:
+#       - checkout
+#       - browser-tools/install-chrome
+#       - browser-tools/install-chromedriver
+#       - run:
+#           command: |
+#             google-chrome --version
+#             chromedriver --version
+#           name: Check install     
+# workflows:
+#   main:
+#     jobs:
+#       - build
+
+
+version: '2.1'
 orbs:
-  win: circleci/windows@2.4.1
-  browser-tools: circleci/browser-tools@1.2.4 
+  browser-tools: circleci/browser-tools@x.y
 jobs:
-  # run collections tests in a separate serial job to make serial workflows more granular
-  build:
-    executor:
-      name: win/default
-      version: "stable"
-      size: "medium"
+  test:
+    macos:
+      xcode: 12.5.1
     steps:
-      - checkout
       - browser-tools/install-chrome
       - browser-tools/install-chromedriver
       - run:
           command: |
             google-chrome --version
             chromedriver --version
-          name: Check install     
-workflows:
-  main:
-    jobs:
-      - build
+          name: Check install
+workflows: null
 
