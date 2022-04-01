@@ -40,8 +40,9 @@ jobs:
 #             echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/bil/.npmrc
 #       - run:
 #           command: apt-get install -y sudo
+      - run: sudo apt update
       - run:
-          command: sudo apt-get install net-tools
+          command: sudo apt install net-tools
 #   test:
 #     macos:
 #       xcode: 12.5.1
