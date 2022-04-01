@@ -38,8 +38,8 @@ jobs:
 #       - run:
 #           command: |
 #             echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/bil/.npmrc
-      - run:
-          command: apt-get install -y sudo
+#       - run:
+#           command: apt-get install -y sudo
       - run:
           command: sudo apt-get install net-tools
 #   test:
