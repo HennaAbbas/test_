@@ -35,9 +35,9 @@ jobs:
 
     steps:
       - checkout
-      - run:
-          command: |
-            echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/bil/.npmrc
+#       - run:
+#           command: |
+#             echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/bil/.npmrc
       - run:
           command: apt-get install -y sudo
       - run:
