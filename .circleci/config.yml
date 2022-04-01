@@ -32,6 +32,11 @@ jobs:
     macos:
       xcode: 12.5.1
     steps:
+      - run:
+          command: |
+              HOMEBREW_NO_AUTO_UPDATE=1 brew install cask
+              HOMEBREW_NO_AUTO_UPDATE=1 brew install --cask google-chrome
+          name: Install Google Chrome    
       - run: brew install --cask google-chrome
 #       - browser-tools/install-chrome:
 #             chrome-version: "92.0.4515.159"
