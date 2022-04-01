@@ -41,7 +41,7 @@ jobs:
       - run:
           command: apt-get install -y sudo
       - run:
-          command: sudo apt install net-tools
+          command: sudo apt-get install net-tools
 #   test:
 #     macos:
 #       xcode: 12.5.1
