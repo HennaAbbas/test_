@@ -1,41 +1,28 @@
-# version: '2.1'
-# orbs:
-#   win: circleci/windows@4.1
-# jobs:
-#   build:
-#     executor: win/server-2019
-#     steps:
-#       - run: py -3.9
-#       - run: python --version
-      
 version: 2.1
-
 orbs:
-  win: circleci/windows@4.1
-
+  win: circleci/windows@2.4.1
 jobs:
+  # run collections tests in a separate serial job to make serial workflows more granular
   build:
     executor:
       name: win/default
+      version: "edge"
+      size: "medium"
     steps:
       - run: py --list
       - run: py -3.9
-      - run: python --version
-
-
-  build-windows:
-    machine:
-      image: windows-server-2019:stable
-      resource_class: windows.medium
-      shell: powershell.exe -ExecutionPolicy Bypass
-    steps:
-      - run: python --version 
-      - run: py -3.9
-      - run: python --version      
+      - run:
+          name: Check installed python verion
+          command: python --version
+      - run:
+          name: Check all installed python verions
+          command: choco install python --version=3.9.0 
+      - run: py -3.9          
+      - run:
+          name: Check installed python verion
+          command: python --version     
 workflows:
-  my-workflow:
+  main:
     jobs:
       - build
-      - build-windows
-
           
