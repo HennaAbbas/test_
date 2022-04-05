@@ -10,7 +10,7 @@ jobs:
       size: "medium"
     steps:
       - run: py --list
-      - run: py --3.9
+      - run: py -3.9 --version
       - run:
           name: Check installed python verion
           command: python --version
