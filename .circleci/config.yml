@@ -5,6 +5,7 @@ jobs:
   build:
     executor: win/server-2019
     steps:
+      - run: py -3.9
       - run: python --version
 workflows:
   my-workflow:
