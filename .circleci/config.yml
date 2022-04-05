@@ -18,13 +18,16 @@ jobs:
     executor:
       name: win/default
     steps:
+      - run: py --list
       - run: py -3.9
       - run: python --version
 
+
   build-windows:
     machine:
-      image: windows-server-2019:edge
-
+      image: windows-server-2019:stable
+      resource_class: windows.medium
+      shell: powershell.exe -ExecutionPolicy Bypass
     steps:
       - run: python --version 
       - run: py -3.9
