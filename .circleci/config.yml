@@ -1,12 +1,27 @@
-version: '2.1'
+# version: '2.1'
+# orbs:
+#   win: circleci/windows@4.1
+# jobs:
+#   build:
+#     executor: win/server-2019
+#     steps:
+#       - run: py -3.9
+#       - run: python --version
+      
+version: 2.1
+
 orbs:
   win: circleci/windows@4.1
+
 jobs:
   build:
-    executor: win/server-2019
+    executor:
+      name: win/default
+      variant: edge
     steps:
       - run: py -3.9
       - run: python --version
+      
 workflows:
   my-workflow:
     jobs:
