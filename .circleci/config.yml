@@ -17,14 +17,22 @@ jobs:
   build:
     executor:
       name: win/default
-      variant: edge
     steps:
       - run: py -3.9
       - run: python --version
-      
+
+  build-windows:
+    machine:
+      image: windows-server-2019:edge
+
+    steps:
+      - run: python --version 
+      - run: py -3.9
+      - run: python --version      
 workflows:
   my-workflow:
     jobs:
       - build
+      - build-windows
 
           
