@@ -4,7 +4,6 @@ orbs:
 jobs:
   build:
     executor: win/server-2019
-      variant: edge
     steps:
       - run: python --version
 workflows:
