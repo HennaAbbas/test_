@@ -4,7 +4,8 @@ orbs:
 jobs:
   build:
     executor:
-      name: win/default
+      machine:
+        image: windows-server-2019:edge
     steps:
       - run: python --version
 workflows:
