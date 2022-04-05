@@ -1,17 +1,15 @@
-version: 2.1
+version: '2.1'
 orbs:
-  win: circleci/windows@2.4.1
+  win: circleci/windows@4.1
 jobs:
-  install_python_3
+  build:
     executor:
       name: win/default
     steps:
-#       - run: choco install python --version=3.9.0
-      - run: python --version   
-
+      - run: python --version
 workflows:
-  main:
+  my-workflow:
     jobs:
-      - install_python_3
+      - build
 
           
