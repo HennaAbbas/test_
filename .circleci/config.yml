@@ -3,9 +3,7 @@ orbs:
   win: circleci/windows@4.1
 jobs:
   build:
-    executor:
-      machine:
-        image: windows-server-2019:edge
+    executor: win/server-2019:edge
     steps:
       - run: python --version
 workflows:
