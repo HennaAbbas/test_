@@ -2,22 +2,20 @@ version: 2.1
 orbs:
    aws-cli: circleci/aws-cli@1.0
    serverless: circleci/serverless-framework@1.0
+   
+  
 jobs:
-   one:
-     docker:
-       - image: circleci/python:3.8
-     executor: serverless/default
-     steps:
-       - checkout
-#        - aws-cli/setup
-#        - serverless/setup
-       - run: sudo apt-get update -y
-       - run: sudo apt-get install -y poppler-utils
+   Spin_Build:
+      machine: true
+      shell: powershell.exe
+    
+    steps:
        - run:
-          name: serverless python plugin
-          command: sls plugin install -n serverless-python-requirements
-       - run: sls deploy
+           name: Enable git longpaths
+           command: git config core.longpaths true
+       - checkout   
+
 workflows:
   one_and_two:
     jobs:
-      - one
+      - Spin_Build
