@@ -10,6 +10,7 @@ jobs:
       shell: powershell.exe
     
       steps:
+          - run: echo $PATH
           - run:
               name: Enable git longpaths
               command: git config core.longpaths true
