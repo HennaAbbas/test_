@@ -1,28 +1,24 @@
 version: 2.1
 orbs:
-  win: circleci/windows@2.4.1
+   aws-cli: circleci/aws-cli@1.0
+   serverless: circleci/serverless-framework@1.0
 jobs:
-  # run collections tests in a separate serial job to make serial workflows more granular
-  build:
-    executor:
-      name: win/default
-      version: "edge"
-      size: "medium"
-    steps:
-      - run: py --list
-      - run: py -3.9 --version
-      - run:
-          name: Check installed python verion
-          command: python --version
-      - run:
-          name: Check all installed python verions
-          command: choco install python --version=3.9.0 
-      - run: py -3.9          
-      - run:
-          name: Check installed python verion
-          command: python --version     
+   one:
+     docker:
+       - image: circleci/python:3.8
+     executor: serverless/default
+     steps:
+       - checkout
+       - aws-cli/setup
+       - serverless/setup
+       - run: sudo apt-get update -y
+       - run: sudo apt-get install -y poppler-utils
+       - run:
+          name: serverless python plugin
+          command: sls plugin install -n serverless-python-requirements
+       - run: sls deploy
 workflows:
-  main:
+  one_and_two:
     jobs:
-      - build
-          
+      - one:
+         context: docs-dev
