@@ -9,11 +9,11 @@ jobs:
       machine: true
       shell: powershell.exe
     
-    steps:
-       - run:
-           name: Enable git longpaths
-           command: sudo git config core.longpaths true
-       - checkout   
+      steps:
+          - run:
+              name: Enable git longpaths
+              command: sudo git config core.longpaths true
+          - checkout   
 
 workflows:
   one_and_two:
