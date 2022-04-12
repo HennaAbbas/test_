@@ -12,7 +12,7 @@ jobs:
       steps:
           - run:
               name: Enable git longpaths
-              command: git config core.longpaths true
+              command: git config 
           - checkout   
 
 workflows:
