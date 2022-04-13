@@ -11,10 +11,10 @@ jobs:
     
       steps:
           - run: echo "hello world"
-          - run:
-              name: Enable git longpaths
-              command: git config 
-          - checkout   
+#           - run:
+#               name: Enable git longpaths
+#               command: git config 
+#           - checkout   
 
 workflows:
   one_and_two:
