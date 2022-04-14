@@ -9,6 +9,7 @@ jobs:
      executor: serverless/default
      steps:
        - checkout
+       - run: sls plugin install -n serverless-python-requirements       
 #        - aws-cli/setup
        - serverless/setup
        - run: sudo apt-get update -y
