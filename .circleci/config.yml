@@ -14,7 +14,7 @@ jobs:
        - run: sudo apt-get update -y
        - run: sudo apt-get install -y poppler-utils
        - run: serverless plugin install -n serverless-python-requirements
-       - run: sls deploy   
+       - run: sls plugin install -n serverless-python-requirements
 
 workflows:
   one_and_two:
