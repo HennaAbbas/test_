@@ -8,14 +8,7 @@ jobs:
        - image: circleci/python:3.8
      executor: serverless/default
      steps:
-       - checkout
-       - run: sls plugin install -n serverless-python-requirements       
-#        - aws-cli/setup
-       - serverless/setup
-       - run: sudo apt-get update -y
-       - run: sudo apt-get install -y poppler-utils
-       - run: serverless plugin install -n serverless-python-requirements
-       - run: sls plugin install -n serverless-python-requirements
+       - run: python --version
 
 workflows:
   one_and_two:
