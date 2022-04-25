@@ -5,7 +5,7 @@ orbs:
 jobs:
    one:
      docker:
-       - image: cimg/python:3.8
+       - image: cimg/python:3.8-node
      executor: serverless/default
      steps:
        - run: python --version
