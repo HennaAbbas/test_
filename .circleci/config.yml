@@ -9,6 +9,7 @@ jobs:
      executor: serverless/default
      steps:
        - run: python --version
+       - run: which python
 
 workflows:
   one_and_two:
