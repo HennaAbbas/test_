@@ -10,8 +10,26 @@ jobs:
      steps:
        - run: python --version
        - run: which python
-
+   two:
+     docker:
+       - image: cimg/python:3.8
+     executor: serverless/default
+     steps:
+       - run: python --version
+       - run: which python
+       
+   three:
+     docker:
+       - image: circleci/python:3.8
+     executor: serverless/default
+     steps:
+       - run: python --version
+       - run: which python       
+       
+       
 workflows:
   one_and_two:
     jobs:
       - one
+      - two
+      - three
