@@ -10,6 +10,7 @@ jobs:
      steps:
        - run: python --version
        - run: which python
+       
    two:
      docker:
        - image: cimg/python:3.8
@@ -17,6 +18,7 @@ jobs:
      steps:
        - run: python --version
        - run: which python
+       - run : cat /usr/local/bin/python
        
    three:
      docker:
@@ -24,7 +26,8 @@ jobs:
      executor: serverless/default
      steps:
        - run: python --version
-       - run: which python       
+       - run: which python  
+
        
        
 workflows:
