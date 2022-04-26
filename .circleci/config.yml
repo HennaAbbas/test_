@@ -5,11 +5,10 @@ orbs:
 jobs:
    one:
      docker:
-       - image: cimg/python:3.8-node
-     executor: serverless/default
+       - image: cimg/elixir:1.13.4
      steps:
-       - run: python --version
-       - run: which python
+       - run: erl -eval 'erlang:display(erlang:system_info(otp_release)), halt().'  -noshell
+
        
    two:
      docker:
