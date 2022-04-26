@@ -5,7 +5,7 @@ orbs:
 jobs:
    one:
      docker:
-       - image: cimg/elixir:1.13.4
+       - image: cimg/elixir:1.11.0-browsers
      steps:
        - run: erl -eval 'erlang:display(erlang:system_info(otp_release)), halt().'  -noshell
 
