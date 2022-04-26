@@ -8,6 +8,9 @@ jobs:
        - image: cimg/elixir:1.11.0-browsers
      steps:
        - run: erl -eval 'erlang:display(erlang:system_info(otp_release)), halt().'  -noshell
+       - run: mix --version
+       - run: mix deps.get
+       - run: mix test       
 
        
    two:
