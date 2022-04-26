@@ -1,22 +1,42 @@
 version: 2.1
 orbs:
    aws-cli: circleci/aws-cli@1.0
-   serverless: circleci/serverless-framework@1.0
-   
- 
+   serverless: circleci/serverless-framework@1.0.1
 jobs:
-   Spin_Build:
-      machine: true
+   one:
+     docker:
+       - image: cimg/elixir:1.11.0-browsers
+     steps:
+       - run: erl -eval 'erlang:display(erlang:system_info(otp_release)), halt().'  -noshell
+       - run: mix --version
+       - run: mix deps.get
+       - run: mix test       
 
-    
-      steps:
-          - run: echo "hello world"
-#           - run:
-#               name: Enable git longpaths
-#               command: git config 
-#           - checkout   
+
+
+   two:
+     docker:
+       - image: cimg/python:3.8
+     executor: serverless/default
+     steps:
+       - run: python --version
+       - run: which python
+       - run : cat /usr/local/bin/python
+       
+   three:
+     docker:
+       - image: circleci/python:3.8
+     executor: serverless/default
+     steps:
+       - run: python --version
+       - run: which python  
+
 
 workflows:
   one_and_two:
     jobs:
-      - Spin_Build
+      - one
+      - two
+      - three
+      
+      #test
