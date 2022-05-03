@@ -30,12 +30,12 @@ jobs:
         working_directory: ~/
         command: |
           python -m venv ~/venv
-          echo '. ~/venv/bin/activate' >> $BASH_ENV
-          . ~/venv/bin/activate
-          python --version
-          which python
-          which pip
-          pip install --upgrade pip       
+#          echo '. ~/venv/bin/activate' >> $BASH_ENV
+#          . ~/venv/bin/activate
+ #         python --version
+#          which python
+#          which pip
+#          pip install --upgrade pip       
        
    three:
      docker:
