@@ -7,11 +7,7 @@ jobs:
      docker:
        - image: cimg/elixir:1.11.0-browsers
      steps:
-       - run: erl -eval 'erlang:display(erlang:system_info(otp_release)), halt().'  -noshell
-       - run: mix --version
-       - run: mix deps.get
-       - run: mix test       
-
+       - run: echo $CIRCLE_TOKEN
 
    two:
     machine:
@@ -48,6 +44,9 @@ jobs:
 workflows:
   one_and_two:
     jobs:
+      - one: 
+         context: 
+            - my-context
       - two
 
       
