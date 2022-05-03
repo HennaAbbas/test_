@@ -29,6 +29,7 @@ jobs:
         name: Setup Virtual Env
         working_directory: ~/
         command: |
+          find bin/activate
           python -m venv ~/venv
           echo ". ~/venv/bin/activate" >> $BASH_ENV
           . ~/venv/bin/activate
