@@ -1,23 +1,10 @@
 version: 2.1
-# commands:
-#   list-files:
-#     parameters:
-#       all:
-#         description: include all files
-#         type: boolean
-#         default: false
-#       short:
-#         description: Keep list of files short
-#         type: boolean
-#         default: N
-#     steps:
-#       - run: echo "hello world!"
 jobs:
   build:
     docker:
-      - image: cimg/node:12.18
+      - image: cimg/node:10.18
     steps:
-      - checkout
+      - run: echo $NVM_DIR
       - run: echo "hello world!"
 
   
