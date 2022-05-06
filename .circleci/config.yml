@@ -56,3 +56,11 @@ workflows:
          name: other two 
          <<: *ignore_intermediate_branches
       - three
+  other_workflow:
+    jobs:
+      - one
+      - two
+      - two: 
+         name: other two 
+         <<: *ignore_intermediate_branches
+      - three      
