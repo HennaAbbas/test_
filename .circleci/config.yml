@@ -2,12 +2,12 @@ version: 2.1
 orbs:
    aws-cli: circleci/aws-cli@1.0
    serverless: circleci/serverless-framework@1.0.1
-_run_anchors:   
-  ignore_intermediate_branches: &ignore_intermediate_branches
-    filters:
-      branches:
-        ignore:
-          - integration   
+# _run_anchors:   
+#   ignore_intermediate_branches: &ignore_intermediate_branches
+#     filters:
+#       branches:
+#         ignore:
+#           - integration   
 jobs:
    one:
      docker:
@@ -17,11 +17,11 @@ jobs:
 
    two:
     parameters:
-      workflow_name:
-        type: string  
-      prefetch_docker_images:
-        type: string
-        default: "none"   
+#       workflow_name:
+#         type: string  
+#       prefetch_docker_images:
+#         type: string
+#         default: "none"   
       use_remote_execution:
         type: boolean
         default: true        
@@ -69,25 +69,25 @@ workflows:
   one_and_two:
     jobs:
       - one
-      - two:
-          workflow_name: something 
-          prefetch_docker_images: "hello"
+      - two
+#           workflow_name: something 
+#           prefetch_docker_images: "hello"
       - two: 
           name: other two 
-          <<: *ignore_intermediate_branches
-          workflow_name: e2e-tests-workflow
-          prefetch_docker_images: "hello-1"          
+#           <<: *ignore_intermediate_branches
+#           workflow_name: e2e-tests-workflow
+#           prefetch_docker_images: "hello-1"          
       - three
   other_workflow:
     jobs:
       - one
-      - two: 
-          workflow_name: e2e-tests-workflow
-          prefetch_docker_images: "hello-2"             
+      - two
+#           workflow_name: e2e-tests-workflow
+#           prefetch_docker_images: "hello-2"             
       - two: 
           name: other two 
-          <<: *ignore_intermediate_branches
-          prefetch_docker_images: "hello-2"             
-          workflow_name: something    
+#           <<: *ignore_intermediate_branches
+#           prefetch_docker_images: "hello-2"             
+#           workflow_name: something    
           use_remote_execution: false
       - three      
