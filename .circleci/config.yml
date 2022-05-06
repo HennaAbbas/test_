@@ -18,7 +18,10 @@ jobs:
    two:
     parameters:
       workflow_name:
-        type: string   
+        type: string  
+      prefetch_docker_images:
+        type: string
+        default: "none"        
     machine:
       image: ubuntu-2004-cuda-11.2:202103-01
     steps:
@@ -55,19 +58,23 @@ workflows:
     jobs:
       - one
       - two:
-          workflow_name: something   
+          workflow_name: something 
+          prefetch_docker_images: "hello"
       - two: 
           name: other two 
           <<: *ignore_intermediate_branches
           workflow_name: e2e-tests-workflow
+          prefetch_docker_images: "hello-1"          
       - three
   other_workflow:
     jobs:
       - one
       - two: 
           workflow_name: e2e-tests-workflow
+          prefetch_docker_images: "hello-2"             
       - two: 
           name: other two 
           <<: *ignore_intermediate_branches
+          prefetch_docker_images: "hello-2"             
           workflow_name: something      
       - three      
