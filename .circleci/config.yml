@@ -10,9 +10,9 @@ jobs:
     steps:
     - checkout   
     - when:
-        condition: << parameters.use_remote_execution >>
+        condition: << parameters.add_suffix >>
         steps:
-          - run: echo "use remote"         
+          - run: echo "test"         
 
 
 workflows:
