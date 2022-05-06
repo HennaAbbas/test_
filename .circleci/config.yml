@@ -2,6 +2,12 @@ version: 2.1
 orbs:
    aws-cli: circleci/aws-cli@1.0
    serverless: circleci/serverless-framework@1.0.1
+_run_anchors:   
+  ignore_intermediate_branches: &ignore_intermediate_branches
+    filters:
+      branches:
+        ignore:
+          - integration   
 jobs:
    one:
      docker:
@@ -48,4 +54,5 @@ workflows:
       - two
       - two: 
          name: other two 
+         <<: *ignore_intermediate_branches
       - three
