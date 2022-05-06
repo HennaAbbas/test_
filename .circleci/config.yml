@@ -4,7 +4,7 @@ jobs:
     parameters:   
       add_suffix:
         type: boolean
-        default: true        
+#         default: true        
     machine:
       image: ubuntu-2004-cuda-11.2:202103-01
     steps:
