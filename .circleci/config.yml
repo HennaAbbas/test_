@@ -54,7 +54,8 @@ workflows:
   one_and_two:
     jobs:
       - one
-      - two
+      - two:
+         workflow_name: something   
       - two: 
          name: other two 
          <<: *ignore_intermediate_branches
@@ -63,7 +64,8 @@ workflows:
   other_workflow:
     jobs:
       - one
-      - two
+      - two: 
+         workflow_name:some_workflow
       - two: 
          name: other two 
          <<: *ignore_intermediate_branches
