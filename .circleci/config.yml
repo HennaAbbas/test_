@@ -2,7 +2,7 @@ version: 2.1
 jobs:
   build:
     docker:
-      - image: cimg/node:10.18
+      - image: cimg/node
     steps:
       - run: echo $NVM_DIR
       - run: echo "hello world!"
