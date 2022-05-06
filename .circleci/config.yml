@@ -2,82 +2,39 @@ version: 2.1
 orbs:
    aws-cli: circleci/aws-cli@1.0
    serverless: circleci/serverless-framework@1.0.1
-# _run_anchors:   
-#   ignore_intermediate_branches: &ignore_intermediate_branches
-#     filters:
-#       branches:
-#         ignore:
-#           - integration   
+
 jobs:
    one:
      docker:
        - image: cimg/elixir:1.11.0-browsers
      steps:
-       - run: echo $CIRCLE_TOKEN
+       - run: echo "hello world" 
 
    two:
-    parameters:
-#       workflow_name:
-#         type: string  
-#       prefetch_docker_images:
-#         type: string
-#         default: "none"   
+    parameters:   
       use_remote_execution:
         type: boolean
         default: true        
     machine:
       image: ubuntu-2004-cuda-11.2:202103-01
     steps:
-    - checkout  
-#     - when:
-#         condition:
-#           matches: { pattern: "mysql", value: << parameters.prefetch_docker_images >> }
-#         steps:
-#           - run: echo "hellow world"  
+    - checkout   
     - when:
         condition: << parameters.use_remote_execution >>
         steps:
           - run: echo "use remote"         
-    - run:
-        name: Setup pyenv
-        command: |
-          git clone https://github.com/pyenv/pyenv-update.git $(pyenv root)/plugins/pyenv-update
-          pyenv update
-          pyenv install -f 3.9.7
-          pyenv global 3.9.7
-    - run:
-        name: Setup Virtual Env
-        working_directory: ~/
-        command: |
-          python -m venv ~/venv
-#          echo '. ~/venv/bin/activate' >> $BASH_ENV
-#          . ~/venv/bin/activate
- #         python --version
-#          which python
-#          which pip
-#          pip install --upgrade pip       
-       
-   three:
-     docker:
-       - image: circleci/python:3.8
-     executor: serverless/default
-     steps:
-       - run: python --version
-       - run: which python  
+
 
 workflows:
-  one_and_two:
-    jobs:
-      - one
-      - two
-#           workflow_name: something 
-#           prefetch_docker_images: "hello"
-      - two: 
-          name: other two 
-#           <<: *ignore_intermediate_branches
-#           workflow_name: e2e-tests-workflow
-#           prefetch_docker_images: "hello-1"          
-      - three
+#   one_and_two:
+#     jobs:
+#       - one
+#       - two
+# #           workflow_name: something 
+# #           prefetch_docker_images: "hello"
+#       - two: 
+#           name: other two          
+
   other_workflow:
     jobs:
       - one
@@ -90,4 +47,4 @@ workflows:
 #           prefetch_docker_images: "hello-2"             
 #           workflow_name: something    
           use_remote_execution: false
-      - three      
+#       - three      
