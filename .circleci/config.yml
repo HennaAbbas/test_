@@ -6,6 +6,7 @@ jobs:
     steps:
       - run: echo $NVM_DIR
       - run: echo "hello world!"
+      - run: node --version
 
   
       
