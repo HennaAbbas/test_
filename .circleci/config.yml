@@ -18,13 +18,16 @@ jobs:
 workflows:
   my_workflow:
     jobs:
-      - build
       - build: 
-          name: other build       
+          add_suffix: false
+      - build: 
+          name: other build      
+          add_suffix: false          
 
   other_workflow:
     jobs:
-      - build         
+      - build: 
+          add_suffix: false      
       - build: 
           name: other build 
           add_suffix: false
