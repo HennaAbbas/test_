@@ -89,5 +89,5 @@ workflows:
           <<: *ignore_intermediate_branches
           prefetch_docker_images: "hello-2"             
           workflow_name: something    
-          use_remote_execution: "yes"
+          use_remote_execution: false
       - three      
