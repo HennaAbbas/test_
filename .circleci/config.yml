@@ -16,6 +16,9 @@ jobs:
        - run: echo $CIRCLE_TOKEN
 
    two:
+    parameters:
+      workflow_name:
+        type: string   
     machine:
       image: ubuntu-2004-cuda-11.2:202103-01
     steps:
@@ -55,6 +58,7 @@ workflows:
       - two: 
          name: other two 
          <<: *ignore_intermediate_branches
+         workflow_name: commit-workflow
       - three
   other_workflow:
     jobs:
@@ -63,4 +67,5 @@ workflows:
       - two: 
          name: other two 
          <<: *ignore_intermediate_branches
+         workflow_name: something         
       - three      
