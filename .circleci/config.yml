@@ -44,10 +44,8 @@ jobs:
 workflows:
   one_and_two:
     jobs:
-      - one: 
-         context: 
-            - my-context
+      - one
       - two
-
-      
-      #test
+      - two: 
+         name: other two 
+      - three
