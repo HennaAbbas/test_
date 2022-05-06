@@ -26,6 +26,11 @@ jobs:
       image: ubuntu-2004-cuda-11.2:202103-01
     steps:
     - checkout
+    - when:
+         condition:
+         matches: { pattern: "mysql", value: << parameters.prefetch_docker_images >> }
+         steps:
+            - run: echo "hellow world"  
     - run:
         name: Setup pyenv
         command: |
