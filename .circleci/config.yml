@@ -26,14 +26,12 @@ jobs:
 
 
 workflows:
-#   one_and_two:
-#     jobs:
-#       - one
-#       - two
-# #           workflow_name: something 
-# #           prefetch_docker_images: "hello"
-#       - two: 
-#           name: other two          
+  one_and_two:
+    jobs:
+      - one
+      - two
+      - two: 
+          name: other two          
 
   other_workflow:
     jobs:
