@@ -37,7 +37,7 @@ jobs:
     - when:
         condition: << parameters.use_remote_execution >>
         steps:
-          - run: echo "<< pipeline.parameters.use_remote_execution >>"        
+          - run: echo "use remote"         
     - run:
         name: Setup pyenv
         command: |
