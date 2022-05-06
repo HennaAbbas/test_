@@ -1,18 +1,8 @@
 version: 2.1
-orbs:
-   aws-cli: circleci/aws-cli@1.0
-   serverless: circleci/serverless-framework@1.0.1
-
 jobs:
-   one:
-     docker:
-       - image: cimg/elixir:1.11.0-browsers
-     steps:
-       - run: echo "hello world" 
-
-   two:
+   build:
     parameters:   
-      use_remote_execution:
+      add_suffix:
         type: boolean
         default: true        
     machine:
@@ -26,23 +16,16 @@ jobs:
 
 
 workflows:
-  one_and_two:
+  my_workflow:
     jobs:
-      - one
-#       - two
-      - two: 
-          name: other two          
+      - build
+      - build: 
+          name: other build       
 
   other_workflow:
     jobs:
-      - one
-      - two
-#           workflow_name: e2e-tests-workflow
-#           prefetch_docker_images: "hello-2"             
-      - two: 
-          name: other two 
-#           <<: *ignore_intermediate_branches
-#           prefetch_docker_images: "hello-2"             
-#           workflow_name: something    
-          use_remote_execution: false
-#       - three      
+      - build         
+      - build: 
+          name: other build 
+          add_suffix: false
+    
