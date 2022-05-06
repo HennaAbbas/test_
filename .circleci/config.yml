@@ -55,19 +55,19 @@ workflows:
     jobs:
       - one
       - two:
-         workflow_name: something   
+          workflow_name: something   
       - two: 
-         name: other two 
-         <<: *ignore_intermediate_branches
-         workflow_name: commit-workflow
+          name: other two 
+          <<: *ignore_intermediate_branches
+          workflow_name: e2e-tests-workflow
       - three
   other_workflow:
     jobs:
       - one
       - two: 
-         workflow_name:some_workflow
+          workflow_name: e2e-tests-workflow
       - two: 
-         name: other two 
-         <<: *ignore_intermediate_branches
-         workflow_name: something         
+          name: other two 
+          <<: *ignore_intermediate_branches
+          workflow_name: something      
       - three      
