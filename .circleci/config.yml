@@ -2,10 +2,11 @@ version: 2.1
 jobs:
   build:
     docker:
-      - image: circleci/python:3.6-jessie-browsers
+      - image: circleci/node:10.18
     steps:
-      - setup_remote_docker:
-          version: 20.10.7  
+      - setup_remote_docker
+      - run : docker version
+          
 #       - run: echo "hello world"
 #       - run: mkdir tests
 #       - run: cd tests && touch my_test_1.txt
@@ -18,7 +19,13 @@ jobs:
 #           command: echo "conditional step"
 # #           when: on_fail # Uploads code coverage results, pass or fail
           #
-
+  test:
+    docker:
+      - image: cimg/node:10.18
+    steps:
+      - setup_remote_docker
+      - run : docker version
+          
       
 
 workflows:
@@ -26,6 +33,7 @@ workflows:
     build_and_push:
       jobs:
         - build
+        - test
 
 
 
