@@ -1,8 +1,5 @@
 version: 2.1
 
-
-  
-
 jobs:
   build:
     docker:
@@ -12,20 +9,21 @@ jobs:
           
           
   test:
+    parameters:   
+      add_suffix:
+        type: boolean
+        default: true        
     machine:
-      image: ubuntu-2004:202201-02
-    resource_class: medium
-
+      image: ubuntu-2004-cuda-11.2:202103-01
     steps:
       - checkout
-  
-
 
 
 workflows:
-  main:
+  my_workflow:
     jobs:
       - build
       - test
 
           
+
