@@ -1,6 +1,14 @@
 version: 2.1
+
 jobs:
-   build:
+  build:
+    docker:
+     - image: cimg/node:14.16-browsers
+    steps:
+      - run: echo "hello world"
+          
+          
+  test:
     parameters:   
       add_suffix:
         type: boolean
@@ -8,27 +16,15 @@ jobs:
     machine:
       image: ubuntu-2004-cuda-11.2:202103-01
     steps:
-    - checkout   
-    - setup_remote_docker:
-         version: 20.10.7
-    - when:
-        condition: << parameters.add_suffix >>
-        steps:
-          - run: echo "test"         
+      - checkout
 
 
 workflows:
   my_workflow:
     jobs:
       - build
-      - build: 
-          name: other build      
-         
+      - test
 
-  other_workflow:
-    jobs:
-      - build  
-      - build: 
-          name: other build 
+          
 
-#test
+
