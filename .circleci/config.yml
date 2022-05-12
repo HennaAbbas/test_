@@ -9,8 +9,7 @@ jobs:
       image: ubuntu-2004-cuda-11.2:202103-01
     steps:
     - checkout   
-    - setup_remote_docker:
-         version: 20.10.7
+
     - when:
         condition: << parameters.add_suffix >>
         steps:
