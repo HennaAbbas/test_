@@ -18,6 +18,7 @@ workflows:
   my_workflow:
     jobs:
       - build: 
+          name: my build  
           add_suffix: "something else"    
 
 
