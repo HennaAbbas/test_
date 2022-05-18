@@ -3,7 +3,7 @@ jobs:
    build:
     parameters:   
       add_suffix:
-        type: boolean       
+        type: string       
     machine:
       image: ubuntu-2004-cuda-11.2:202103-01
     steps:
@@ -27,4 +27,4 @@ workflows:
       - build  
       - build: 
           name: other build 
-          add_suffix: false
+          add_suffix: "something"
