@@ -36,12 +36,10 @@ workflows:
   my_workflow:
     jobs:
       - build: 
-          name: my build  
           workflow_name: "something else"    
 
 
   other_workflow:
     jobs: 
       - build: 
-          name: test build 
           workflow_name: "something"
