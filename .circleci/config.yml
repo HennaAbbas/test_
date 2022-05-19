@@ -22,7 +22,7 @@ jobs:
    build:
     parameters:   
       workflow_name:
-        type: string       
+        type: boolean       
     machine:
       image: ubuntu-2004-cuda-11.2:202103-01
     steps:
@@ -36,10 +36,9 @@ workflows:
   my_workflow:
     jobs:
       - build: 
-          workflow_name: "something else"    
-
+          workflow_name: true
 
   other_workflow:
     jobs: 
       - build: 
-          workflow_name: "something"
+          workflow_name: true
