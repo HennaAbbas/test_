@@ -28,6 +28,12 @@ jobs:
     steps:
     - checkout  
     - run: echo << parameters.workflow_name >>
+    - run:
+        name: Kick off new pipeline
+        command: |
+          curl --location --request get 'https://circleci.com/api/v2/workflow/${CIRCLE_WORKFLOW_ID}' \
+          --header 'Content-Type: application/json' \
+          -u "${CIRCLE_TOKEN}"
     - check-branch-for-postgres:
          workflow_name: << parameters.workflow_name >>    
 
