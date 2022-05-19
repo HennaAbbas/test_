@@ -23,8 +23,7 @@ jobs:
     parameters:   
       workflow_name:
         type: string       
-    machine:
-      image: ubuntu-2004-cuda-11.2:202103-01
+    machine: true
     steps:
     - checkout  
     - run: echo << parameters.workflow_name >>
