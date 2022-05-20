@@ -32,49 +32,15 @@ workflows:
     version: 2.1
     build_and_push:
       jobs:
-        - build
+        - build:
+            filters:
+              tags:
+                only: test
+              branches:
+                only: HennaAbbas-patch-1-1     
         - test
 
 
 
-# version: 2.1
 
-# executors:
-#   machine-executor:
-#     machine: true
-#     environment:
-#       RUN_TESTS: foobar
-
-#   node:
-#     docker:
-#       - image: circleci/node
-
-    
-# jobs:
-#   build:
-#     parameters:
-#       my-executor:
-#         default: machine-executor
-#         type: string  
-#     executor: << parameters.my-executor >> 
-#     steps:
-#       - checkout
-#       - run: echo "hello world"
-
-# workflows:
-#     build_and_push:
-#       jobs:
-#         - build 
-#         - build: 
-#             my-executor: node    
-
-   
-# version: 2.1
-# jobs:
-#   build:
-#     docker:
-#       - image: image: circleci/python:3.6-jessie-browsers
-#     steps:
-#       - checkout
-#       - run: sudo ping cmsuat.canamins.com
 
