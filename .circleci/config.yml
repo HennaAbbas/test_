@@ -4,7 +4,7 @@ jobs:
     docker:
       - image: circleci/node:10.18
     steps:
-      - run : "hello world!"
+      - run : echo "hello world!"
           
           
       
