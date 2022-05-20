@@ -5,7 +5,11 @@ jobs:
       - image: circleci/node:10.18
     steps:
       - run : echo "hello world!"
-          
+      - run: touch new_builds.txt
+      - persist_to_workspace:
+          paths:
+            - new_builds.txt
+          root: /home/circleci/project          
           
       
 
