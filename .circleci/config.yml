@@ -4,27 +4,8 @@ jobs:
     docker:
       - image: circleci/node:10.18
     steps:
-      - setup_remote_docker
-      - run : docker version
+      - run : "hello world!"
           
-#       - run: echo "hello world"
-#       - run: mkdir tests
-#       - run: cd tests && touch my_test_1.txt
-#       - run: echo "this is a test" > my_test_1.txt
-#       - store_artifacts:
-#           path: tests
-#       - run: wqr    
-#       - run:
-#           name: conditional step
-#           command: echo "conditional step"
-# #           when: on_fail # Uploads code coverage results, pass or fail
-          #
-  test:
-    docker:
-      - image: cimg/node:10.18
-    steps:
-      - setup_remote_docker
-      - run : docker version
           
       
 
@@ -38,7 +19,7 @@ workflows:
                 only: test
               branches:
                 only: HennaAbbas-patch-1-1     
-        - test
+
 
 
 
