@@ -1,30 +1,11 @@
 version: 2.1
-jobs:
-  build:
-    docker:
-      - image: circleci/node:10.18
-    steps:
-      - run : echo "hello world!"
-      - persist_to_workspace:
-          paths:
-            - new_builds.txt
-          root: /home/circleci/project          
-          
-      
-
 workflows:
-    version: 2.1
-    build_and_push:
-      jobs:
-        - build:
-            filters:
-              tags:
-                only: test
-              branches:
-                only: HennaAbbas-patch-1-1     
-
-
-
-
-
-
+  testing:
+    jobs:
+      - runner-test
+jobs:
+  runner-test:
+    machine: true
+    resource_class: mikhailtymchukft/engineering-default
+    steps:
+      - run: echo "I'm on runner!"
