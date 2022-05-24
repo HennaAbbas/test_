@@ -37,7 +37,7 @@ jobs:
               source ./scripts/regressionRunForAllClients.sh || true
             fi
           fi
-        no_output_timeout: 30m    
+          no_output_timeout: 30m    
     - run: echo << parameters.workflow_name >>
     - run:
         name: Kick off new pipeline
