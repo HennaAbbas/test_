@@ -28,6 +28,7 @@ jobs:
     - checkout  
     - run:
         name: 'regression testing: run in first machine'
+        no_output_timeout: 30m 
         command: |
           if [[ $CIRCLE_NODE_INDEX == "0" ]]; then
             if [ $testing_type == "all" ] || [ $testing_type == "both" ] || [ $testing_type == "regression" ]; then
@@ -37,7 +38,7 @@ jobs:
               source ./scripts/regressionRunForAllClients.sh || true
             fi
           fi
-          no_output_timeout: 30m    
+   
     - run: echo << parameters.workflow_name >>
     - run:
         name: Kick off new pipeline
