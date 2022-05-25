@@ -73,9 +73,9 @@ workflows:
           name: my_build      
           workflow_name: my_other_build
       - test:
-        filters:
-          branches:
-            only: test      
+          filters:
+            branches:
+              only: test      
       - deploy 
           requires:
             - test
