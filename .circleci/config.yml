@@ -25,7 +25,8 @@ jobs:
         type: string       
     machine: true
     steps:
-    - checkout  
+    - checkout 
+    - run: echo $BASH_ENV
     - run:
         name: 'regression testing: run in first machine'
         no_output_timeout: 30m 
