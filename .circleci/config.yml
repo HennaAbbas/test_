@@ -66,16 +66,23 @@ workflows:
       - build: 
           workflow_name: my_build
           name: my_build
+          
+          
+      - test:
+          filters:
+            branches:
+              only: test            
+      - deploy: 
+          requires:
+            - test         
 
-  other_workflow:
-    jobs: 
-      - build: 
-          name: my_build      
-          workflow_name: my_other_build
+#   other_workflow:
+#     jobs: 
+#       - build: 
+#           name: my_build      
+#           workflow_name: my_other_build
 #       - test:
 #           filters:
 #             branches:
 #               only: test      
-      - deploy 
-          requires:
-            - test
+
