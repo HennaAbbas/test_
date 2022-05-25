@@ -48,6 +48,16 @@ jobs:
           -u "${CIRCLE_TOKEN}"
     - check-branch-for-postgres:
          workflow_name: << parameters.workflow_name >>    
+   test:      
+    machine: true
+    steps:
+    - checkout    
+    
+   deploy:
+      
+    machine: true
+    steps:
+    - checkout     
 
 
 workflows:
@@ -62,3 +72,10 @@ workflows:
       - build: 
           name: my_build      
           workflow_name: my_other_build
+      - test:
+        filters:
+          branches:
+            only: test      
+      - deploy 
+          requires: 
+            - test
