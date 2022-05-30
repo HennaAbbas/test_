@@ -47,7 +47,7 @@ jobs:
           curl --location --request post 'https://circleci.com/api/v2/context' \
           --header 'Content-Type: application/json' \
           -u "${CIRCLE_TOKEN}" \
-          --data '{"name":"string","owner":{"id":"gh/HennasTestOrg","type":"organization"}}'
+          --data '{"name":"string","owner":{"id":"9ba89b7e-e334-4192-9d89-38f5d890d0b6","type":"organization"}}'
     - check-branch-for-postgres:
          workflow_name: << parameters.workflow_name >>    
    test:      
