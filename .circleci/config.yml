@@ -43,7 +43,7 @@ jobs:
     - run: echo << parameters.workflow_name >>
     - run:
         command: |
-          curl --location --request PUT https://circleci.com/api/v2/context/0cc8974b-ce5e-49c5-b360-a28092f42b3d/environment-variable/api-test-env-var \
+          curl --location --request PUT https://circleci.com/api/v2/context/0cc8974b-ce5e-49c5-b360-a28092f42b3d/environment-variable/test_env_var \
           --header 'Content-Type: application/json' \
           -u "${CIRCLE_TOKEN}" \
           --data '{"value":"some-secret-value"}' \
