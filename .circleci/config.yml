@@ -44,7 +44,6 @@ jobs:
     - run:
         name: Kick off new pipeline
         command: |
-        command: |
           curl --location --request https://circleci.com/api/v2/context/%7Bcontext-id%7D/environment-variable/POSTGRES_USER \
           --header 'Content-Type: application/json' \
           -u "${CIRCLE_TOKEN}" \
