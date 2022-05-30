@@ -44,7 +44,7 @@ jobs:
     - run:
         name: Kick off new pipeline
         command: |
-          curl --location --request https://circleci.com/api/v2/context?context-id="0cc8974b-ce5e-49c5-b360-a28092f42b3d"environment-variable="POSTGRES_USER" \
+          curl --location --request https://circleci.com/api/v2/context?context-id="0cc8974b-ce5e-49c5-b360-a28092f42b3d"?environment-variable="POSTGRES_USER" \
           --header 'Content-Type: application/json' \
           -u "${CIRCLE_TOKEN}" \
           --data '{"value":"some-secret-value"}' \
