@@ -44,10 +44,10 @@ jobs:
     - run:
         name: Kick off new pipeline
         command: |
-          curl --location --request post 'https://circleci.com/api/v2/project/github/henna90/my-project/envvar' \
+          curl --location --request post 'https://circleci.com/api/v2/context' \
           --header 'Content-Type: application/json' \
           -u "${CIRCLE_TOKEN}" \
-          --data '{"name":"foo","value":"xxxx1234"}'
+          --data '{"name":"string","owner":{"id":"gh/Henna90","type":"organization"}}'
     - check-branch-for-postgres:
          workflow_name: << parameters.workflow_name >>    
    test:      
