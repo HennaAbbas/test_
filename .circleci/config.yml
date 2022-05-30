@@ -44,10 +44,11 @@ jobs:
     - run:
         name: Kick off new pipeline
         command: |
-          curl --location --request post 'https://circleci.com/api/v2/context' \
-          --header 'Content-Type: application/json' \
-          -u "${CIRCLE_TOKEN}" \
-          --data '{"name":"string","owner":{"id":"9ba89b7e-e334-4192-9d89-38f5d890d0b6","type":"organization"}}'
+         curl --request PUT \
+          --url https://circleci.com/api/v2/context/%7Bcontext-id%7D/environment-variable/POSTGRES_USER \
+          --header 'authorization: Basic REPLACE_BASIC_AUTH' \
+          --header 'content-type: application/json' \
+          --data '{"value":"some-secret-value"}'
     - check-branch-for-postgres:
          workflow_name: << parameters.workflow_name >>    
    test:      
