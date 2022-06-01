@@ -8,10 +8,10 @@ jobs:
     machine: true
     steps:
     - checkout 
-    - azure-acr/build-and-push-image:    
-        login-server-name: "helloworld"
-        registry-name: "helloworld"
-        repo: "helloworld"
+#     - azure-acr/build-and-push-image:    
+#         login-server-name: "helloworld"
+#         registry-name: "helloworld"
+#         repo: "helloworld"
 
    
 
