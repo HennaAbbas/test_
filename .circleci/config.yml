@@ -1,7 +1,7 @@
 version: 2.1
 orbs: 
   my_orb: hennaabbas/myorb@2.0.1
-  my_other_orb: hennaabbas/myorb@dev
+  my_other_orb: hennaabbas/myorb@1.0.0
 
 commands: 
   check-branch-for-postgres:
