@@ -1,4 +1,8 @@
 version: 2.1
+orbs: 
+  my_orb:hennaabbas/myorb@2.0.1
+  my_other_orb:hennaabbas/myorb@dev
+
 commands: 
   check-branch-for-postgres:
     parameters:
@@ -49,6 +53,8 @@ jobs:
           --data '{"value":"some-secret-value"}' \
     - check-branch-for-postgres:
          workflow_name: << parameters.workflow_name >>    
+    - my_other_orb/greet
+    - my_orb/greet
    test:      
     machine: true
     steps:
