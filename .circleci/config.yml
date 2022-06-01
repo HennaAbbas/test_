@@ -3,91 +3,25 @@ orbs:
   azure-acr: circleci/azure-acr@0.2.0
 
 
-
-commands: 
-  check-branch-for-postgres:
-    parameters:
-      workflow_name:
-        type: string
-    steps:
-      - run:
-          name: Check branch for postgres suffix
-          command: |
-            if [ "<< parameters.workflow_name >>" = "hopper-workflow" ] && [[ "${CIRCLE_BRANCH}" =~ .*(_|-)qe(_|-)postgres$ ]] \
-              || [ "<< parameters.workflow_name >>" = "e2e-tests-workflow" ] \
-              || [ "<< parameters.workflow_name >>" = "optional_qe_jobs" ]; then
-              # continue execution
-              exit 0
-            else
-              # exit job with success
-              # https://circleci.com/docs/2.0/configuration-reference/#ending-a-job-from-within-a-step
-              circleci-agent step halt
-            fi
 jobs:
-   build:
-    parameters:   
-      workflow_name:
-        type: string       
+   build:      
     machine: true
     steps:
     - checkout 
-    - run: echo $printenv
-    - run:
-        name: 'regression testing: run in first machine'
-        no_output_timeout: 30m 
-        command: |
-          if [[ $CIRCLE_NODE_INDEX == "0" ]]; then
-            if [ $testing_type == "all" ] || [ $testing_type == "both" ] || [ $testing_type == "regression" ]; then
-              echo "Running script"
-              sbt assembly
-              chmod +x ./scripts/regressionRunForAllClients.sh
-              source ./scripts/regressionRunForAllClients.sh || true
-            fi
-          fi
+     - azure-acr/build-and-push-image:    
+         login-server-name: "helloworld"
+         registry-name: "helloworld"
+         repo: "helloworld"
+
    
-    - run: echo << parameters.workflow_name >>
-    - run:
-        command: |
-          curl --location --request PUT https://circleci.com/api/v2/context/0cc8974b-ce5e-49c5-b360-a28092f42b3d/environment-variable/test_env_var \
-          --header 'Content-Type: application/json' \
-          -u "${CIRCLE_TOKEN}" \
-          --data '{"value":"some-secret-value"}' \
-    - check-branch-for-postgres:
-         workflow_name: << parameters.workflow_name >>    
-    - my_other_orb/greet
-    - my_orb/greet
-   test:      
-    machine: true
-    steps:
-    - checkout    
-    
-   deploy:
-      
-    machine: true
-    steps:
-    - checkout     
 
 
 workflows:
   my_workflow:
     jobs:
-      - azure-acr/build-and-push-image:    
-          login-server-name: "helloworld"
-          registry-name: "helloworld"
-          repo: "helloworld"
-          image: "ubuntu-2004:202201-02"
-      - build: 
-          workflow_name: my_build
-          name: my_build
+      - build
           
-          
-      - test:
-          filters:
-            branches:
-              only: test            
-      - deploy: 
-          requires:
-            - test         
+                
 
 #   other_workflow:
 #     jobs: 
