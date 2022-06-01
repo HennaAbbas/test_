@@ -7,11 +7,10 @@ jobs:
    build: 
     machine: true
     steps:
-    - checkout 
-#     - azure-acr/build-and-push-image:    
-#         login-server-name: "helloworld"
-#         registry-name: "helloworld"
-#         repo: "helloworld"
+    - azure-acr/build-and-push-image:    
+        login-server-name: "helloworld"
+        registry-name: "helloworld"
+        repo: "helloworld"
 
    
 
@@ -21,15 +20,4 @@ workflows:
     jobs:
       - build
           
-                
-
-#   other_workflow:
-#     jobs: 
-#       - build: 
-#           name: my_build      
-#           workflow_name: my_other_build
-#       - test:
-#           filters:
-#             branches:
-#               only: test      
-
+  
