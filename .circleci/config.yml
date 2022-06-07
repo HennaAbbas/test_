@@ -1,8 +1,7 @@
 version: 2.1
 orbs: 
-  azure-acr: circleci/azure-acr@0.2.0
-
-
+  my_orb: hennaabbas/myorb@2.0.1
+  my_other_orb: hennaabbas/myorb@1.0.0
 
 commands: 
   check-branch-for-postgres:
@@ -71,11 +70,6 @@ jobs:
 workflows:
   my_workflow:
     jobs:
-      - azure-acr/build-and-push-image:    
-          login-server-name: "helloworld"
-          registry-name: "helloworld"
-          repo: "helloworld"
-          image: "ubuntu-2004:202201-02"
       - build: 
           workflow_name: my_build
           name: my_build
@@ -88,16 +82,6 @@ workflows:
       - deploy: 
           requires:
             - test         
-
-#   other_workflow:
-#     jobs: 
-#       - build: 
-#           name: my_build      
-#           workflow_name: my_other_build
-#       - test:
-#           filters:
-#             branches:
-#               only: test      
 
 
 #test 
