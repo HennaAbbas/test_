@@ -1,33 +1,51 @@
 version: 2.1
 jobs:
-   build:
-    parameters:   
-      add_suffix:
-        type: boolean
-        default: true        
-    machine:
-      image: ubuntu-2004-cuda-11.2:202103-01
+  build:
+    docker:
+      - image: cimg/node:12.18
     steps:
-    - checkout   
-
-    - when:
-        condition: << parameters.add_suffix >>
-        steps:
-          - run: echo "test"         
-
-
+      - checkout
+      - run: echo "hello world!"
+  job_1:
+    docker:
+      - image: cimg/node:12.18
+    steps:
+      - checkout
+      - run: echo "hello world!"
+  job_2:
+    docker:
+      - image: cimg/node:12.18
+    steps:
+      - checkout
+      - run: echo "hello world!"      
+  job_3:
+    docker:
+      - image: cimg/node:12.18
+    steps:
+      - checkout
+      - run: echo "hello world!"       
+  
+      
 workflows:
-  my_workflow:
-    jobs:
-      - build
-      - build: 
-          name: other build      
-         
-
-  other_workflow:
-    jobs:
-      - build  
-      - build: 
-          name: other build 
-
-#test
+    build_and_push:
+      jobs:
+        - build:
+            filters:  # using regex filters requires the entire branch to match
+              branches:
+                only:  # only branches matching the below regex filters will run
+                  - testing  
+        - job_1:
+            filters:  # using regex filters requires the entire branch to match
+              branches:
+                only:  # only branches matching the below regex filters will run
+                  - testing       
+        - job_2: 
+            filters:  # using regex filters requires the entire branch to match
+              branches:
+                only:  # only branches matching the below regex filters will run
+                  - testing          
+        - job_3:
+            filters:  # using regex filters requires the entire branch to match
+              branches:
+                only:  # only branches matching the below regex filters will run
+                  - testing  
