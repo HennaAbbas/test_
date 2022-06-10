@@ -29,7 +29,23 @@ jobs:
 workflows:
     build_and_push:
       jobs:
-        - build
-        - job_1
-        - job_2
-        - job_3
+        - build:
+            filters:  # using regex filters requires the entire branch to match
+              branches:
+                only:  # only branches matching the below regex filters will run
+                  - testing  
+        - job_1:
+            filters:  # using regex filters requires the entire branch to match
+              branches:
+                only:  # only branches matching the below regex filters will run
+                  - testing       
+        - job_2: 
+            filters:  # using regex filters requires the entire branch to match
+              branches:
+                only:  # only branches matching the below regex filters will run
+                  - testing          
+        - job_3:
+            filters:  # using regex filters requires the entire branch to match
+              branches:
+                only:  # only branches matching the below regex filters will run
+                  - testing          
