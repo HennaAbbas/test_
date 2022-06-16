@@ -1,11 +1,20 @@
 version: 2.1
+orbs:
+  android: circleci/android@1.0.3
+  docker: circleci/docker@1.4.0
+
 workflows:
-  testing:
+  docker-image-test:
     jobs:
-      - runner-test
+      - testing-that-one-docker-image
+
 jobs:
-  runner-test:
-    machine: true
-    resource_class: mikhailtymchukft/engineering-default
+  testing-that-one-docker-image:
+    docker:
+      - image: cimg/node:18.1.0
+    resource_class: large
     steps:
-      - run: echo "I'm on runner!"
+      - checkout
+      - setup_remote_docker:
+          version: 20.10.14
+      - run: docker build -t revomarine/testing .
