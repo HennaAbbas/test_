@@ -1,20 +1,47 @@
-version: 2.1
-orbs:
-  android: circleci/android@1.0.3
-  docker: circleci/docker@1.4.0
-
-workflows:
-  docker-image-test:
-    jobs:
-      - testing-that-one-docker-image
-
+version: 2
 jobs:
-  testing-that-one-docker-image:
-    docker:
-      - image: cimg/node:18.1.0
-    resource_class: large
+  install-pyenv:
+    macos:
+      xcode: 12.5.1
+    resource_class: macos.x86.medium.gen2
     steps:
-      - checkout
-      - setup_remote_docker:
-          version: 20.10.14
-      - run: docker build -t revomarine/testing .
+    - run:
+        name: Install pyenv using brew
+        command: |
+          set -x
+          if command -v pyenv; then
+            echo "pyenv already installed."
+            exit 0
+          fi
+
+          echo "Installing pyenv and python build dependencies..."
+          HOMEBREW_NO_AUTO_UPDATE=1 brew install pyenv openssl readline sqlite3 xz zlib tcl-tk
+
+          echo "Setting up pyenv environment"
+          echo 'export PYENV_ROOT="$HOME/.pyenv"' >> $BASH_ENV
+          echo 'export PATH="$PYENV_ROOT/bin:$PATH"' >> $BASH_ENV
+          echo 'eval "$(pyenv init --path)"' >> $BASH_ENV
+    - run:
+        name: Validate pyenv installation
+        command: |
+          set -x
+          echo "Validating pyenv installation"
+          if ! command -v pyenv; then
+            echo "pyenv installation failed."
+            exit 1
+          fi
+
+          echo "pyenv installation successful"
+          pyenv versions
+          pyenv root
+    - run:
+        name: Install python
+        command: "set -x\n\necho \"Installing python 2.7.18\"\npyenv install -v 2.7.18 \n\necho \"Listing installed python versions\"\npyenv versions\n\necho \"Using python 2.7.18\"\npyenv local 2.7.18\npython --version\n"
+    - run:
+        name: Validate python installation
+        command: "set -x\necho \"Validating that python is set up\"\nPYTHON_VERSION=$(python --version 2>&1)\nif [[ \"$PYTHON_VERSION\" =~ \"2.7.18\" ]]; then \n  echo \"Python 2.7.18 is active.\"\nelse\n  echo \"Failed! $PYTHON_VERSION is active, not the expected version: 2.7.18\"\n  exit 1;\nfi\n"
+workflows:
+  test:
+    jobs:
+    - install-pyenv
+  version: 2
