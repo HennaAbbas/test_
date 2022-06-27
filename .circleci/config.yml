@@ -76,13 +76,10 @@ workflows:
           name: my_build
           
           
-      - test:
-          filters:
-            branches:
-              only: test            
-      - deploy: 
-          requires:
-            - test         
+      - test
+       
+      - deploy
+      
 
 
 #test 
