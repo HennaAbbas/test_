@@ -64,7 +64,8 @@ jobs:
       
     machine: true
     steps:
-    - checkout     
+    - checkout  
+    - run: cat .test/my_file.txt
 
 
 workflows:
