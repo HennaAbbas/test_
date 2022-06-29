@@ -78,10 +78,13 @@ workflows:
           workflow_name: my_build
           name: my_build         
   integration_tests:
-    when: << pipeline.git.tag >>
-    jobs:
-      - test
-      - deploy
+      when:
+        or:
+          - equal: [ master, << pipeline.git.branch >> ]
+          - equal: [ staging, << pipeline.git.branch >> ]
+      jobs:
+        - test
+        - deploy
 
       
 
