@@ -80,8 +80,8 @@ workflows:
   integration_tests:
       when:
         or:
-          - equal: [ master, << pipeline.git.branch >> ]
-          - equal: [ staging, << pipeline.git.branch >> ]
+          - equal: [ v4, << pipeline.git.tag >> ]
+          - equal: [ v5, << pipeline.git.tag >> ]
       jobs:
         - test
         - deploy
