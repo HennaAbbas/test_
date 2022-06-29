@@ -74,10 +74,9 @@ workflows:
       - build: 
           workflow_name: my_build
           name: my_build
-          
-          
-      - test
-       
+    when: << pipeline.git.tag >>
+    jobs:
+      - test           
       - deploy
       
 
