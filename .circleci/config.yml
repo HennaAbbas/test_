@@ -77,10 +77,13 @@ workflows:
       - build: 
           workflow_name: my_build
           name: my_build
+  my_workflow:          
+  integration_tests:
     when: << pipeline.git.tag >>
     jobs:
-      - test           
+      - test
       - deploy
+
       
 
 
