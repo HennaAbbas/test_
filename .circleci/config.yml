@@ -76,8 +76,7 @@ workflows:
     jobs:
       - build: 
           workflow_name: my_build
-          name: my_build
-  my_other_workflow:          
+          name: my_build         
   integration_tests:
     when: << pipeline.git.tag >>
     jobs:
