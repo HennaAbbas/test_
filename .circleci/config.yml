@@ -66,6 +66,12 @@ jobs:
     steps:
     - checkout  
     - run: cat .test/my_file.txt
+    
+    upload_api_assets:
+    working_directory: ~/button
+    steps:
+      - checkout
+      - run: echo "hello world"
 
 
 
@@ -76,7 +82,8 @@ workflows:
     jobs:
       - build: 
           workflow_name: my_build
-          name: my_build         
+          name: my_build  
+      - upload_api_assets     
   integration_tests:
       when:
         or:
