@@ -1,55 +1,24 @@
-# version: 2.1
-# orbs:
-#   win: circleci/windows@2.4.1
-#   browser-tools: circleci/browser-tools@1.2.4 
-# jobs:
-#   # run collections tests in a separate serial job to make serial workflows more granular
-#   build:
-#     executor:
-#       name: win/default
-#       version: "stable"
-#       size: "medium"
-#     steps:
-#       - checkout
-#       - browser-tools/install-chrome
-#       - browser-tools/install-chromedriver
-#       - run:
-#           command: |
-#             google-chrome --version
-#             chromedriver --version
-#           name: Check install     
-# workflows:
-#   main:
-#     jobs:
-#       - build
 
 
 version: '2.1'
-orbs:
-  browser-tools: circleci/browser-tools@1.2.5
+
 jobs:
-  job_run_api_tests_dev1:
-    machine:
-      image: ubuntu-2004:202201-02
-    resource_class: medium
+  build:
+    docker:
+    - image: cimg/node:16.11-browsers
 
     steps:
       - checkout
-#       - run:
-#           command: |
-#             echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/bil/.npmrc
-#       - run:
-#           command: apt-get install -y sudo
-      - run: sudo apt update
-      - run:
-          command: sudo apt install net-tools
-  upload_api_assets:
-    working_directory: ~/button
-    steps:
-    - checkout
+#       - run: sudo apt-get install -y ca-certificates
+      - restore_cache:
+          keys:
+          - node-modules-cache-node-gallium-npm-8-{{ .Environment.CACHE_VERSION }}-{{ checksum "package-lock.json" }}
+          - node-modules-cache-node-gallium-npm-8-{{ .Environment.CACHE_VERSION }}-
+
+
 workflows:
   main:
     jobs:
-      - upload_api_assets
-      - job_run_api_tests_dev1
+      - build
+
 
