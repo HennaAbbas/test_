@@ -1,77 +1,14 @@
 version: 2.1
-orbs: 
-  my_orb: hennaabbas/myorb@2.0.1
-  my_other_orb: hennaabbas/myorb@1.0.0
 
-commands: 
-  check-branch-for-postgres:
-    parameters:
-      workflow_name:
-        type: string
-    steps:
-      - run:
-          name: Check branch for postgres suffix
-          command: |
-            if [ "<< parameters.workflow_name >>" = "hopper-workflow" ] && [[ "${CIRCLE_BRANCH}" =~ .*(_|-)qe(_|-)postgres$ ]] \
-              || [ "<< parameters.workflow_name >>" = "e2e-tests-workflow" ] \
-              || [ "<< parameters.workflow_name >>" = "optional_qe_jobs" ]; then
-              # continue execution
-              exit 0
-            else
-              # exit job with success
-              # https://circleci.com/docs/2.0/configuration-reference/#ending-a-job-from-within-a-step
-              circleci-agent step halt
-            fi
+
 jobs:
-   build:
-    parameters:   
-      workflow_name:
-        type: string       
-    machine: true
-    steps:
-    - run: git clone -b "$CIRCLE_BRANCH" "$CIRCLE_REPOSITORY_URL"
-    - run: echo $printenv
-    - run:
-        name: 'regression testing: run in first machine'
-        no_output_timeout: 30m 
-        command: |
-          if [[ $CIRCLE_NODE_INDEX == "0" ]]; then
-            if [ $testing_type == "all" ] || [ $testing_type == "both" ] || [ $testing_type == "regression" ]; then
-              echo "Running script"
-              sbt assembly
-              chmod +x ./scripts/regressionRunForAllClients.sh
-              source ./scripts/regressionRunForAllClients.sh || true
-            fi
-          fi
-   
-    - run: echo << parameters.workflow_name >>
-    - run:
-        command: |
-          curl --location --request PUT https://circleci.com/api/v2/context/0cc8974b-ce5e-49c5-b360-a28092f42b3d/environment-variable/test_env_var \
-          --header 'Content-Type: application/json' \
-          -u "${CIRCLE_TOKEN}" \
-          --data '{"value":"some-secret-value"}' \
-    - check-branch-for-postgres:
-         workflow_name: << parameters.workflow_name >>    
-    - my_other_orb/greet
-    - my_orb/greet
-   test:      
-    machine: true
-    steps:
-    - checkout    
     
    deploy:
       
-    machine: true
-    steps:
-    - checkout  
-    - run: cat .test/my_file.txt
-    
-    upload_api_assets:
-    working_directory: ~/button
+    machine: ubuntu-2004:202201-02
     steps:
       - checkout
-      - run: echo "hello world"
+      - run: docker build - < Dockerfile
 
 
 
@@ -80,17 +17,6 @@ jobs:
 workflows:
   my_workflow:
     jobs:
-      - build: 
-          workflow_name: my_build
-          name: my_build  
-      - upload_api_assets     
-  integration_tests:
-      when:
-        or:
-          - equal: [ v4, << pipeline.git.tag >> ]
-          - equal: [ v5, << pipeline.git.tag >> ]
-      jobs:
-        - test
         - deploy
 
       
