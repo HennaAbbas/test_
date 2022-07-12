@@ -9,7 +9,8 @@ jobs:
         image: ubuntu-2004:202201-02
     steps:
       - checkout
-      - run: docker build - < .Dockerfile
+      - run: pwd
+      - run: docker build .Dockerfile
 
 
 
