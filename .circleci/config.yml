@@ -10,6 +10,7 @@ jobs:
     steps:
       - checkout
       - run: pwd
+      - run: ls -al
       - run: docker build .Dockerfile
 
 
