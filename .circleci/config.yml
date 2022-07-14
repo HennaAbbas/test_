@@ -5,15 +5,13 @@ jobs:
       - image: cimg/base:stable
     parameters:
       target_arch:
-        type: string
-      target_os:
-        type: string      
+        type: string  
     steps:
       - run: echo "hello world!" 
 workflows:
   my-workflow:
     jobs:
       - release 
-#           target_arch: "hiii"
+          target_arch: "hiii"
 
 
