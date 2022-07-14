@@ -21,7 +21,7 @@ jobs:
       - checkout
       - run:    
             command: sleep 3m
-#             no_output_timeout: 30m
+            no_output_timeout: "30m"
       - run: 
             command: |
                 approval_hold_status=$(curl -s -H "Circle-Token: $CIRCLE_TOKEN" https://circleci.com/api/v2/workflow/${CIRCLE_WORKFLOW_ID}/job | jq '.items[] | select(.name == "approval_hold") | .status')
