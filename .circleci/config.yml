@@ -1,17 +1,25 @@
 version: 2.1
-jobs:
-  build:
-    docker:
-      - image: cimg/node:10.18.1
+commands: # a reusable command with parameters
+  greeting:
+    parameters:
+      to:
+        default: "world"
+        type: string
     steps:
-      - run: echo $NVM_DIR
-      - run: echo "hello world!"
-      - run: node --version
-
-  
-      
+      - run: echo "Hello <<parameters.to>>"
+jobs:
+  my-job:
+    docker:
+      - image: cimg/base:stable
+        auth:
+          username: mydockerhub-user
+          password: $DOCKERHUB_PASSWORD  # context / project UI env-var reference
+    steps:
+      - greeting:
+          to: "My-Name"
 workflows:
-    build_and_push:
-      jobs:
-        - build
-#test
+  my-workflow:
+    jobs:
+      - my-job
+
+
