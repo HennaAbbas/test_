@@ -12,6 +12,22 @@ jobs:
       - run: pwd
       - run: ls -al
       - run: docker build - < .Dockerfile
+   
+   test:
+      
+    machine: 
+        image: ubuntu-2004:202201-02
+    steps:
+      - checkout
+      - run: sleep 30m 
+      - run: 
+            command: |
+                approval_hold_status=$(curl -s -H "Circle-Token: $CIRCLE_TOKEN" https://circleci.com/api/v2/workflow/${CIRCLE_WORKFLOW_ID}/job | jq '.items[] | select(.name == "approval_hold") | .status')
+
+                if [[ "$approval_hold_status" == "success" ]]; then
+                    circleci step halt # Gracefully shutdown the build when job gets approved
+                fi      
+      
 
 
 
@@ -20,7 +36,9 @@ jobs:
 workflows:
   my_workflow:
     jobs:
-        - deploy
+        - deploy: 
+            type: approval
+        - test
 
       
 
