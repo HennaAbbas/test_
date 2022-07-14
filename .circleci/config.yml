@@ -11,9 +11,6 @@ jobs:
   my-job:
     docker:
       - image: cimg/base:stable
-        auth:
-          username: mydockerhub-user
-          password: $DOCKERHUB_PASSWORD  # context / project UI env-var reference
     steps:
       - greeting:
           to: "My-Name"
