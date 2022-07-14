@@ -6,7 +6,7 @@ jobs:
     parameters:
       target_arch:
         type: string
-        default: "hello"
+        default: ""
     steps:
       - run: echo "hello world!" 
 workflows:
