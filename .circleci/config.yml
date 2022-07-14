@@ -3,7 +3,6 @@ commands: # a reusable command with parameters
   greeting:
     parameters:
       to:
-        default: "world"
         type: string
     steps:
       - run: echo "Hello <<parameters.to>>"
