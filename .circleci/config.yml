@@ -1,7 +1,8 @@
 version: 2.1
 jobs:
   release:
-    executor: linux
+    executor:
+      machine: true
     parameters:
       target_arch:
         type: string
