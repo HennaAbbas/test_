@@ -5,11 +5,7 @@ commands:
       - run:
           name: set REPO_NAME
           command: |
-            if [ -n "<< pipeline.parameters.repo_name >>" ]; then
-              echo "export REPO_NAME='<< pipeline.parameters.repo_name >>'" >> $BASH_ENV
-            else
-              echo "export REPO_NAME='$CIRCLE_PROJECT_REPONAME'" >> $BASH_ENV              
-            fi
+            echo "hello world"
           when: always
 
 jobs:
