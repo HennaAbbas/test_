@@ -3,6 +3,11 @@ jobs:
   release:
     docker:
       - image: cimg/base:stable
+    parameters:
+      target_arch:
+        type: string
+      target_os:
+        type: string      
     steps:
       - run: echo "hello world!" 
 workflows:
