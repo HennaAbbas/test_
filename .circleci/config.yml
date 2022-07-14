@@ -3,9 +3,9 @@ jobs:
   release:
     executor:
       machine: true
-    parameters:
-      target_arch:
-        type: string
+#     parameters:
+#       target_arch:
+#         type: string
 #         default: "hello"
 #       target_os:
 #         type: string
