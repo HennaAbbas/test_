@@ -5,6 +5,7 @@ jobs:
     parameters:
       target_arch:
         type: string
+        default: "hello"
 #       target_os:
 #         type: string
     steps:
