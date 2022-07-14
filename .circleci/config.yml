@@ -5,10 +5,10 @@ jobs:
     parameters:
       target_arch:
         type: string
-      target_os:
-        type: string
+#       target_os:
+#         type: string
     steps:
-    - run: echo "hellow world"
+    - run: echo << parameters.target_arch>>
 workflows:
   my-workflow:
     jobs:
