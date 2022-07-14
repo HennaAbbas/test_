@@ -11,7 +11,7 @@ jobs:
 workflows:
   my-workflow:
     jobs:
-      - release 
+      - release:
           target_arch: "hiii"
 
 
