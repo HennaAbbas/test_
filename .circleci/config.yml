@@ -8,10 +8,11 @@ jobs:
 #       target_os:
 #         type: string
     steps:
-    - run: echo << parameters.target_arch>>
+    - run: echo << parameters.target_arch >>
 workflows:
   my-workflow:
     jobs:
-      - release
+      - release:  
+          target_arch: "hiii"
 
 
