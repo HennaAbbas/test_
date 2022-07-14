@@ -1,21 +1,17 @@
 version: 2.1
-commands: # a reusable command with parameters
-  greeting:
+jobs:
+  release:
+    executor: linux
     parameters:
-      to:
+      target_arch:
+        type: string
+      target_os:
         type: string
     steps:
-      - run: echo "Hello <<parameters.to>>"
-jobs:
-  my-job:
-    docker:
-      - image: cimg/base:stable
-    steps:
-      - greeting:
-          to: "My-Name"
+    - run: echo "hellow world"
 workflows:
   my-workflow:
     jobs:
-      - my-job
+      - release
 
 
