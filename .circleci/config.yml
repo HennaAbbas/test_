@@ -5,7 +5,8 @@ jobs:
       - image: cimg/base:stable
     parameters:
       target_arch:
-        type: string  
+        type: string
+        default: "hello"
     steps:
       - run: echo "hello world!" 
 workflows:
