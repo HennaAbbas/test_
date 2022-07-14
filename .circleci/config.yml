@@ -1,16 +1,10 @@
 version: 2.1
 jobs:
-  release:
-    executor:
-      machine: true
-#     parameters:
-#       target_arch:
-#         type: string
-#         default: "hello"
-#       target_os:
-#         type: string
+  my-job:
+    docker:
+      - image: cimg/base:stable
     steps:
-    - run: echo "hello world"
+      - run: echo "hello world!" 
 workflows:
   my-workflow:
     jobs:
