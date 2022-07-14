@@ -6,15 +6,15 @@ jobs:
     parameters:
       target_arch:
         type: string
-        default: "hello"
+#         default: "hello"
 #       target_os:
 #         type: string
     steps:
-    - run: echo << parameters.target_arch >>
+    - run: echo "hello world"
 workflows:
   my-workflow:
     jobs:
-      - release:  
-          target_arch: "hiii"
+      - release 
+#           target_arch: "hiii"
 
 
