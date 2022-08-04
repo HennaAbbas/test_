@@ -1,37 +1,20 @@
-version: 2.1
-
+version: 2
+executorType: docker
+containerInfo:
+  - image: circleci/ruby:2.5.1-node
+    env:
+      - RAILS_ENV=test
+      - RACK_ENV=test
 
 jobs:
+  deploy:
+
     resource_class: small
-    steps:
-      - checkout   
-      
-#     machine: 
-#         image: ubuntu-2004:202201-02
-#     steps:
-#       - checkout
-      - run: pwd
-      - run: ls -al
-      - run: docker build - < .Dockerfile
-   
-   test:
-      
-    machine: 
-        image: ubuntu-2004:202201-02
+
     steps:
       - checkout
-      - run:    
-            command: sleep 3m
-            no_output_timeout: "30m"
-      - run: 
-            command: |
-                approval_hold_status=$(curl -s -H "Circle-Token: $CIRCLE_TOKEN" https://circleci.com/api/v2/workflow/${CIRCLE_WORKFLOW_ID}/job | jq '.items[] | select(.name == "approval_hold") | .status')
 
-                if [[ "$approval_hold_status" == "success" ]]; then
-                    echo "cancel workflow"
-                    curl -X POST -H "Circle-Token: $CIRCLE_TOKEN" https://circleci.com/api/v2/${CIRCLE_WORKFLOW_ID}/cancel
-                    circleci step halt # Gracefully shutdown the build when job gets approved
-                fi      
+
       
 
 
@@ -43,7 +26,6 @@ workflows:
     jobs:
         - deploy
        
-        - test
 
       
 
