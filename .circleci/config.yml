@@ -2,13 +2,14 @@ version: 2.1
 
 
 jobs:
-    
-   deploy:
-      
-    machine: 
-        image: ubuntu-2004:202201-02
+    resource_class: small
     steps:
-      - checkout
+      - checkout   
+      
+#     machine: 
+#         image: ubuntu-2004:202201-02
+#     steps:
+#       - checkout
       - run: pwd
       - run: ls -al
       - run: docker build - < .Dockerfile
@@ -40,8 +41,8 @@ jobs:
 workflows:
   my_workflow:
     jobs:
-        - deploy: 
-            type: approval
+        - deploy
+       
         - test
 
       
