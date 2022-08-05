@@ -5,7 +5,7 @@ jobs:
     docker:
       - image: cimg/base:2020.01
     environment: 
-      AWS_ACCESS_KEY_ID:TESTING_ENV
+      AWS_ACCESS_KEY_ID: TESTING_ENV
     steps:
       - checkout
       - run: echo 'export listall="ls -a"' >> $BASH_ENV
