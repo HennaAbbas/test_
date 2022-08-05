@@ -1,25 +1,22 @@
-version: 2
-executorType: docker
-containerInfo:
-  - image: circleci/ruby:2.5.1-node
-    env:
-      - RAILS_ENV=test
-      - RACK_ENV=test
+version: 2.1
 
 jobs:
-  deploy:
-
-    resource_class: small
-
+  build:
+    docker:
+      - image: cimg/base:2020.01
+    environment: TESTING_ENV  
     steps:
       - checkout
+      - run: echo 'export listall="ls -a"' >> $BASH_ENV
+#       - run: echo 'export AWS_ACCESS_KEY_ID=TESTING_ENV' >> $BASH_ENV
+      - run: echo ${AWS_ACCESS_KEY_ID}
 
 
 workflows:
   version: 2
   my_workflow:
     jobs:
-        - deploy
+        - build
        
 
       
