@@ -17,7 +17,12 @@ workflows:
   version: 2
   my_workflow:
     jobs:
-        - build
+        - build: 
+            filters:
+              tags:
+                only: 
+                  - tagged
+              
        
 
       
