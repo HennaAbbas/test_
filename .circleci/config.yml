@@ -7,7 +7,7 @@ jobs:
       resource_class: windows.large
     steps:
     - checkout
-    - run: C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -property catalog_productDisplayVersion
+    - run: C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools
 workflows:
   version: 2
   run-ci:
