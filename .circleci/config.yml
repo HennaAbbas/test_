@@ -8,6 +8,7 @@ jobs:
     - checkout
     - run: C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -property catalog_productDisplayVersion
 workflows:
+version: 2
   run-ci:
     jobs:
     - e2e-test-windows-smoke-windows-large-2022    
