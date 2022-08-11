@@ -8,6 +8,7 @@ jobs:
     steps:
     - checkout
     - run: C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools
+        shell: bash.exe
 workflows:
   version: 2
   run-ci:
