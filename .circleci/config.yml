@@ -17,12 +17,14 @@ jobs:
       image: ubuntu-2004:202201-01
       docker_layer_caching: true
     steps:
-    - checkout      
+    - checkout
+    - run: echo $CIRCLE_WORKING_DIRECTORY    
   test1:
     machine:
       image: ubuntu-2004:202201-01
     steps:
-    - checkout      
+    - checkout  
+    - run: echo $CIRCLE_WORKING_DIRECTORY
 
 
 workflows:
