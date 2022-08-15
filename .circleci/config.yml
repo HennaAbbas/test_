@@ -18,7 +18,7 @@ jobs:
       docker_layer_caching: true
     steps:
     - checkout      
-  test_1:
+  test1:
     machine:
       image: ubuntu-2004:202201-01
     steps:
@@ -31,7 +31,7 @@ workflows:
     jobs:
         - build
         - test
-        _ test_1
+        - test1
 
       
 
