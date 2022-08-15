@@ -11,17 +11,27 @@ jobs:
       - run: echo 'export listall="ls -a"' >> $BASH_ENV
 #       - run: echo 'export AWS_ACCESS_KEY_ID=TESTING_ENV' >> $BASH_ENV
       - run: echo ${AWS_ACCESS_KEY_ID}
+      
+  test:
+    machine:
+      image: ubuntu-2004:202201-01
+      docker_layer_caching: true
+    steps:
+    - checkout      
+  test_1:
+    machine:
+      image: ubuntu-2004:202201-01
+    steps:
+    - checkout      
 
 
 workflows:
   version: 2
   my_workflow:
     jobs:
-        - build: 
-            filters:
-              tags:
-                only: /^v.*/
-       
+        - build
+        - test
+        _ test_1
 
       
 
