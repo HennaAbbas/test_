@@ -12,9 +12,8 @@ jobs:
 #       - run: echo 'export AWS_ACCESS_KEY_ID=TESTING_ENV' >> $BASH_ENV
       - run: echo ${AWS_ACCESS_KEY_ID}
       
-  tests:
+  test:
     machine: true
-    environment:
     shell: /bin/bash --login -o pipefail
     steps:
       - checkout
