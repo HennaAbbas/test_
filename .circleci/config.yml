@@ -12,13 +12,21 @@ jobs:
 #       - run: echo 'export AWS_ACCESS_KEY_ID=TESTING_ENV' >> $BASH_ENV
       - run: echo ${AWS_ACCESS_KEY_ID}
       
-  test:
-    machine:
-      image: ubuntu-2004:202201-01
-      docker_layer_caching: true
+  tests:
+    machine: true
+    environment:
+    shell: /bin/bash --login -o pipefail
     steps:
-    - checkout
-    - run: echo $CIRCLE_WORKING_DIRECTORY    
+      - checkout
+    - run: echo $CIRCLE_WORKING_DIRECTORY   
+    - run:
+        name: Set up environment
+        command: |
+          gem update --system
+          gem install bundler
+          bundle install    
+    
+  
   test1:
     machine:
       image: ubuntu-2004:202201-01
