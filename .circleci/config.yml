@@ -13,8 +13,7 @@ jobs:
       - run: echo ${AWS_ACCESS_KEY_ID}
       
   test:
-    machine:
-      image: ubuntu-2004:202201-01
+    machine: true
     shell: /bin/bash --login -o pipefail
     steps:
     - checkout
