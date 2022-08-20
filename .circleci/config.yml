@@ -1,16 +1,27 @@
 version: 2.1
 
+orbs:
+  node: circleci/node@5.0.2
 jobs:
   build:
-    docker:
-      - image: cimg/base:2020.01
-    environment: 
-      AWS_ACCESS_KEY_ID: TESTING_ENV
+    machine:
+      image: ubuntu-2004:202201-01
     steps:
       - checkout
-      - run: echo 'export listall="ls -a"' >> $BASH_ENV
-#       - run: echo 'export AWS_ACCESS_KEY_ID=TESTING_ENV' >> $BASH_ENV
-      - run: echo ${AWS_ACCESS_KEY_ID}
+      - node/install:
+          install-yarn: true
+
+# jobs:
+#   build:
+#     docker:
+#       - image: cimg/base:2020.01
+#     environment: 
+#       AWS_ACCESS_KEY_ID: TESTING_ENV
+#     steps:
+#       - checkout
+#       - run: echo 'export listall="ls -a"' >> $BASH_ENV
+# #       - run: echo 'export AWS_ACCESS_KEY_ID=TESTING_ENV' >> $BASH_ENV
+#       - run: echo ${AWS_ACCESS_KEY_ID}
       
   test:
     machine: true
