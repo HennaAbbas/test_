@@ -5,11 +5,9 @@ orbs:
 jobs:
   build:
     machine:
-      image: ubuntu-2004:202201-01
+      image: ubuntu-2204:2022.08.1
     steps:
-      - checkout
-      - node/install:
-          install-yarn: true
+      - checkout          
 
 # jobs:
 #   build:
