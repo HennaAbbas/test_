@@ -39,8 +39,9 @@ jobs:
     machine:
       image: ubuntu-2004:202201-01
     steps:
-    - run: git tag -a v1.4
+
     - checkout  
+    - run: git tag -a v1.4    
     - run: echo $CIRCLE_WORKING_DIRECTORY
 
 
