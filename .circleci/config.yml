@@ -1,41 +1,23 @@
 version: 2.1
-
+commands: # a reusable command with parameters
+  greeting:
+    parameters:
+      to:
+        default: "world"
+        type: string
+    steps:
+      - run: echo "Hello <<parameters.to>>"
 jobs:
-  say-date:
+  my-job:
     docker:
       - image: cimg/base:stable
-
-#     parameters:
-
-#       date:
-#         type: string
-#         default: none
-     steps:
-        - checkout
-        - run:
-          name: set var
-            command: echo "export DATETIME=`date +%Y%m%d.%H%M`" >> $BASH_ENV
-        - run: echo "$DATETIME"
-        - run: mkdir -p workspace
-        - run: echo "export DATETIME=datetime.`date +%Y%m%d.%H%M%S`" >>workspace/new-env-vars
-        - run: echo "export BOB=$BAZ" >> workspace/new-env-vars
-        - run: cat workspace/new-env-vars 
-        - run: cat workspace/new-env-vars >> $BASH_ENV
-        - run: echo ${DATETIME:-NULL}
-        - run: 
-            name: make test artifacts
-            command: |
-              mkdir /tmp/artifacts;
-              echo "my artifact files in a dir" > /tmp/artifacts/encap-staging-no-color_${DATETIME:-NULL}.txt 
-        - store_artifacts:
-            path: /tmp/artifacts
-        - persist_to_workspace:
-            root: workspace
-            paths:
-              - new-env-vars
-
+        auth:
+          username: mydockerhub-user
+          password: $DOCKERHUB_PASSWORD  # context / project UI env-var reference
+    steps:
+      - greeting:
+          to: "My-Name"
 workflows:
-   say-date-workflow:
+  my-workflow:
     jobs:
-      - say-date
-  # TODO: Re-enable after issue wi
+      - my-job
