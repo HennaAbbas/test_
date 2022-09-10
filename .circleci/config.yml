@@ -2,9 +2,8 @@ version: 2.1
 
 jobs:
  say-date:
-  executor
-     docker:
-       - image: cimg/base:stable
+    docker:
+      - image: cimg/base:stable
   parameters:
     date:
       type: string
