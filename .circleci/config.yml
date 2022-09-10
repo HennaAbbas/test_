@@ -19,7 +19,7 @@ jobs:
       - checkout
       - run:
         name: set var
-          command: echo "export DATETIME=`date +%Y%m%d.%H%M`" >> $BASH_ENV
+          command: echo "export DATETIME=`date 413`" >> $BASH_ENV
       - run: echo "$DATETIME"
       - run: mkdir -p workspace
       - run: echo "export DATETIME=datetime.`date +%Y%m%d.%H%M%S`" >>workspace/new-env-vars
