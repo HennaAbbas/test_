@@ -1,7 +1,7 @@
 version: 2.1
 
 jobs:
- say-date:
+  say-date:
     docker:
       - image: cimg/base:stable
   parameters:
