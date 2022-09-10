@@ -11,6 +11,10 @@ jobs:
   my-job:
     docker:
       - image: cimg/base:stable
+    parameters:
+      date:
+        type: string
+        default: none      
     steps:
       - greeting:
           to: "My-Name"
