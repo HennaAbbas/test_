@@ -3,11 +3,11 @@ jobs:
   say-date:
     docker:
       - image: cimg/base:stable  
-    parameters:
+#     parameters:
 
-      date:
-        type: string
-        default: none
+#       date:
+#         type: string
+#         default: none
      steps:
       - checkout
       - run:
