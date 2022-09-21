@@ -53,7 +53,7 @@ workflows:
             name: test-build
         - test
         - test1
-  my_workflow:
+  my_other_workflow:
     jobs:
         - build: 
             name: test-build
