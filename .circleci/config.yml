@@ -57,6 +57,8 @@ workflows:
     jobs:
         - build: 
             name: test-build
+        - build: 
+            name: test-build            
         - test
         - test1        
 
