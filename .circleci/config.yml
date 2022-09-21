@@ -49,7 +49,7 @@ workflows:
   version: 2
   my_workflow:
     jobs:
-        - build
+        - build: 
             name: test-build
         - test
         - test1
