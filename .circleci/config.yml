@@ -50,6 +50,7 @@ workflows:
   my_workflow:
     jobs:
         - build
+            name: test-build
         - test
         - test1
 
