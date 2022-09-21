@@ -61,6 +61,10 @@ workflows:
             name: test-build            
         - test
         - test1        
+        - build: 
+            name: test-build
+        - build: 
+            name: test-build                
 
       
 
