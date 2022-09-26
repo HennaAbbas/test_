@@ -5,10 +5,9 @@ orbs:
 jobs:
   build:
     docker:
-      image: cimg/base:2022.06-22.04
-      
+      - image: cimg/base:2022.09
     steps:
-      - checkout      
+      - checkout    
 
 # jobs:
 #   build:
