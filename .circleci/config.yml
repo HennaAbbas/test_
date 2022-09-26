@@ -5,9 +5,7 @@ orbs:
 jobs:
   build:
     machine:
-      image: ubuntu-2204:2022.08.1
-    steps:
-      - checkout          
+      image: ubuntu-2204:2022.08.1        
 
 # jobs:
 #   build:
