@@ -2,12 +2,16 @@ version: 2.1
 
 orbs:
   node: circleci/node@5.0.2
+  harshitha-test-orb: myhelix/harshitha-test-orb@0.0.2
+
+
 jobs:
   build:
     docker:
       - image: cimg/base:2022.09
     steps:
-      - checkout    
+      - checkout  
+      - harshitha-test-orb/npm-install
       
       
 
