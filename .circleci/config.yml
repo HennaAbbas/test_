@@ -2,7 +2,7 @@ version: 2.1
 
 orbs:
   node: circleci/node@5.0.2
-  harshitha-test-orb: myhelix/harshitha-test-orb@0.0.2
+
 
 
 jobs:
@@ -11,7 +11,7 @@ jobs:
       - image: cimg/base:2022.09
     steps:
       - checkout  
-      - harshitha-test-orb/npm-install
+      - run: echo $TEST
       
       
 
