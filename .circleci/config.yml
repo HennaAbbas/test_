@@ -12,6 +12,7 @@ jobs:
     steps:
       - checkout  
       - run: echo $TEST
+      - run: echo "test"
       
       
 
