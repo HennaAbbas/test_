@@ -53,28 +53,21 @@ jobs:
     - checkout  
     - run: git tag -a v1.4    
     - run: echo $CIRCLE_WORKING_DIRECTORY
+  npm-install:
+    executor: node/default
+    steps:
+      - run: npm install    
 
 
 workflows:
   version: 2
   my_workflow:
     jobs:
-        - build: 
-            name: test-build
+        - build
         - test
         - test1
-  my_other_workflow:
-    jobs:
-        - build: 
-            name: test-build
-        - build: 
-            name: test-build            
-        - test
-        - test1        
-        - build: 
-            name: test-build
-        - build: 
-            name: test-build                
+        - npm-install
+              
 
       
 
