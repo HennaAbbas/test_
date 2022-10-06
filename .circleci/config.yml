@@ -67,6 +67,12 @@ workflows:
         - test
         - test1
         - npm-install
+  my_other_workflow:
+    jobs:
+        - build
+        - test
+        - test1
+        - npm-install        
               
 
       
