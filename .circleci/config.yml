@@ -1,81 +1,32 @@
-version: 2.1
-
-#test
-
+version: 2
 
 orbs:
-  node: circleci/node@5.0.2
-
-
+ # python: scx/molecule@1.0.0
 
 jobs:
-  build:
+  packer:
     docker:
-      - image: cimg/base:2022.09
+      - image: 531111251637.dkr.ecr.us-east-1.amazonaws.com/packer-ansible:v1.0.0
+        aws_auth:
+          aws_access_key_id: $IT_AWS_ACCESS_KEY_ID
+          aws_secret_access_key: $IT_AWS_ACCESS_SECRET
     steps:
-      - checkout  
-      - run: echo $TEST
-      - run: echo "test"
-      
-      
-
-# jobs:
-#   build:
-#     docker:
-#       - image: cimg/base:2020.01
-#     environment: 
-#       AWS_ACCESS_KEY_ID: TESTING_ENV
-#     steps:
-#       - checkout
-#       - run: echo 'export listall="ls -a"' >> $BASH_ENV
-# #       - run: echo 'export AWS_ACCESS_KEY_ID=TESTING_ENV' >> $BASH_ENV
-#       - run: echo ${AWS_ACCESS_KEY_ID}
-      
-  test:
-    machine: true
-    shell: /bin/bash --login -o pipefail
-    steps:
-    - checkout
-    - run: echo $CIRCLE_WORKING_DIRECTORY   
-    - run:
-        name: Set up environment
-        command: |
-          gem update --system
-          gem install bundler
-          bundle install    
-    
-  
-  test1:
-    machine:
-      image: ubuntu-2004:202201-01
-    steps:
-
-    - checkout  
-    - run: git tag -a v1.4    
-    - run: echo $CIRCLE_WORKING_DIRECTORY
-  npm-install:
-    executor: node/default
-    steps:
-      - run: npm install    
-
+      - checkout
+      - run:
+          name: "packer installation"
+          command: |
+            packer --version
+            ansible --version
 
 workflows:
   version: 2
-  my_workflow:
+  build_test:
     jobs:
-        - build
-        - test
-        - test1
-        - npm-install
-  my_other_workflow:
-    jobs:
-        - build
-        - test
-        - test1
-        - npm-install        
-              
+      - packer:
+          filters:
+            tags:
+              only: /^\d{4}\.\d+$/
 
-      
 
 
 #test 
