@@ -1,27 +1,44 @@
 version: 2.1
 
-executors:
-  linux-arm64:
-    machine:
-      image: ubuntu-2204:2022.07.1
-    resource_class: arm.medium
-    environment:
-      DEBIAN_FRONTEND=noninteractive
-
 jobs:
-  test:
-    executor: linux-arm64
+  inspect:
+    parameters:
+      img:
+        # see https://circleci.com/docs/2.0/using-arm#overview
+        type: string
+    machine:
+      image: << parameters.img >>
+    resource_class: arm.medium
     steps:
-      - run:
-          command: |
-            which jq
-            file "$(which jq)"
-            jq
+      - checkout
+      - run: |
+          cat /proc/cpuinfo
+          uname -m
+      - run: |
+          which jq
+          file "$(which jq)"
 
+  armed:
+    parameters:
+      dlc:
+        type: boolean
+        default: true
+      img:
+        # see https://circleci.com/docs/2.0/using-arm#overview
+        type: string
+    machine:
+      image: << parameters.img >>
+      docker_layer_caching: << parameters.dlc >>
+      resource_class: arm.medium
+    steps:
+      - checkout
+ 
 workflows:
-  test:
+  main:
     jobs:
-      - test
-
-
-
+      - inspect:
+          matrix:
+            parameters:
+              img:
+                - ubuntu-2204:2022.07.1
+                - ubuntu-2004:current
