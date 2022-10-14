@@ -3,7 +3,7 @@ version: 2.1
 executors:
   linux-arm64:
     machine:
-      image: ubuntu-2204:2022.07.2
+      image: ubuntu-2204:2022.07.1
     resource_class: arm.medium
     environment:
       DEBIAN_FRONTEND=noninteractive
@@ -21,7 +21,6 @@ workflows:
   test:
     jobs:
       - test
-              only: /^\d{4}\.\d+$/
 
 
 
