@@ -15,7 +15,6 @@ jobs:
       - run:
           command: |
             which jq
-            jq
 
 workflows:
   test:
