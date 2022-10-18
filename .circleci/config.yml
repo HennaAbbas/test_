@@ -39,6 +39,8 @@
 # Use the latest 2.1 version of CircleCI pipeline process engine.
 # See: https://circleci.com/docs/2.0/configuration-reference
 
+
+
 version: 2.1
 
 jobs:
@@ -74,8 +76,141 @@ jobs:
          root: workspace
          paths:
            - new-env-vars
+  docker-build-and-push-fr-web:
+    docker:
+    - image: cimg/python:3.9-node
+    environment:
+    - BUILDKIT_PROGRESS: plain
+    steps:
+    - run:
+        command: |
+          mkdir -p ~/.ssh;
+          ssh-keyscan -H github.com >> ~/.ssh/known_hosts;
+          git clone --depth 50 "$CIRCLE_REPOSITORY_URL" --branch "$CIRCLE_BRANCH" .;
+          git checkout --force -B "$CIRCLE_BRANCH" "$CIRCLE_SHA1";
+        name: Checkout code
+    - run:
+        command: |
+          if [[ $EUID == 0 ]]; then export SUDO=""; else export SUDO="sudo"; fi
+
+          if [ ! "$(which aws)" ] || [ "$PARAM_AWS_CLI_OVERRIDE" = 1 ]; then
+              # setup
+              if [ ! "$PARAM_AWS_CLI_VERSION" = "latest" ]; then export AWS_CLI_VER_STRING="-$PARAM_AWS_CLI_VERSION"; fi
+
+              # Uninstall existing AWS CLI if override is enabled.
+              if [ "$PARAM_AWS_CLI_OVERRIDE" = 1 ]; then
+                  AWS_CLI_PATH=$(which aws)
+                  if [ -n "$AWS_CLI_PATH" ]; then
+                      EXISTING_AWS_VERSION=$(aws --version)
+                      echo "Uninstalling ${EXISTING_AWS_VERSION}"
+                      # shellcheck disable=SC2012
+                      if [ -L "$AWS_CLI_PATH" ]; then
+                          AWS_SYMLINK_PATH=$(ls -l "$AWS_CLI_PATH" | sed -e 's/.* -> //')
+                      fi
+                      $SUDO rm -rf "$AWS_CLI_PATH" "$AWS_SYMLINK_PATH" "$HOME/.aws/" "/usr/local/bin/aws" "/usr/local/bin/aws_completer" "/usr/local/aws-cli"
+                  else
+                      echo "No AWS install found"
+                  fi
+              fi
+
+              echo "Installing AWS CLI v2"
+              cd /tmp || exit
+              # Platform check
+              if uname -a | grep "Darwin"; then
+                  export SYS_ENV_PLATFORM=macos
+              elif uname -a | grep "x86_64 GNU/Linux"; then
+                  export SYS_ENV_PLATFORM=linux_x86
+              elif uname -a | grep "aarch64 GNU/Linux"; then
+                  export SYS_ENV_PLATFORM=linux_arm
+              else
+                  echo "This platform appears to be unsupported."
+                  uname -a
+                  exit 1
+              fi
+              echo "Platform $SYS_ENV_PLATFORM"
+              # Install per platform
+              case $SYS_ENV_PLATFORM in
+              linux_x86)
+                  curl -sSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64${AWS_CLI_VER_STRING}.zip" -o "awscliv2.zip"
+                  unzip -q -o awscliv2.zip
+                  $SUDO ./aws/install
+                  rm awscliv2.zip
+                  ;;
+              macos)
+                  curl -sSL "https://awscli.amazonaws.com/AWSCLIV2${AWS_CLI_VER_STRING}.pkg" -o "AWSCLIV2.pkg"
+                  $SUDO installer -pkg AWSCLIV2.pkg -target /
+                  rm AWSCLIV2.pkg
+                  ;;
+              linux_arm)
+                  curl -sSL "https://awscli.amazonaws.com/awscli-exe-linux-aarch64${AWS_CLI_VER_STRING}.zip" -o "awscliv2.zip"
+                  unzip -q -o awscliv2.zip
+                  $SUDO ./aws/install
+                  rm awscliv2.zip
+                  ;;
+              *)
+                  echo "This orb does not currently support your platform. If you believe it should, please consider opening an issue on the GitHub repository:"
+                  echo "https://github.com/CircleCI-Public/aws-cli-orb/issues/new"
+                  exit 1
+              ;;
+              esac
+              # Toggle AWS Pager
+              if [ "$PARAM_AWS_CLI_DISABLE_PAGER" = 1 ]; then
+                  if [ -z "${AWS_PAGER+x}" ]; then
+                      echo 'export AWS_PAGER=""' >> "$BASH_ENV"
+                      echo "AWS_PAGER is being set to the empty string to disable all output paging for AWS CLI commands."
+                      echo "You can set the 'disable-aws-pager' parameter to 'false' to disable this behavior."
+                  fi
+              fi
+          else
+              echo "AWS CLI is already installed, skipping installation."
+              aws --version
+          fi
+        environment:
+          PARAM_AWS_CLI_DISABLE_PAGER: true
+          PARAM_AWS_CLI_OVERRIDE: false
+          PARAM_AWS_CLI_VERSION: latest
+        name: Install AWS CLI - latest
+    - run:
+        command: |-
+          PARAM_AWS_CLI_ACCESS_KEY_ID=$(eval echo "\$$PARAM_AWS_CLI_ACCESS_KEY_ID")
+          PARAM_AWS_CLI_SECRET_ACCESS_KEY=$(eval echo "\$$PARAM_AWS_CLI_SECRET_ACCESS_KEY")
+          PARAM_AWS_CLI_REGION=$(eval echo "\$$PARAM_AWS_CLI_REGION")
+
+          aws configure set aws_access_key_id \
+              "$PARAM_AWS_CLI_ACCESS_KEY_ID" \
+              --profile "$PARAM_AWS_CLI_PROFILE_NAME"
+          aws configure set aws_secret_access_key \
+              "$PARAM_AWS_CLI_SECRET_ACCESS_KEY" \
+              --profile "$PARAM_AWS_CLI_PROFILE_NAME"
+
+          if [ "$PARAM_AWS_CLI_CONFIG_DEFAULT_REGION" = "1" ]; then
+              aws configure set default.region "$PARAM_AWS_CLI_REGION" \
+                  --profile "$PARAM_AWS_CLI_PROFILE_NAME"
+          fi
+
+          if [ "$PARAM_AWS_CLI_CONFIG_PROFILE_REGION" = "1" ]; then
+              aws configure set region "$PARAM_AWS_CLI_REGION" \
+                  --profile "$PARAM_AWS_CLI_PROFILE_NAME"
+          fi
+
+          if [ -n "$PARAM_AWS_CLI_ROLE_ARN" ]; then
+              aws configure set role_arn "$PARAM_AWS_CLI_ROLE_ARN" \
+                  --profile "$PARAM_AWS_CLI_PROFILE_NAME"
+          fi
+        environment:
+          PARAM_AWS_CLI_ACCESS_KEY_ID: AWS_ACCESS_KEY_ID
+          PARAM_AWS_CLI_CONFIG_DEFAULT_REGION: true
+          PARAM_AWS_CLI_CONFIG_PROFILE_REGION: true
+          PARAM_AWS_CLI_PROFILE_NAME: default
+          PARAM_AWS_CLI_REGION: AWS_DEFAULT_REGION
+          PARAM_AWS_CLI_ROLE_ARN: ''
+          PARAM_AWS_CLI_SECRET_ACCESS_KEY: AWS_SECRET_ACCESS_KEY
+        name: Configure AWS Access Key ID
+    - setup_remote_docker:
+        version: 20.10.17           
 
 workflows:
    say-date-workflow:
     jobs:
       - say-date
+      - docker-build-and-push-fr-web
