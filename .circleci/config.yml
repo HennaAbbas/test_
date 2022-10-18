@@ -47,35 +47,10 @@ jobs:
  say-date:
    docker:
      - image: cimg/base:stable
-   parameters:
-     date:
-       type: string
-       default: "henna"
    steps:
      - checkout
      - setup_remote_docker:
           version: 20.10.17     
-     - run:
-         name: set var
-         command: echo "export DATETIME=`date +%Y%m%d.%H%M`" >> $BASH_ENV
-     - run: echo "$DATETIME"
-     - run: mkdir -p workspace
-     - run: echo "export DATETIME=datetime.`date +%Y%m%d.%H%M%S`" >>workspace/new-env-vars
-     - run: echo "export BOB=$BAZ" >> workspace/new-env-vars
-     - run: cat workspace/new-env-vars 
-     - run: cat workspace/new-env-vars >> $BASH_ENV
-     - run: echo ${DATETIME:-NULL}
-     - run: 
-         name: make test artifacts
-         command: |
-           mkdir /tmp/artifacts;
-           echo "my artifact files in a dir" > /tmp/artifacts/encap-staging-no-color_${DATETIME:-NULL}.txt 
-     - store_artifacts:
-         path: /tmp/artifacts
-     - persist_to_workspace:
-         root: workspace
-         paths:
-           - new-env-vars
   docker-build-and-push-fr-web:
     docker:
     - image: cimg/python:3.9-node
