@@ -30,17 +30,11 @@
 version: 2.1
 jobs:
   build:
-    parameters:
-      p:
-        type: boolean
-        default: true
-
     machine: true
     steps:
       - checkout
-      - run : echo << parameters.p >>
+      - run : echo "hello world"
 workflows:
   workflow:
     jobs:
-      - build:
-          p: y
+      - build
