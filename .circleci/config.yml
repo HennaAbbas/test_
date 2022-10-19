@@ -1,22 +1,15 @@
-version: '2.1'
-orbs:
-  aws-code-deploy: circleci/aws-code-deploy@2.0
-
-
-#       - image: cimg/python:3.6  # image name & value:
-#     steps:
-#       - checkout
-#       - aws-cli/setup
-#       - aws-code-deploy/create-application:
-#           application-name: myApplication
+version: 2.1
+jobs:
+  build:
+    machine: true
+    steps:
+      - checkout
+      - run : echo "hello world"
 workflows:
-  deploy_application:
+  workflow:
     jobs:
-#       - build
-      - aws-code-deploy/deploy:
-          application-name: myApplication
-          bundle-bucket: myApplicationS3Bucket
-          bundle-key: myS3BucketKey
-          deployment-group: myDeploymentGroup
-          service-role-arn: myDeploymentGroupRoleARN
-#test
+      - build: 
+          filters: 
+            branches: 
+              only:
+                - master
