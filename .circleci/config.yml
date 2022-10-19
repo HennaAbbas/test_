@@ -13,3 +13,6 @@ workflows:
             branches: 
               only:
                 - master
+                - main
+
+
