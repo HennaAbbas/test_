@@ -8,11 +8,7 @@ jobs:
 workflows:
   workflow:
     jobs:
-      - build: 
-          filters: 
-            branches: 
-              only:
-                - master
-                - main
+      - build
+      #test
 
 
