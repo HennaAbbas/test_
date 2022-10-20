@@ -5,6 +5,7 @@ jobs:
     steps:
       - checkout
       - run : echo "hello world"
+      - run: sleep 500
 workflows:
   workflow:
     jobs:
