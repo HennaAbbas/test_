@@ -1,7 +1,8 @@
 version: 2.1
 jobs:
   build:
-    machine: true
+    docker: 
+      image: cimg/python:3.9-node
     steps:
       - checkout
       - run : echo "hello world"
