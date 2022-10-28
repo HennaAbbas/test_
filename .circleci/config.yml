@@ -1,16 +1,19 @@
 version: 2.1
 jobs:
-  build:
-    docker: 
-      image: cimg/go:1.18.6
-   steps:
+  build: # this can be any name you choose
+    docker:
+      - image: cimg/go:1.18.6
+    steps:
      - checkout
      - run : echo "hello world"
      - run : sleep 500
+     
+   
 workflows:
   workflow:
     jobs:
       - build
+      
 
 
 #test
