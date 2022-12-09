@@ -1,19 +1,23 @@
 version: 2.1
+
 jobs:
-  build: 
+  foo:
     docker:
-      - image: cimg/go:1.18.6
+      - image: circleci/node:10
     steps:
-     - checkout
-     - run : echo "hello world"
-     - run : sleep 500
-     
-   
+      - checkout
+
 workflows:
-  workflow:
+  version: 2
+
+  master:
+
+    when:
+      or:
+        - equal: [ master, << pipeline.git.branch >> ]
+
     jobs:
-      - build
-      
+      - foo
 
 
 
