@@ -27,7 +27,7 @@ jobs:
             echo "Testing Slack notification."
             echo "Test name: << parameters.test-name >>"
       - slack/notify:
-          channel: 'slack-notify-test'
+          channel: << parameters.test-name >>"
           event: fail
           template: basic_fail_1
       - slack/notify:
