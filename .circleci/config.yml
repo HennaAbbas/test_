@@ -49,7 +49,6 @@ jobs:
   test:
     docker:
       - image: 'cimg/base:stable'
-    resource_class: hippo/k8s-small
     steps:
       - run: echo "test my app"
 
