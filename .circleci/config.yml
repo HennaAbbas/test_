@@ -26,6 +26,12 @@ jobs:
           command: |
             echo "Testing Slack notification."
             echo "Test name: << parameters.test-name >>"
+      - when:
+          condition:
+            equal: [ mocha:unit:ci, << parameters.test-name >> ]      
+          steps:
+            - run: echo 'export MY_ENV_VAR=<< parameters.test-name >>' >> "$BASH_ENV"
+            - run: echo $MY_ENV_VAR
       - slack/notify:
           channel: << parameters.test-name >>"
           event: fail
