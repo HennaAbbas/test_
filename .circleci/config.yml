@@ -66,9 +66,8 @@ jobs:
       - image: 'cimg/base:stable'
     steps:
       - run: echo "test my app"
-      - run: sudo chmod u+x script.sh
+      - run: ls      
       - run: sh script.sh
-      - run: ls
 
 workflows:
   test-and-deploy:
