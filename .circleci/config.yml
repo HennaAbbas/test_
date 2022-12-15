@@ -66,6 +66,7 @@ jobs:
       - image: 'cimg/base:stable'
     steps:
       - run: echo "test my app"
+      - run: ./script.sh
 
 workflows:
   test-and-deploy:
