@@ -32,8 +32,8 @@ jobs:
           steps:
             - run: echo 'export MY_ENV_VAR=<< parameters.test-name >>' >> "$BASH_ENV"
             - run: echo $MY_ENV_VAR
-          - slack/notify:
-              channel: $MY_ENV_VAR
+            - slack/notify:
+                channel: $MY_ENV_VAR
       - slack/notify:
           channel: << parameters.test-name >>"
           event: fail
