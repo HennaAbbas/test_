@@ -58,7 +58,7 @@ workflows:
       - test
       - slack/on-hold:
           channel: 'slack-notify-test'
-          context: SLACK_SECRETS
+          context: slack-secrets
           requires:
             - test
       - pause_workflow:
@@ -71,7 +71,7 @@ workflows:
             alias: "Test name"
             parameters: 
               test-name: *test-names
-          context: SLACK_SECRETS
+          context: slack-secrets
           requires:
             - pause_workflow
 
