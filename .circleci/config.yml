@@ -30,16 +30,23 @@ jobs:
           condition:
             equal: [ mocha:unit:ci, << parameters.test-name >> ]      
           steps:
-            - run: echo 'export MY_ENV_VAR=<< parameters.test-name >>' >> "$BASH_ENV"
-            - run: echo $MY_ENV_VAR
-            - slack/notify:
-                channel: $MY_ENV_VAR
+            - run: echo 'export MY_SLACK_CHANNEL="SLACK_CHANNEL_NAME"' >> "$BASH_ENV"
+      - when:
+          condition:
+            equal: [ mocha:unit:rateplan, << parameters.test-name >> ]      
+          steps:
+            - run: echo 'export MY_SLACK_CHANNEL="DIFFERENT_SLACK_CHANNEL_NAME"' >> "$BASH_ENV"
+      - when:
+          condition:
+            equal: [ test:billing-service-integration, << parameters.test-name >> ]      
+          steps:
+            - run: echo 'export MY_SLACK_CHANNEL="ANOTHER_SLACK_CHANNEL_NAME"' >> "$BASH_ENV"            
       - slack/notify:
-          channel: << parameters.test-name >>"
+          channel: $MY_SLACK_CHANNEL
           event: fail
           template: basic_fail_1
       - slack/notify:
-          channel: 'slack-notify-test'
+          channel: $MY_SLACK_CHANNEL
           custom: |
             {
               "blocks": [
