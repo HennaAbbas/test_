@@ -67,7 +67,7 @@ jobs:
     steps:
       - run: echo "test my app"
       - run: chmod u+x script.sh
-      - run: script.sh
+      - run: sh script.sh
       - run: ls
 
 workflows:
