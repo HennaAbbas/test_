@@ -6,46 +6,11 @@ jobs:
     steps:
       - checkout
       - run: echo "hello world!"
-  job_1:
-    docker:
-      - image: cimg/node:12.18
-    steps:
-      - checkout
-      - run: echo "hello world!"
-  job_2:
-    docker:
-      - image: cimg/node:12.18
-    steps:
-      - checkout
-      - run: echo "hello world!"      
-  job_3:
-    docker:
-      - image: cimg/node:12.18
-    steps:
-      - checkout
-      - run: echo "hello world!"       
-  
+      - run: lsb_release -a
+
       
 workflows:
     build_and_push:
       jobs:
-        - build:
-            filters:  # using regex filters requires the entire branch to match
-              branches:
-                only:  # only branches matching the below regex filters will run
-                  - testing  
-        - job_1:
-            filters:  # using regex filters requires the entire branch to match
-              branches:
-                only:  # only branches matching the below regex filters will run
-                  - testing       
-        - job_2: 
-            filters:  # using regex filters requires the entire branch to match
-              branches:
-                only:  # only branches matching the below regex filters will run
-                  - testing          
-        - job_3:
-            filters:  # using regex filters requires the entire branch to match
-              branches:
-                only:  # only branches matching the below regex filters will run
-                  - testing          
+        - build
+            
