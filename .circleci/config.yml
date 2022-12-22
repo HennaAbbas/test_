@@ -30,10 +30,23 @@
 version: 2.1
 jobs:
   build:
-    machine: true
+    resource_class: large
+    working_directory: ~/amp-online
+    docker:
+    - image: cimg/ruby:3.0.4-browsers
+      environment:
+        PATH: /opt/yarn/yarn-v1.5.1/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+        PGHOST: 127.0.0.1
+        PGUSER: circleci
+    - image: postgres:13.9-alpine
+      environment:
+        POSTGRES_USER: circleci
+        POSTGRES_DB: access_test
+        POSTGRES_PASSWORD: ''
+        POSTGRES_HOST_AUTH_METHOD: trust
+    - image: redis:7.0.6-alpine
     steps:
-      - checkout
-      - run : echo "hello world"
+    - checkout
 workflows:
   workflow:
     jobs:
