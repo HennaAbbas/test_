@@ -42,7 +42,7 @@ jobs:
       environment:
         POSTGRES_USER: circleci
         POSTGRES_DB: access_test
-        POSTGRES_PASSWORD: "password"
+        POSTGRES_PASSWORD: ""
         POSTGRES_HOST_AUTH_METHOD: trust
     - image: redis:7.0.6-alpine
     steps:
