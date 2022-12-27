@@ -12,6 +12,8 @@ jobs:
           docker_layer_caching: true
       - run: docker build ./
       - run: docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+      - run: docker push henna453/test-docker      
+      
 
 workflows:
   main:
