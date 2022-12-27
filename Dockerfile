@@ -1,41 +1,72 @@
-FROM debian:11.0
+FROM buildpack-deps:jessie
 
-USER root
+# Skip installing gem documentation
+RUN mkdir -p /usr/local/etc \
+	&& { \
+		echo 'install: --no-document'; \
+		echo 'update: --no-document'; \
+	} >> /usr/local/etc/gemrc
 
-ARG ARTIFACTORY_TOKEN
-ENV ARTIFACTORY_TOKEN=$ARTIFACTORY_TOKEN
+ENV RUBY_MAJOR 2.1
+ENV RUBY_VERSION 2.1.10
+ENV RUBY_DOWNLOAD_SHA256 5be9f8d5d29d252cd7f969ab7550e31bbb001feb4a83532301c0dd3b5006e148
+ENV RUBYGEMS_VERSION 2.6.10
 
-RUN apt-get update
-RUN apt-get install -y libc6 pkg-config build-essential libssl-dev libudev-dev librtlsdr-dev libpthread-stubs0-dev libgmp-dev protobuf-compiler unzip cmake golang libusb-1.0-0-dev curl git
-RUN curl -sL https://deb.nodesource.com/setup_14.x | bash -
-RUN apt -y install nodejs
-RUN npm config set prefix /usr/local
-RUN npm install -g npm
-RUN npm install -g typescript@3.9.5 ts-node yarn --force
-RUN npm install --global --save neon-cli@0.8.1
+# some of ruby's build scripts are written in ruby
+#   we purge system ruby later to make sure our final image uses what we just built
+RUN set -ex \
+	\
+	&& buildDeps=' \
+		bison \
+		libgdbm-dev \
+		ruby \
+	' \
+	&& apt-get update \
+	&& apt-get install -y --no-install-recommends $buildDeps \
+	&& rm -rf /var/lib/apt/lists/* \
+	\
+	&& wget -O ruby.tar.xz "https://cache.ruby-lang.org/pub/ruby/${RUBY_MAJOR%-rc}/ruby-$RUBY_VERSION.tar.xz" \
+	&& echo "$RUBY_DOWNLOAD_SHA256 *ruby.tar.xz" | sha256sum -c - \
+	\
+	&& mkdir -p /usr/src/ruby \
+	&& tar -xJf ruby.tar.xz -C /usr/src/ruby --strip-components=1 \
+	&& rm ruby.tar.xz \
+	\
+	&& cd /usr/src/ruby \
+	\
+# hack in "ENABLE_PATH_CHECK" disabling to suppress:
+#   warning: Insecure world writable dir
+	&& { \
+		echo '#define ENABLE_PATH_CHECK 0'; \
+		echo; \
+		cat file.c; \
+	} > file.c.new \
+	&& mv file.c.new file.c \
+	\
+	&& autoconf \
+	&& ./configure --disable-install-doc --enable-shared \
+	&& make -j"$(nproc)" \
+	&& make install \
+	\
+	&& apt-get purge -y --auto-remove $buildDeps \
+	&& cd / \
+	&& rm -r /usr/src/ruby \
+	\
+	&& gem update --system "$RUBYGEMS_VERSION"
 
+ENV BUNDLER_VERSION 1.14.3
 
-# Freezing nightly due to https://github.com/rust-lang/rust/issues/62562
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain nightly-2019-10-01
-RUN ln -sf $HOME/.cargo/bin/* /bin
+RUN gem install bundler --version "$BUNDLER_VERSION"
 
-RUN apt-get -y install redis-server
+# install things globally, for great justice
+# and don't create ".bundle" in all our apps
+ENV GEM_HOME /usr/local/bundle
+ENV BUNDLE_PATH="$GEM_HOME" \
+	BUNDLE_BIN="$GEM_HOME/bin" \
+	BUNDLE_SILENCE_ROOT_WARNING=1 \
+	BUNDLE_APP_CONFIG="$GEM_HOME"
+ENV PATH $BUNDLE_BIN:$PATH
+RUN mkdir -p "$GEM_HOME" "$BUNDLE_BIN" \
+	&& chmod 777 "$GEM_HOME" "$BUNDLE_BIN"
 
-COPY pingpong-wallet /home/root/pingpong-wallet
-RUN mv /home/root/pingpong-wallet/.npmrc.ci /home/root/pingpong-wallet/.npmrc
-
-RUN chown -R root:root /home/root/pingpong-wallet
-
-RUN cd /home/root/pingpong-wallet && yarn install
-
-RUN cd /home/root/pingpong-wallet/pingpong-react && sh ../upgrade-dependency.sh pingpong-common-server && sh ../upgrade-dependency.sh pingpong-types && yarn install && yarn build
-
-#RUN rm -rf /home/root/pingpong-wallet
-
-#RUN chown -R root:root /usr/local/lib/node_modules
-
-#RUN chown -R root:root /usr/local/share/.cache/yarn
-
-#RUN cat /etc/subuid
-#RUN cat /etc/subgid
-#RUN find / \( -uid +65535 \) -ls 2>/dev/null || true
+CMD [ "irb" ]
