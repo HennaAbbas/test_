@@ -1,94 +1,20 @@
+
+
 version: '2.1'
 
-test-names: &test-names
-  - mocha:unit:ci
-  - mocha:unit:rateplan
-  - test:billing-service-integration
-
-orbs:
-  slack: circleci/slack@4.12.0
-
-parameters:
-  environment:
-    default: "prod"
-    type: string
-
 jobs:
-  deploy:
+  build:
     docker:
-      - image: 'cimg/base:stable'
-    parameters:
-      test-name:
-        type: string
+    - image: cimg/node:16.11-browsers
+
     steps:
-      - run:
-          name: "Simple echo"
-          command: |
-            echo "Testing Slack notification."
-            echo "Test name: << parameters.test-name >>"
-      - when:
-          condition:
-            equal: [ mocha:unit:ci, << parameters.test-name >> ]      
-          steps:
-            - run: echo 'export MY_SLACK_CHANNEL="SLACK_CHANNEL_NAME"' >> "$BASH_ENV"
-      - when:
-          condition:
-            equal: [ mocha:unit:rateplan, << parameters.test-name >> ]      
-          steps:
-            - run: echo 'export MY_SLACK_CHANNEL="DIFFERENT_SLACK_CHANNEL_NAME"' >> "$BASH_ENV"
-      - when:
-          condition:
-            equal: [ test:billing-service-integration, << parameters.test-name >> ]      
-          steps:
-            - run: echo 'export MY_SLACK_CHANNEL="ANOTHER_SLACK_CHANNEL_NAME"' >> "$BASH_ENV"            
-      - slack/notify:
-          channel: $MY_SLACK_CHANNEL
-          event: fail
-          template: basic_fail_1
-      - slack/notify:
-          channel: $MY_SLACK_CHANNEL
-          custom: |
-            {
-              "blocks": [
-                {
-                  "type": "header",
-                  "text": {
-                      "type": "plain_text",
-                      "text": ":white_check_mark: Success to deploy << parameters.test-name >> to << pipeline.parameters.environment >>",
-                      "emoji": true
-                  }
-                }
-              ]
-            }
-          event: pass
-  test:
-    docker:
-      - image: 'cimg/base:stable'
-    steps:
-      - run: echo "test my app"
-      - run: ls      
-      - run: sh script.sh
+      - checkout
+      - run: docker build
+
 
 workflows:
-  test-and-deploy:
+  main:
     jobs:
-      - test
-      - slack/on-hold:
-          channel: 'slack-notify-test'
-          context: slack-secrets
-          requires:
-            - test
-      - pause_workflow:
-          requires:
-            - test
-            - slack/on-hold
-          type: approval
-      - deploy:
-          matrix:
-            alias: "Test name"
-            parameters: 
-              test-name: *test-names
-          context: slack-secrets
-          requires:
-            - pause_workflow
+      - build
+
 
