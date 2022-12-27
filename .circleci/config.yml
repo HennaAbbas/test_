@@ -5,11 +5,11 @@ version: '2.1'
 jobs:
   build:
     docker:
-    - image: cimg/node:16.11-browsers
+    - image: henna453/test-docker:latest
 
     steps:
       - checkout
-      - run: docker build
+
 
 
 workflows:
