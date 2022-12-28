@@ -1,4 +1,4 @@
-FROM debian:11.0
+FROM cimg/base:2022.12
 # USER root
 
 RUN apt-get update
