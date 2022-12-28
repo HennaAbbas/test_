@@ -1,5 +1,5 @@
 FROM cimg/base:2022.12
-# USER root
+USER root
 
 RUN apt-get update
 RUN apt-get install -y libc6 pkg-config build-essential libssl-dev libudev-dev librtlsdr-dev libpthread-stubs0-dev libgmp-dev protobuf-compiler unzip cmake golang libusb-1.0-0-dev curl git
