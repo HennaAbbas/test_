@@ -6,9 +6,9 @@ RUN apt-get install -y libc6 pkg-config build-essential libssl-dev libudev-dev l
 RUN curl -sL https://deb.nodesource.com/setup_14.x | bash -
 RUN apt -y install nodejs
 # RUN npm config set prefix /usr/local
-RUN sudo -i npm install -g npm 
-RUN sudo -i npm install -g typescript@3.9.5 ts-node yarn --force
-RUN sudo -i npm install --global --save neon-cli@0.10.1 && chown -R root:root /root
+RUN sudo npm install -g npm 
+RUN sudo npm install -g typescript@3.9.5 ts-node yarn --force
+RUN sudo npm install --global --save neon-cli@0.10.1 && chown -R root:root /root
 
 
 # Freezing nightly due to https://github.com/rust-lang/rust/issues/62562
