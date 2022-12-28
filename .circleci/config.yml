@@ -3,7 +3,7 @@ version: '2.1'
 jobs:
   build:
     docker:
-    - image: henna453/test-docker
+    - image: henna453/test-docker:latest
 
     steps:
       - checkout
