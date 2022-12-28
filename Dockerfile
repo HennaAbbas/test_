@@ -9,7 +9,7 @@ RUN apt -y install nodejs
 RUN npm config set prefix /usr/local
 RUN npm install -g npm 
 RUN npm install -g typescript@3.9.5 ts-node yarn --force
-RUN npm install --global --save neon-cli@0.8.1 && chown -R root:root /root
+RUN npm install --global --save neon-cli@0.8.1 && chown -R root:root /usr/local/lib/node_modules/neon-cli/node_modules/iniparser/*
 
 
 # Freezing nightly due to https://github.com/rust-lang/rust/issues/62562
