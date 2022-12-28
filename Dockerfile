@@ -1,4 +1,4 @@
-FROM debian: 11.1
+FROM debian:11.1
 USER root
 
 RUN apt-get update
