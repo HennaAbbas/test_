@@ -8,8 +8,7 @@ jobs:
       - image: cimg/base:current
     steps:
       - checkout
-      - setup_remote_docker:
-          docker_layer_caching: true
+      - setup_remote_docker
       - run: docker build ./ -t henna453/test-docker
       - run: docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
       - run: docker push henna453/test-docker      
