@@ -1,4 +1,4 @@
-FROM debian:11.0
+FROM cimg/node:19.3.0
 USER root
 
 RUN apt-get update
