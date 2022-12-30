@@ -1,7 +1,6 @@
 FROM cimg/node:19.3.0
 USER root
 
-
 RUN npm install -g npm 
 RUN npm install neon-cli@0.8.1
 RUN npm install -g typescript@3.9.5 ts-node yarn --force
