@@ -7,8 +7,8 @@ RUN curl -sL https://deb.nodesource.com/setup_14.x | bash -
 RUN apt -y install nodejs
 # RUN npm config set prefix /usr/local
 RUN npm install -g npm 
+RUN npm install neon-cli@0.8.1
 RUN npm install -g typescript@3.9.5 ts-node yarn --force
-RUN npm install neon-cli@0.10.1 
 
 # Freezing nightly due to https://github.com/rust-lang/rust/issues/62562
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain nightly-2019-10-01
