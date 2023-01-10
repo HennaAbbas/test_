@@ -1,22 +1,71 @@
+version: 2.1
 
-version: '2.1'
+orbs:
+  ecr: pagerduty/ecr@0.0.4
+  git: pagerduty/git@0.0.3        # https://circleci.com/orbs/registry/orb/pagerduty/git
+  elixir: pagerduty/elixir@0.0.9  # https://circleci.com/orbs/registry/orb/pagerduty/elixir
+
+build_image: &build_image
+  image: cimg/base:stable-20.04
+
+defaults: &defaults
+  docker:
+    - *build_image
+    # - image: elasticsearch:5.3
+    # - image: pagerdutypublic/kafka:04a3654
+    #   environment:
+    #     KAFKA_CREATE_TOPICS: "team_updates:2:1"
 
 jobs:
-  build:
-    resource_class: medium
-    docker:
-      - image: cimg/base:current
+  test:
+    <<: *defaults
+    environment:
+      - MIX_ENV=test
     steps:
-      - checkout
       - setup_remote_docker
-      - run: docker build ./ -t henna453/test-docker
-      - run: docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
-      - run: docker push henna453/test-docker:latest      
-      
+      - checkout
+      - run: ssh-add -D && echo "${GITHUB_SSH_KEY}" | base64 --decode | ssh-add - # to access private Github deps
+      - git/rebase_on_main
+      - run: sudo apt-get update && sudo apt install libtinfo5 libncurses5-dev
+      - elixir/install:
+          include_odbc: true
+      - run: make deps
+      - run: mix format --check-formatted
+      - run: mix credo
+      - run: mix compile --force --warnings-as-errors
+      - run:
+          name: 'run test suites for all applications'
+          command: mix test --warnings-as-errors
+  docker_publish:
+    docker:
+      - *build_image
+    environment:
+      - MIX_ENV=deploy
+    steps:
+      - setup_remote_docker
+      - checkout
+      - run: ssh-add -D && echo "${GITHUB_SSH_KEY}" | base64 --decode | ssh-add - # to access private Github deps
+      - git/rebase_on_main
+      - run: sudo apt-get update && sudo apt install libtinfo5 libncurses5-dev
+      - elixir/install:
+          include_odbc: true
+      - run: make deps
+      - run: make release
+      - ecr/build-and-publish:
+          repo: 'deployability-monitoring'
+          dockerfile: Dockerfile
+          regions: 'us-west-2,us-west-1,us-east-2,eu-central-1,eu-west-1'
 
 workflows:
-  main:
+  version: 2
+  test_and_publish:
     jobs:
-      - build
-
+      - test:
+          context:
+            - PagerDuty
+            - ECR Production
+      - docker_publish:
+          context:
+            - PagerDuty
+            - ECR Production
 
