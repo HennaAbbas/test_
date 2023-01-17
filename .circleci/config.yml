@@ -7,10 +7,7 @@ jobs:
     executor: terraform/default
     steps:
       - checkout
-      - terraform/install:
-          arch: amd64
-          os: linux
-          terraform_version: 1.3.4
+      - terraform/install
       # - terraform/fmt:
       #     path: .
       # - terraform/validate:
