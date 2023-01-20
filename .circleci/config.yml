@@ -4,7 +4,7 @@ jobs:
   build:
     docker:
     - image: henna453/test-docker:latest
-    resource_class: ""
+    resource_class: medium
 
     steps:
       - checkout
