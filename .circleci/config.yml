@@ -13,7 +13,7 @@ jobs:
       - run:
           name: Build
           command: |
-            echo "Current build number: ${CIRCLE_BUILD_NUM}"      
+            echo "Current build number: %CIRCLE_BUILD_NUM%"      
 workflows:
   build-and-pack:
     jobs:
