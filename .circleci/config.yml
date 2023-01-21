@@ -10,7 +10,7 @@ jobs:
     executor: win/server-2022
     steps:
       - checkout
-      - run: echo 'export $Env:MY_ENV_VAR="test_env_var"' >> 
+      - run: setx MY_ENV_VAR "Variable value"
       - run:
           name: Build
           command: |
