@@ -1,33 +1,22 @@
-version: '2.1'
+version: 2.1
+
+# Defining orbs to be used
 orbs:
-  terraform: circleci/terraform@3.1
+  win: circleci/windows@5.0
+
+# Define a job to be invoked later in a workflow.
 jobs:
-  single-job-lifecycle:
-    executor: terraform/default
+  build-and-pack:
+    executor: win/server-2022
     steps:
       - checkout
-      - terraform/install:
-          arch: amd64
-          os: linux
-          terraform_version: 0.14.2
-      - terraform/fmt:
-          path: .
-      - terraform/validate:
-          path: .
-      - terraform/init:
-          backend: true
-          backend_config_file: backend.hcl
-          path: .
-      - terraform/plan:
-          backend_config_file: backend.hcl
-          path: .
-      - terraform/apply:
-          backend_config_file: backend.hcl
-          path: .
-      - terraform/destroy:
-          path: .
-    working_directory: ~/src
+      - run:
+          name: Build
+          command: |
+            echo "Current build number: ${CIRCLE_BUILD_NUM}"
+            ./ci/build.ps1 -BuildNumber "${CIRCLE_BUILD_NUM}"      
 workflows:
-  single-job-lifecycle:
+  build-and-pack:
     jobs:
-      - single-job-lifecycle
+      - build-and-pack
+      
