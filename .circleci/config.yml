@@ -13,7 +13,7 @@ jobs:
       - run:
           name: Build
           command: |
-            echo %CIRCLE_BUILD_NUM%    
+            echo $Env:CIRCLE_BUILD_NUM 
 workflows:
   build-and-pack:
     jobs:
