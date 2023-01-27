@@ -1,12 +1,17 @@
 version: '2.1'
 
-jobs:
-  build:
-#     docker:
-#     - image: windows-server-2022-gui:edge
-    machine:
-      image: windows-server-2022-gui:edge
+# jobs:
+#   build:
+# #     docker:
+# #     - image: windows-server-2022-gui:edge
+#     machine:
+#       image: windows-server-2022-gui:edge
+orbs:
+  win: circleci/windows@5.0 # The Windows orb gives you everything you need to start using the Windows executor.
 
+jobs:
+  build: # name of your job
+    executor: win/default
     steps:
       - checkout
 
