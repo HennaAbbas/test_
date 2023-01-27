@@ -107,12 +107,12 @@ workflows:
       - build-and-test-ML
       - build-and-test-SD
 
-#   commit-workflow:
-#     when:
-#       not:
-#         equal: [scheduled_pipeline, << pipeline.trigger_source >>]
-#     jobs:
-#       - build-and-test-ML
+  commit-workflow:
+    when:
+      not:
+        equal: [scheduled_pipeline, << pipeline.trigger_source >>]
+    jobs:
+      - build-and-test-ML
 
 #   commit-workflow-sd:
 #     when:
