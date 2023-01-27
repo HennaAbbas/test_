@@ -96,10 +96,7 @@ jobs:
 workflows:
   version: 2
 
-  # daily-run-workflow:
-
-  #   jobs:
-  #     - build-and-test
+  
 
   daily-run-workflow:
     when:
