@@ -18,6 +18,8 @@ jobs:
   webdriver_tests:
     docker:
       - image: cimg/go:1.19.5-browsers
+    working_directory: /home/circleci/go/src/github.com/monzo/wearedev
+    resource_class: small      
     steps:
       - browser-tools/install-browser-tools      
 
