@@ -17,7 +17,7 @@ jobs:
       - checkout
   webdriver_tests:
     docker:
-      - image: cimg/go:1.19.5-browsers
+      - image: cimg/go@sha256:ef6056f96590eb962b24285f158a2e8bb2376d83b19d64aaa6676c20c803c168
     working_directory: /home/circleci/go/src/github.com/monzo/wearedev
     resource_class: small      
     steps:
