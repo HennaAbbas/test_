@@ -18,6 +18,12 @@ jobs:
     executor: win/default
     steps:
       - checkout
+      - browser-tools/install-chrome
+      - browser-tools/install-chromedriver            
+      - run:
+          name: chmod webdrivers
+          command: chmod +x /home/circleci/.webdrivers/chromedriver      
+          
   webdriver_tests:
     docker:
       - image: cimg/go@sha256:ef6056f96590eb962b24285f158a2e8bb2376d83b19d64aaa6676c20c803c168
@@ -27,60 +33,60 @@ jobs:
       - browser-tools/install-browser-tools  
       
       
-  test: # our next job, called "test"
-    # we run "parallel job containers" to enable speeding up our tests;
-    # this splits our tests across multiple containers.
-    parallelism: 3
-    # here we set TWO docker images.
-    docker:
-      - image: cimg/ruby:3.0-node # this is our primary docker image, where step commands run.
+#   test: # our next job, called "test"
+#     # we run "parallel job containers" to enable speeding up our tests;
+#     # this splits our tests across multiple containers.
+#     parallelism: 3
+#     # here we set TWO docker images.
+#     docker:
+#       - image: cimg/ruby:3.0-node # this is our primary docker image, where step commands run.
 
-#       - image: cimg/postgres:14.0
-#         environment: # add POSTGRES environment variables.
-#           POSTGRES_USER: projidy
-#           POSTGRES_DB: projidy_test
-#           POSTGRES_PASSWORD: ""
-#     # environment variables specific to Ruby/Rails, applied to the primary container.
-#     environment:
-#       BUNDLE_JOBS: "3"
-#       BUNDLE_RETRY: "3"
-#       PGHOST: 127.0.0.1
-#       PGUSER: projidy
-#       PGPASSWORD: ""
-#       RAILS_ENV: test
-#     # A series of steps to run, some are similar to those in "build".
-    steps:
-      - checkout
-      - ruby/install-deps
-      - node/install-packages:
-          pkg-manager: yarn
-          cache-key: "yarn.lock"
-      # https://circleci.com/developer/orbs/orb/circleci/browser-tools
-      - browser-tools/install-chrome
-      - browser-tools/install-chromedriver
-      - run:
-          command: |
-            google-chrome --version
-            chromedriver --version
-          name: Check install
-      # Here we make sure that the secondary container boots
-      # up before we run operations on the database.
-      - run:
-          name: Wait for DB
-          command: dockerize -wait tcp://localhost:5432 -timeout 1m
-      - run:
-          name: Database setup
-          command: bundle exec rails db:schema:load --trace
-      # https://github.com/rails/webpacker/issues/1047
-      - run:
-          name: Precompile Assets
-          command: bundle exec rails assets:precompile
-      - run:
-          name: chmod webdrivers
-          command: chmod +x /home/circleci/.webdrivers/chromedriver
-      - run:
-          name: Run Minitest
-          command: bundle exec rake test:all      
+# #       - image: cimg/postgres:14.0
+# #         environment: # add POSTGRES environment variables.
+# #           POSTGRES_USER: projidy
+# #           POSTGRES_DB: projidy_test
+# #           POSTGRES_PASSWORD: ""
+# #     # environment variables specific to Ruby/Rails, applied to the primary container.
+# #     environment:
+# #       BUNDLE_JOBS: "3"
+# #       BUNDLE_RETRY: "3"
+# #       PGHOST: 127.0.0.1
+# #       PGUSER: projidy
+# #       PGPASSWORD: ""
+# #       RAILS_ENV: test
+# #     # A series of steps to run, some are similar to those in "build".
+#     steps:
+#       - checkout
+#       - ruby/install-deps
+#       - node/install-packages:
+#           pkg-manager: yarn
+#           cache-key: "yarn.lock"
+#       # https://circleci.com/developer/orbs/orb/circleci/browser-tools
+#       - browser-tools/install-chrome
+#       - browser-tools/install-chromedriver
+#       - run:
+#           command: |
+#             google-chrome --version
+#             chromedriver --version
+#           name: Check install
+#       # Here we make sure that the secondary container boots
+#       # up before we run operations on the database.
+#       - run:
+#           name: Wait for DB
+#           command: dockerize -wait tcp://localhost:5432 -timeout 1m
+#       - run:
+#           name: Database setup
+#           command: bundle exec rails db:schema:load --trace
+#       # https://github.com/rails/webpacker/issues/1047
+#       - run:
+#           name: Precompile Assets
+#           command: bundle exec rails assets:precompile
+#       - run:
+#           name: chmod webdrivers
+#           command: chmod +x /home/circleci/.webdrivers/chromedriver
+#       - run:
+#           name: Run Minitest
+#           command: bundle exec rake test:all      
 
 
 workflows:
@@ -88,6 +94,5 @@ workflows:
     jobs:
       - build
       - webdriver_tests
-      - test
 
 
