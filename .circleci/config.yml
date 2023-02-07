@@ -9,6 +9,9 @@ version: '2.1'
 orbs:
   win: circleci/windows@5.0 # The Windows orb gives you everything you need to start using the Windows executor.
   browser-tools: circleci/browser-tools@1.4.1  
+  ruby: circleci/ruby@2.0.0
+  node: circleci/node@2
+  browser-tools: circleci/browser-tools@1.4.1  
 
 jobs:
   build: # name of your job
