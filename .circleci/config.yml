@@ -15,7 +15,7 @@ orbs:
 jobs:
   build: # name of your job
     docker:
-      - image: cimg/go
+      - image: cimg/go:1.20.0
     steps:
       - checkout
       - browser-tools/install-chrome
