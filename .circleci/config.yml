@@ -46,9 +46,24 @@ jobs:
     - image: redis:7.0.6-alpine
     steps:
     - checkout
+    
+  api-install-and-lint:
+    docker:
+      - image: cimg/python:3.8
+    working_directory: ~/project
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - deps-{{ checksum "api/poetry.lock" }}
+      - run:
+          name: Install Dependencies
+          working_directory: ~/project/api
+          command: poetry install    
 workflows:
   workflow:
     jobs:
       - build
+      - api-install-and-lint
       
 #test
