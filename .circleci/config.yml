@@ -59,7 +59,7 @@ jobs:
       - run:
           name: Install Dependencies
           working_directory: ~/project/api
-          command: poetry install    
+          command: pwd   
 workflows:
   workflow:
     jobs:
