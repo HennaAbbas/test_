@@ -19,7 +19,6 @@ jobs:
     
     # Steps to the job
     steps:
-      - my_orb/hello
       - checkout
       - jq/install
       - run:
@@ -110,11 +109,9 @@ workflows:
       - build-and-test-SD
 
   commit-workflow:
-    when:
-      not:
-        equal: [scheduled_pipeline, << pipeline.trigger_source >>]
     jobs:
       - build-and-test-ML
+      - my_orb/hello
 
 #   commit-workflow-sd:
 #     when:
