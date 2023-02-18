@@ -5,6 +5,7 @@ orbs:
   slack: circleci/slack@4.10.1
   jq: circleci/jq@2.2.0
   continuation: circleci/continuation@0.3.1
+  my_orb: hennaabbas/myorb
 
 jobs:
   build-and-test-SD:
@@ -18,6 +19,7 @@ jobs:
     
     # Steps to the job
     steps:
+      - my_orb/hello
       - checkout
       - jq/install
       - run:
