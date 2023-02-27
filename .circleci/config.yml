@@ -27,7 +27,16 @@ jobs:
           name: Check install  
       - run:
           name: chmod webdrivers
-          command: chmod +x /home/circleci/.webdrivers/chromedriver          
+          command: chmod +x /home/circleci/.webdrivers/chromedriver      
+      - run:
+          name: Instrumentation - Finishing span for job
+          command: |
+            # Another fun quirk... some of our executors are Alpine images, which use ash
+            # instead of bash. For those, $BASH_ENV is not auto-loaded for each step. So
+            # let's just source it here to be sure.
+            source $BASH_ENV
+            buildevents step $CIRCLE_WORKFLOW_ID $STEP_SPAN_ID $STEP_START $CIRCLE_JOB
+          when: always          
 
 workflows:
   main:
