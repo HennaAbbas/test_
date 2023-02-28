@@ -31,7 +31,7 @@ jobs:
         
   run_unit_tests-2:
     macos:
-      xcode: 14.3.0
+      xcode: 14.2.0
     resource_class: macos.m1.large.gen1      
     steps:
       - run:
