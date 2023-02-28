@@ -1,69 +1,17 @@
-# version: 2.1
-# commands:
-#   list-files:
-#     parameters:
-#       all:
-#         description: include all files
-#         type: boolean
-#         default: false
-#       short:
-#         description: Keep list of files short
-#         type: boolean
-#         default: true
-#     steps:
-#       - run: ls <<# parameters.all >> -a <</ parameters.all >><<^ parameters.short >> -l <</ parameters.short >>
 
-# jobs:
-#   build:
-#     docker:
-#       - image: cimg/node:12.18
-#     steps:
-#       - checkout
-#       - list-files
-
-  
-      
-# workflows:
-#     build_and_push:
-#       jobs:
-#         - build
 version: 2.1
-jobs:
-  build:
-    resource_class: large
-    working_directory: ~/amp-online
-    docker:
-    - image: cimg/ruby:3.0.4-browsers
-      environment:
-        PATH: /opt/yarn/yarn-v1.5.1/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-        PGHOST: 127.0.0.1
-        PGUSER: circleci
-    - image: postgres:13.9-alpine
-      environment:
-        POSTGRES_USER: circleci
-        POSTGRES_DB: access_test
-        POSTGRES_HOST_AUTH_METHOD: trust
-    - image: redis:7.0.6-alpine
-    steps:
-    - checkout
-    
+jobs:    
   api-install-and-lint:
     docker:
       - image: cimg/python:3.8
     working_directory: ~/project
     steps:
       - checkout
-      - restore_cache:
-          keys:
-            - deps-{{ checksum "api/poetry.lock" }}
-      - run:
-          name: Install Dependencies
-          working_directory: ~/project/api
-          command: pwd   
+      - run: pip install awsebcli --upgrade --user
+
 workflows:
   workflow:
     jobs:
-      - build
       - api-install-and-lint
       
 #test
