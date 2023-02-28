@@ -23,7 +23,7 @@ jobs:
   run_unit_tests-1:
     resource_class: macos.x86.medium.gen2
     macos:
-      xcode: 14.2.0
+      xcode: 14.3.0
     steps:
       - run:
           command: brew --version
