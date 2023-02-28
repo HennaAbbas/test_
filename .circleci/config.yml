@@ -25,8 +25,10 @@ jobs:
     macos:
       xcode: 14.3.0
     steps:
+      - run: brew --version
+      - run: brew update  
       - run:
-          command: brew --version
+          command: brew --version  
      
         
   run_unit_tests-2:
