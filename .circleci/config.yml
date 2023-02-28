@@ -35,7 +35,10 @@ jobs:
     resource_class: macos.m1.large.gen1      
     steps:
       - run:
-          command: brew --version        
+          command: brew --version 
+      - run: brew update  
+      - run:
+          command: brew --version       
 #       - browser-tools/install-chrome
 #       - browser-tools/install-chromedriver
 #       - run:
