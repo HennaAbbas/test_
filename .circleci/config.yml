@@ -17,7 +17,25 @@ jobs:
     docker:
       - image: cimg/go:1.20.0
     steps:
-      - checkout
+    - checkout
+    
+    
+  run_unit_tests-1:
+    resource_class: macos.x86.medium.gen2
+    macos:
+      xcode: 14.2.0
+    steps:
+    - run:
+        command: brew --version
+        
+        
+  run_unit_tests-2:
+    resource_class: macos.x86.medium.gen2
+    macos:
+      xcode: 14.3.0
+    steps:
+    - run:
+        command: brew --version        
 #       - browser-tools/install-chrome
 #       - browser-tools/install-chromedriver
 #       - run:
@@ -42,4 +60,6 @@ workflows:
   main:
     jobs:
       - build
+      - run_unit_tests-1
+      - run_unit_tests-2
 
