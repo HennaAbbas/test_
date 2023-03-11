@@ -4,7 +4,7 @@ jobs:
     docker:
       - image: cimg/node:12.18
     steps:
-      - checkout
+
       - run: echo << pipeline.git.tag >>
 
   
