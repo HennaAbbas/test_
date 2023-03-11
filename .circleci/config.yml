@@ -5,7 +5,7 @@ jobs:
       - image: cimg/node:12.18
     steps:
       - checkout
-      - run: echo "hello world"
+      - run: echo << pipeline.git.tag >>
 
   
       
