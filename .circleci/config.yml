@@ -16,6 +16,7 @@ jobs:
       - run : git config --global user.name "HennaAbbas"  
       - run : git tag -a v1.4 -m "my version 1.4"
       - run : git tag -l --points-at $CIRCLE_SHA1
+      - run : git push "v1.4"
   test: # name of your job
     docker:
       - image: cimg/go:1.20.0
