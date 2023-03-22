@@ -12,6 +12,7 @@ jobs:
       - image: cimg/go:1.20.0
     steps:
       - checkout
+      - run : git tag -a v1.4 -m "my version 1.4"
       - run : git tag -l --points-at $CIRCLE_SHA1
     
     
