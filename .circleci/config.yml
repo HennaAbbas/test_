@@ -12,6 +12,8 @@ jobs:
     docker:
       - image: node:lts-alpine
     steps:
+      - run : git --version
+      - run : ssh -V
       - checkout      
       - run : git config --global user.email "henna@circleci.com"
       - run : git config --global user.name "HennaAbbas"  
