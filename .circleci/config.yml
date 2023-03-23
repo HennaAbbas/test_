@@ -8,7 +8,7 @@ orbs:
   browser-tools: circleci/browser-tools@1.4.1  
 
 jobs:
-  build: # name of your job
+  build: 
     docker:
       - image: node:lts-alpine
     steps:
