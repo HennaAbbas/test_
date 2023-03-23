@@ -10,11 +10,8 @@ orbs:
 jobs:
   build: # name of your job
     docker:
-      - image: cimg/go:1.20.0
+      - image: node:lts-alpine
     steps:
-      - add_ssh_keys: 
-          fingerprints:
-            - 39:e6:81:b6:55:c4:2f:9e:c6:3c:d7:09:b6:ca:ed:aa
       - checkout      
       - run : git config --global user.email "henna@circleci.com"
       - run : git config --global user.name "HennaAbbas"  
