@@ -26,6 +26,8 @@ jobs:
       - image: cimg/go:1.20.0
     steps:
       - checkout
+      - run: GITHUB_SHA=$(git rev-parse --short HEAD) 
+      - run: echo $GITHUB_SHA
       - run: git tag -l --points-at $CIRCLE_SHA1 
     
     
