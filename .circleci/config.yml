@@ -1,122 +1,61 @@
-version: 2.1
-setup: true
+version: '2.1'
+#test
+
 orbs:
-  node: circleci/node@5.0.3
-  slack: circleci/slack@4.10.1
-  jq: circleci/jq@2.2.0
-  continuation: circleci/continuation@0.3.1
-  my_orb: hennaabbas/myorb@2.0.1
+  win: circleci/windows@5.0 # The Windows orb gives you everything you need to start using the Windows executor. 
+  ruby: circleci/ruby@2.0.0
+  node: circleci/node@5
+  browser-tools: circleci/browser-tools@1.4.1  
 
 jobs:
-  build-and-test-SD:
-    environment:
-      NODE_ENV: development
-      CIRCLE_ARTIFACTS: /tmp/circleci-artifacts
-      CIRCLE_TEST_REPORTS: /tmp/circleci-test-results
-
+  build: # name of your job
     docker:
-      - image: mcr.microsoft.com/playwright:v1.30.0-focal 
+      - image: cimg/go:1.20.0
+    steps:
+      - add_ssh_keys: 
+          fingerprints:
+            - 39:e6:81:b6:55:c4:2f:9e:c6:3c:d7:09:b6:ca:ed:aa
+      - checkout      
+      - run : git config --global user.email "henna@circleci.com"
+      - run : git config --global user.name "HennaAbbas"  
+      - run : git tag -a v1.4 -m "my version 1.4"
+      - run : git tag -l --points-at $CIRCLE_SHA1
+      - run : git push $CIRCLE_REPOSITORY_URL "v1.4"
+  test: # name of your job
+    docker:
+      - image: cimg/go:1.20.0
+    steps:
+      - checkout
+      - run: git tag -l --points-at $CIRCLE_SHA1 
     
-    # Steps to the job
+    
+  run_unit_tests-1:
+    resource_class: macos.m1.large.gen1
+    macos:
+      xcode: 14.0.1
     steps:
-      - checkout
-      - jq/install
+      - run: brew --version
+      - run: brew update  
       - run:
-          name: Create directory artifacts and test reports
-          command: mkdir -p $CIRCLE_ARTIFACTS $CIRCLE_TEST_REPORTS
-
-      - run: npm install
-      - run: npx playwright install
-      - run: npm i -D @playwright/test
-      - run: test_env=test npm test --  --grep @Smoke
-      - run:
-          name: Save test results
-          command: |
-            mkdir -p $CIRCLE_TEST_REPORTS/
-            find . -type f -regex "./junitResults.xml/.*" -exec cp {} $CIRCLE_TEST_REPORTS/ \;
-
-      - store_test_results:
-          path: junitResults.xml
-
-      - run:
-          name: Get build number and set in parameters.json
-          command: |
-            echo '{}' | jq --arg buildnumber $CIRCLE_BUILD_NUM '. + {"buildnumber": $buildnumber}' > parameters.json
-            cat parameters.json
-
-      - continuation/continue:
-          configuration_path: ./.circleci/continuation-config.yml
-          parameters: parameters.json
-          when: always
-
-  build-and-test-ML:
-    environment:
-      NODE_ENV: development
-      CIRCLE_ARTIFACTS: /tmp/circleci-artifacts
-      CIRCLE_TEST_REPORTS: /tmp/circleci-test-results
-
-    docker:
-      - image: mcr.microsoft.com/playwright:v1.30.0-focal
-
-    # Steps to the job
+          command: brew --version  
+     
+        
+  run_unit_tests-2:
+    macos:
+      xcode: 14.2.0
+    resource_class: macos.x86.medium.gen2
     steps:
-      - checkout
-      - jq/install
-      - run:
-          name: Create directory artifacts and test reports
-          command: mkdir -p $CIRCLE_ARTIFACTS $CIRCLE_TEST_REPORTS
+    - node/install:
+        node-version: "16.13"     
+        
 
-      - run: npm install
-      - run: npx playwright install
-      - run: npm i -D @playwright/test
-      - run: test_env=test npm test -- --grep @MLRegression || exit 0
-      - run:
-          name: Save test results
-          command: |
-            mkdir -p $CIRCLE_TEST_REPORTS/
-            find . -name "junitResults.xml" -exec cp {} $CIRCLE_TEST_REPORTS/ \;
-
-      - store_test_results:
-          path: ./junitResults.xml
-
-      - store_artifacts:
-          path: ./test-results
-
-      - run:
-          name: Get build number and set in parameters.json
-          command: |
-            echo '{}' | jq --arg buildnumber $CIRCLE_BUILD_NUM '. + {"buildnumber": $buildnumber}' > parameters.json
-            cat parameters.json
-
-      - continuation/continue:
-          configuration_path: ./.circleci/continuation-config.yml
-          parameters: parameters.json
-          when: always
-
-# Invoke jobs via workflows
 workflows:
-  version: 2
-
-  
-
-  daily-run-workflow:
-    when:
-      and:
-        - equal: [scheduled_pipeline, << pipeline.trigger_source >>]
-        - equal: ["schedule-workflow-ML", << pipeline.schedule.name >>]
+  main:
     jobs:
-      - build-and-test-ML
-      - build-and-test-SD
+      - build
+      - run_unit_tests-1
+      - run_unit_tests-2
+      - test:
+          requires: 
+            - build
 
-  commit-workflow:
-    jobs:
-      - build-and-test-ML
-      - my_orb/hello
-
-#   commit-workflow-sd:
-#     when:
-#       not:
-#         equal: [scheduled_pipeline, << pipeline.trigger_source >>]
-#     jobs:
-#       - build-and-test-SD
-#test
