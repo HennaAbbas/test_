@@ -11,6 +11,9 @@ jobs:
       - run:
           name: "Say hello"
           command: "echo Hello, World!"
+      - run: printenv HOME  
+      - run: printenv $HOME
+      - run: printenv $BASH_ENV
 
 workflows:
   say-hello-workflow:
