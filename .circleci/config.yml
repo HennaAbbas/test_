@@ -8,6 +8,7 @@ jobs:
 
     steps:
       - checkout
+      - run: echo $test_env_var
       - run: echo "You can use the API to set test_env_var=$test_env_var"
 
 workflows:
