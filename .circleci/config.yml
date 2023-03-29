@@ -8,16 +8,14 @@ jobs:
 
     steps:
       - checkout
-      - run:
-          name: "Say hello"
-          command: "echo Hello, World!"
-      - run: printenv HOME  
-      - run: printenv $BASH_ENV
+      - run: echo "You can use the API to set test_env_var=$test_env_var"
 
 workflows:
   say-hello-workflow:
     jobs:
-      - say-hello
+      - say-hello: 
+          context: 
+             my_context
 
 
 
