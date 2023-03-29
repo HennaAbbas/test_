@@ -1,122 +1,21 @@
 version: 2.1
-setup: true
-orbs:
-  node: circleci/node@5.0.3
-  slack: circleci/slack@4.10.1
-  jq: circleci/jq@2.2.0
-  continuation: circleci/continuation@0.3.1
-  my_orb: hennaabbas/myorb@2.0.1
 
 jobs:
-  build-and-test-SD:
-    environment:
-      NODE_ENV: development
-      CIRCLE_ARTIFACTS: /tmp/circleci-artifacts
-      CIRCLE_TEST_REPORTS: /tmp/circleci-test-results
+  say-hello:
 
     docker:
-      - image: mcr.microsoft.com/playwright:v1.30.0-focal 
-    
-    # Steps to the job
+      - image: cimg/base:stable
+
     steps:
       - checkout
-      - jq/install
       - run:
-          name: Create directory artifacts and test reports
-          command: mkdir -p $CIRCLE_ARTIFACTS $CIRCLE_TEST_REPORTS
+          name: "Say hello"
+          command: "echo Hello, World!"
 
-      - run: npm install
-      - run: npx playwright install
-      - run: npm i -D @playwright/test
-      - run: test_env=test npm test --  --grep @Smoke
-      - run:
-          name: Save test results
-          command: |
-            mkdir -p $CIRCLE_TEST_REPORTS/
-            find . -type f -regex "./junitResults.xml/.*" -exec cp {} $CIRCLE_TEST_REPORTS/ \;
-
-      - store_test_results:
-          path: junitResults.xml
-
-      - run:
-          name: Get build number and set in parameters.json
-          command: |
-            echo '{}' | jq --arg buildnumber $CIRCLE_BUILD_NUM '. + {"buildnumber": $buildnumber}' > parameters.json
-            cat parameters.json
-
-      - continuation/continue:
-          configuration_path: ./.circleci/continuation-config.yml
-          parameters: parameters.json
-          when: always
-
-  build-and-test-ML:
-    environment:
-      NODE_ENV: development
-      CIRCLE_ARTIFACTS: /tmp/circleci-artifacts
-      CIRCLE_TEST_REPORTS: /tmp/circleci-test-results
-
-    docker:
-      - image: mcr.microsoft.com/playwright:v1.30.0-focal
-
-    # Steps to the job
-    steps:
-      - checkout
-      - jq/install
-      - run:
-          name: Create directory artifacts and test reports
-          command: mkdir -p $CIRCLE_ARTIFACTS $CIRCLE_TEST_REPORTS
-
-      - run: npm install
-      - run: npx playwright install
-      - run: npm i -D @playwright/test
-      - run: test_env=test npm test -- --grep @MLRegression || exit 0
-      - run:
-          name: Save test results
-          command: |
-            mkdir -p $CIRCLE_TEST_REPORTS/
-            find . -name "junitResults.xml" -exec cp {} $CIRCLE_TEST_REPORTS/ \;
-
-      - store_test_results:
-          path: ./junitResults.xml
-
-      - store_artifacts:
-          path: ./test-results
-
-      - run:
-          name: Get build number and set in parameters.json
-          command: |
-            echo '{}' | jq --arg buildnumber $CIRCLE_BUILD_NUM '. + {"buildnumber": $buildnumber}' > parameters.json
-            cat parameters.json
-
-      - continuation/continue:
-          configuration_path: ./.circleci/continuation-config.yml
-          parameters: parameters.json
-          when: always
-
-# Invoke jobs via workflows
 workflows:
-  version: 2
-
-  
-
-  daily-run-workflow:
-    when:
-      and:
-        - equal: [scheduled_pipeline, << pipeline.trigger_source >>]
-        - equal: ["schedule-workflow-ML", << pipeline.schedule.name >>]
+  say-hello-workflow:
     jobs:
-      - build-and-test-ML
-      - build-and-test-SD
+      - say-hello
 
-  commit-workflow:
-    jobs:
-      - build-and-test-ML
-      - my_orb/hello
 
-#   commit-workflow-sd:
-#     when:
-#       not:
-#         equal: [scheduled_pipeline, << pipeline.trigger_source >>]
-#     jobs:
-#       - build-and-test-SD
 #test
