@@ -14,8 +14,7 @@ jobs:
       - run:
           name: Checkout
           command: |
-            git clone -b "$Env:CIRCLE_BRANCH" "$Env:CIRCLE_REPOSITORY_URL" --depth 1 .
-
+            git clone -b "$Env:CIRCLE_BRANCH" "$Env:CIRCLE_REPOSITORY_URL"
 workflows:
   all:
     jobs:
