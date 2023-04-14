@@ -1,57 +1,31 @@
 version: 2.1
 
+executors:
+  windows:
+    machine:
+      image: windows-server-2022-gui:current
+      resource_class: windows.medium
+      shell: bash
+
 jobs:
-  say-hello:
-
-    docker:
-      - image: cimg/base:stable
-
+  Test Checkout:
+    executor: windows
     steps:
       - checkout
-      - run: echo $test_var
-      - run: echo "You can use the API to set test_env_var=$test_var"
-      
-  test:
-
-    docker:
-      - image: cimg/base:stable
-
-    steps:
-      - checkout
-      - run: echo $test_var
-      - run: echo "You can use the API to set test_env_var=$test_var"      
-      
-  test_1:
-
-    docker:
-      - image: cimg/base:stable
-
-    steps:
-      - checkout
-      - run: echo $test_var
-      - run: echo "You can use the API to set test_env_var=$test_var"      
-      
+#           name: Checkout
+#           command: |
+#             mkdir -p ~/.ssh
+#             ssh-keyscan -H github.com >> ~/.ssh/known_hosts
+#             echo "DEBUG 1"
+#             cat ~/.ssh/known_hosts
+#             echo "DEBUG 2"
+#             ssh-keygen -t ed25519 -C "your_email@example.com" -q -f ~/.ssh/id_ed25519 -N ""
+#             echo "DEBUG 3"
+#             ls -al ~/.ssh
+#             echo "DEBUG 4"
+#             git clone -b "$CIRCLE_BRANCH" "$CIRCLE_REPOSITORY_URL" --depth 1 .
 
 workflows:
-  say-hello-workflow:
+  all:
     jobs:
-      - say-hello
-  selenium-testing-cron:
-    triggers:
-      - schedule:
-          #"Min Hour Day Month Day_of_week"
-          cron: "* * * * *"
-          filters:
-            branches:
-              only:
-                - master
-
-    jobs:
-      - test:
-          filters:
-            branches:
-              only:
-                - master
-      - test_1:
-          requires:
-            - test 
+      - Test Checkout
