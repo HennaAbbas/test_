@@ -34,14 +34,15 @@ jobs:
 
 workflows:
    version: 2
-   nightly:
-     triggers:
-       - schedule:
-           cron: "0 0 * * *"
-           filters:
-             branches:
-               only:
-                 - master
+  selenium-testing-cron:
+    triggers:
+      - schedule:
+          #"Min Hour Day Month Day_of_week"
+          cron: "30 16 * * *"
+          filters:
+            branches:
+              only:
+                - master
 
     jobs:
       - test:
