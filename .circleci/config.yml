@@ -14,15 +14,6 @@ jobs:
       - run:
           name: Checkout
           command: |
-            mkdir -p ~/.ssh
-            ssh-keyscan -H github.com >> ~/.ssh/known_hosts
-            echo "DEBUG 1"
-            cat ~/.ssh/known_hosts
-            echo "DEBUG 2"
-            ssh-keygen -t ed25519 -C "your_email@example.com" -q -f ~/.ssh/id_ed25519 -N ""
-            echo "DEBUG 3"
-            ls -al ~/.ssh
-            echo "DEBUG 4"
             git clone -b "$Env:CIRCLE_BRANCH" "$Env:CIRCLE_REPOSITORY_URL" --depth 1 .
 
 workflows:
