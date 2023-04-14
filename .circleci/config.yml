@@ -10,13 +10,51 @@ jobs:
       - checkout
       - run: echo $test_var
       - run: echo "You can use the API to set test_env_var=$test_var"
+      
+  test:
+
+    docker:
+      - image: cimg/base:stable
+
+    steps:
+      - checkout
+      - run: echo $test_var
+      - run: echo "You can use the API to set test_env_var=$test_var"      
+      
+  test_1:
+
+    docker:
+      - image: cimg/base:stable
+
+    steps:
+      - checkout
+      - run: echo $test_var
+      - run: echo "You can use the API to set test_env_var=$test_var"      
+      
 
 workflows:
   say-hello-workflow:
     jobs:
-      - say-hello: 
-          context: 
-             my_context
+      - say-hello
+  selenium-testing-cron:
+    triggers:
+      - schedule:
+          #"Min Hour Day Month Day_of_week"
+          cron: "30 16 * * *"
+          filters:
+            branches:
+              only:
+                - master
+
+    jobs:
+      - test:
+          filters:
+            branches:
+              only:
+                - master
+      - test-1:
+          requires:
+            - test             
 
 
 
