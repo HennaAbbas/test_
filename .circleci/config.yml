@@ -37,13 +37,13 @@ workflows:
     jobs:
       - say-hello
   selenium-testing-cron:
-     triggers:
-       - schedule:
-           cron: "0 0 * * *"
-           filters:
-             branches:
-               only:
-                 - master
+    triggers:
+      - schedule:
+          cron: "0 0 * * *"
+            filters:
+              branches:
+                only:
+                  - master
 
     jobs:
       - test:
