@@ -1,3 +1,5 @@
+version: 2.1
+
 jobs:
   say-hello:
 
@@ -31,12 +33,14 @@ jobs:
       
 
 workflows:
-   version: 2
+  say-hello-workflow:
+    jobs:
+      - say-hello
   selenium-testing-cron:
     triggers:
       - schedule:
           #"Min Hour Day Month Day_of_week"
-          cron: "30 16 * * *"
+          cron: "* * * * *"
           filters:
             branches:
               only:
@@ -50,8 +54,4 @@ workflows:
                 - master
       - test_1:
           requires:
-            - test             
-
-
-
-#test
+            - test 
