@@ -14,7 +14,11 @@ jobs:
       - run:
           name: Checkout
           command: |
-            git clone -b "$CIRCLE_BRANCH" "$CIRCLE_REPOSITORY_URL"
+            echo "$CIRCLE_BRANCH" "$CIRCLE_REPOSITORY_URL"
+      - run:
+          name: windows env cars 
+          command: |
+            echo "$Env:CIRCLE_BRANCH" "$Env:CIRCLE_REPOSITORY_URL"            
 workflows:
   all:
     jobs:
