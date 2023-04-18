@@ -15,10 +15,7 @@ jobs:
           name: Checkout
           command: |
             echo "$CIRCLE_BRANCH" "$CIRCLE_REPOSITORY_URL"
-      - run:
-          name: windows env cars 
-          command: |
-            echo "$Env:CIRCLE_BRANCH" "$Env:CIRCLE_REPOSITORY_URL"            
+      - run: sleep 100000     
 workflows:
   all:
     jobs:
