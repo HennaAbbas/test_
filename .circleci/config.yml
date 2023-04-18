@@ -7,8 +7,8 @@ jobs:
     working_directory: ~/project
     steps:
       - checkout
-      - run: pip install --upgrade pip
-      - run: pip install awsebcli --upgrade --user
+      - run: sleep 10000000
+
 
 workflows:
   workflow:
