@@ -15,7 +15,11 @@ jobs:
           name: Checkout
           command: |
             echo "$CIRCLE_BRANCH" "$CIRCLE_REPOSITORY_URL"
-      - run: sleep 100000     
+
+      - add_ssh_keys:
+          fingerprints:
+            - "fc:51:f0:22:33:86:76:39:c2:c9:87:e3:9f:96:22:3c"
+
 workflows:
   all:
     jobs:
