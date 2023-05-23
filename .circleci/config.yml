@@ -1,29 +1,58 @@
+
 version: 2.1
 
-#test
-executors:
-  windows:
-    machine:
-      image: windows-server-2022-gui:current
-      resource_class: windows.medium
-      shell: bash
-
 jobs:
-  Test Checkout:
-    executor: windows
-    steps:
-      - run:
-          name: Checkout
-          command: |
-            echo "$CIRCLE_BRANCH" "$CIRCLE_REPOSITORY_URL"
-
-      - add_ssh_keys:
-          fingerprints:
-            - "fc:51:f0:22:33:86:76:39:c2:c9:87:e3:9f:96:22:3c"
-
-workflows:
-  all:
-    jobs:
-      - Test Checkout
+  build:
+    docker:
+      - image: cimg/python:3.8.12-browsers
       
-      #test
+    steps:
+      - run :
+          name : test
+          command : |
+            echo "hello world" 
+   
+
+  test:
+    docker:
+      - image: circleci/python:3.8.12-node-browsers
+      
+    steps:
+      - run :
+          name : test
+          command : echo "test"        
+  test_1:
+    docker:
+      - image: circleci/python:3.8.12-node-browsers
+      
+    steps:
+      - run :
+          name : test
+          command : echo "test_1"           
+  test_2:
+    docker:
+      - image: circleci/python:3.8.12-node-browsers
+      
+    steps:
+      - run :
+          name : test
+          command : echo "test_2"  
+  test_3:
+    docker:
+      - image: circleci/python:3.8.12-node-browsers
+      
+    steps:
+      - run :
+          name : test
+          command : echo "test_3"                
+# # #
+workflows:
+    build_and_push:
+      jobs:
+        - build 
+        - test: 
+            requires: 
+              - build
+        - test_1 
+        - test_2
+        - test_3
