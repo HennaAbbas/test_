@@ -9,7 +9,7 @@ executors:
       shell: bash
 
 jobs:
-  Test Checkout:
+  Test: 
     executor: windows
     steps:
       - run:
@@ -17,13 +17,11 @@ jobs:
           command: |
             echo "$CIRCLE_BRANCH" "$CIRCLE_REPOSITORY_URL"
 
-      - add_ssh_keys:
-          fingerprints:
-            - "fc:51:f0:22:33:86:76:39:c2:c9:87:e3:9f:96:22:3c"
+
 
 workflows:
   all:
     jobs:
-      - Test Checkout
+      - Test
       
       #test
