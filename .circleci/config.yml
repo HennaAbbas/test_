@@ -24,3 +24,10 @@ jobs:
     steps:
       - mac/enable-vnc   
       
+workflows:
+  all:
+    jobs:
+      - Test
+      - build
+      
+      
