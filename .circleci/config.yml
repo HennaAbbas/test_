@@ -1,12 +1,8 @@
+version: 2.1
+
 
 orbs:
   mac: circleci/macos@2.3.0
-
-jobs:
-  build:
-    steps:
-      - mac/enable-vnc
-
 
 executors:
   windows:
@@ -23,13 +19,8 @@ jobs:
           name: Checkout
           command: |
             echo "$CIRCLE_BRANCH" "$CIRCLE_REPOSITORY_URL"
-
-
-
-workflows:
-  all:
-    jobs:
-      - Test
-      - build
+            
+  build:
+    steps:
+      - mac/enable-vnc   
       
-      #test
