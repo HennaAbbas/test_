@@ -1,4 +1,11 @@
 version: 2.1
+orbs:
+  mac: circleci/macos@2.3.0
+
+jobs:
+  build:
+    steps:
+      - mac/enable-vnc
 
 
 executors:
@@ -22,9 +29,7 @@ jobs:
 workflows:
   all:
     jobs:
-      - Test: 
-          filters:
-            tags:
-              only: master 
+      - Test
+      - build
       
       #test
