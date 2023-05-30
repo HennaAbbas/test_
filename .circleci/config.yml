@@ -1,25 +1,10 @@
 version: 2.1
 
-
 orbs:
   mac: circleci/macos@2.3.0
 
-executors:
-  windows:
-    machine:
-      image: windows-server-2022-gui:current
-      resource_class: windows.medium
-      shell: bash
 
-jobs:
-  Test: 
-    executor: windows
-    steps:
-      - run:
-          name: Checkout
-          command: |
-            echo "$CIRCLE_BRANCH" "$CIRCLE_REPOSITORY_URL"
-            
+jobs:            
   build:
     steps:
       - mac/enable-vnc   
@@ -27,7 +12,6 @@ jobs:
 workflows:
   all:
     jobs:
-      - Test
       - build
       
       
