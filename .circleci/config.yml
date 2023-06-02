@@ -1,20 +1,27 @@
 version: 2.1
 
-orbs:
-  mac: circleci/macos@2.3.0
-
-#test
-jobs:            
+jobs:
   build:
+    parameters:
+      xcode_version:
+        default: "14.3.1"
+        type: string
     macos:
-      xcode: 14.3.1
-    resource_class: macos.x86.medium.gen2  
+      xcode: << parameters.xcode_version >>
+    resource_class: macos.x86.medium.gen2
     steps:
-      - mac/enable-vnc   
-      
+      - checkout
+      - run:
+          name: PWD
+          command: |
+            cd /home
+            ls -al
+            mkdir -p /home/circleci
+
 workflows:
-  all:
+  workflow-mac:
     jobs:
-      - build
-      
-      
+      - build:
+          matrix:
+            parameters:
+              xcode_version: ["14.2.0", "14.3.1"]
