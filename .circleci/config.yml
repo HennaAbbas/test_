@@ -17,7 +17,7 @@ jobs:
           command: |
             cd /home
             ls -al
-            mkdir -p /home/circleci
+            mkdir -p /Users/distiller/project/home/circleci
 
 workflows:
   workflow-mac:
