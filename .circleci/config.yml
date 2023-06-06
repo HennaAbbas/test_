@@ -12,6 +12,7 @@ jobs:
     steps:
       - checkout
       - run: pwd
+      - run: source $CIRCLE_WORKING_DIRECTORY/script.sh
       - run:
           name: PWD
           command: |
