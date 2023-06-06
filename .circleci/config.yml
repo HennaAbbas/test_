@@ -18,5 +18,4 @@ jobs:
 workflows:
   workflow-mac:
     jobs:
-      - build:
-          matrix
+      - build
