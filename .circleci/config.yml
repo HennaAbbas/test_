@@ -2,13 +2,8 @@ version: 2.1
 
 jobs:
   build:
-    parameters:
-      xcode_version:
-        default: "14.3.1"
-        type: string
-    macos:
-      xcode: << parameters.xcode_version >>
-    resource_class: macos.x86.medium.gen2
+    docker:
+      image: cimg/openjdk:11.0
     steps:
       - checkout
       - run: pwd
@@ -24,6 +19,4 @@ workflows:
   workflow-mac:
     jobs:
       - build:
-          matrix:
-            parameters:
-              xcode_version: ["14.2.0", "14.3.1"]
+          matrix
