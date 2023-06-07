@@ -2,12 +2,13 @@ version: 2.1
 
 jobs:
   build:
-    machine: true
+    docker:
+      - image: cimg/openjdk:11.0
     steps:
       - checkout
       - run: pwd
       - run: source ${CIRCLE_WORKING_DIRECTORY}/script.sh
-      - run: echo ${CIRCLE_WORKING_DIRECTORY}
+      - run: echo ${CIRCLE_WORKING_DIRECTORY}/script.sh
       - run:
           name: PWD
           command: |
