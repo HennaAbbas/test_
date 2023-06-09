@@ -2,16 +2,18 @@ version: 2.1
 
 jobs:
   build:
-    docker:
-      - image: cimg/openjdk:11.0
+    parameters:
+      xcode_version:
+        default: "14.3.1"
+        type: string
+    macos:
+      xcode: << parameters.xcode_version >>
+    resource_class: macos.x86.medium.gen2
+    parallelism: 1
     steps:
       - checkout
-      - run: pwd    
-      - run:
-            name: "Fix CIRCLE_WORKING_DIRECTORY"
-            command: echo 'CIRCLE_WORKING_DIRECTORY="${CIRCLE_WORKING_DIRECTORY/#\~/$HOME}"' >> $BASH_ENV
+      - run: pwd
       - run: source ${CIRCLE_WORKING_DIRECTORY}/script.sh
-      - run: echo ${CIRCLE_WORKING_DIRECTORY}/script.sh
       - run:
           name: PWD
           command: |
@@ -22,4 +24,7 @@ jobs:
 workflows:
   workflow-mac:
     jobs:
-      - build
+      - build:
+          matrix:
+            parameters:
+              xcode_version: ["14.2.0", "14.3.1"]
