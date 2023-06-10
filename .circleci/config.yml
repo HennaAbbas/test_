@@ -12,7 +12,7 @@ jobs:
     parallelism: 1
     steps:
       - checkout
-      - run: pwd
+      - run: exit 0
       - run: source ${CIRCLE_WORKING_DIRECTORY}/script.sh
       - run:
           name: PWD
