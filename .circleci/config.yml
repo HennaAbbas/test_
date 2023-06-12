@@ -2,12 +2,8 @@ version: 2.1
 
 jobs:
   build:
-    parameters:
-      xcode_version:
-        default: "14.3.1"
-        type: string
     macos:
-      xcode: << parameters.xcode_version >>
+      xcode: 14.2.0
     resource_class: macos.x86.medium.gen2
     parallelism: 1
     steps:
@@ -25,6 +21,10 @@ workflows:
   workflow-mac:
     jobs:
       - build:
-          matrix:
-            parameters:
-              xcode_version: ["14.2.0", "14.3.1"]
+          filters:
+            branches:
+              only: # SET TO ONLY
+                - master
+                - staging
+                - /sandbox-.+/
+                - /FINP-.*/
