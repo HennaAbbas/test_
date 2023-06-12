@@ -103,9 +103,7 @@ workflows:
         - equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
         - equal: [ true, << pipeline.parameters.nightly_cleanup >> ]
     jobs:
-      - delete-obsolete-stacks:
-          context:
-            - DockerHub-Auth
+      - delete-obsolete-stacks
   deploy:
     jobs:
       - deploy_infra:
