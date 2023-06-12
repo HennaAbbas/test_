@@ -1,61 +1,118 @@
-version: '2.1'
+version: 2.1
 #test
+parameters:
+  nightly_cleanup:
+    default: false
+    type: boolean
 
 orbs:
-  win: circleci/windows@5.0 # The Windows orb gives you everything you need to start using the Windows executor. 
-  ruby: circleci/ruby@2.0.0
-  node: circleci/node@5
-  browser-tools: circleci/browser-tools@1.4.1  
+  pulumi: pulumi/pulumi@1.0.0
+  gh: circleci/github-cli@1.0
 
 jobs:
-  build: 
+  delete-obsolete-stacks:
     docker:
-      - image: node:lts-alpine
-    steps:
-      - run : ssh -V
-      - checkout      
-      - run : git config --global user.email "henna@circleci.com"
-      - run : git config --global user.name "HennaAbbas"  
-      - run : git tag -a v1.4 -m "my version 1.4"
-      - run : git tag -l --points-at $CIRCLE_SHA1
-      - run : git push $CIRCLE_REPOSITORY_URL "v1.4"
-  test: # name of your job
-    docker:
-      - image: cimg/go:1.20.0
+      - image: cimg/python:3.7
+        auth:
+          username: firstvettech
+          password: $DOCKERHUB_PASSWORD
+    working_directory: ~/firstvet/webapp
     steps:
       - checkout
-      - run: git tag -l --points-at $CIRCLE_SHA1 
-    
-    
-  run_unit_tests-1:
-    resource_class: macos.m1.large.gen1
-    macos:
-      xcode: 14.0.1
-    steps:
-      - run: brew --version
-      - run: brew update  
       - run:
-          command: brew --version  
-     
-        
-  run_unit_tests-2:
-    macos:
-      xcode: 14.2.0
-    resource_class: macos.x86.medium.gen2
+          name: Store AWS credentials
+          command: |
+            echo "export AWS_DEFAULT_REGION=eu-north-1" >> $BASH_ENV
+            echo "export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID_PULUMI_STAGING" >> $BASH_ENV
+            echo "export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY_PULUMI_STAGING" >> $BASH_ENV
+            echo "export PULUMI_CONFIG_PASSPHRASE='$PULUMI_PASSWORD_FOR_SECRETS_STAGING'" >> $BASH_ENV
+      - pulumi/login:
+          cloud-url: s3://pulumi.state
+      - run:
+          name: Install AWS CLI
+          command: |
+            pip3 install awscli
+      - run:
+          name: Delete stacks and Docker images whose branch has been deleted
+          command: |
+            stack_name_prefix="webapp-staging--"
+            git branch -r --color=never | grep -v HEAD | sed 's,[ ]*origin/,,g' | while read -r git_branch; do
+              clean_branch_name=`echo ${git_branch:0:60} | sed "s,[^A-Za-z0-9],-,g" | tr '[:upper:]' '[:lower:]'`
+              echo "$stack_name_prefix$clean_branch_name" >> /tmp/stacks_to-keep.txt
+            done
+            # Delete stacks corresponding to deleted branches
+            pulumi stack ls --cwd infra | cut -d' ' -f1 | grep -F $stack_name_prefix | while read -r stack_name; do
+              if ! grep -xq "$stack_name" /tmp/stacks_to-keep.txt; then
+                echo "Destroying resources of stack $stack_name ..."
+                pulumi refresh --cwd infra --yes --stack $stack_name
+                pulumi stack --cwd infra select $stack_name
+                pulumi destroy --cwd infra --yes --remove # Destroy the rest of the resources
+              fi
+            done
+  deploy_infra:
+    docker:
+      - image: cimg/node:18.16.0
+    working_directory: ~/firstvet/webapp
     steps:
-    - node/install:
-        node-version: "16.13"     
-        
+      - checkout
+      - run:
+          name: Store AWS credentials
+          command: |
+            echo "export AWS_DEFAULT_REGION=eu-north-1" >> $BASH_ENV
+            if [ "${CIRCLE_BRANCH}" = "master" ]; then
+              echo "export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID_PULUMI_PRODUCTION" >> $BASH_ENV
+              echo "export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY_PULUMI_PRODUCTION" >> $BASH_ENV
+              echo "export PULUMI_CONFIG_PASSPHRASE='$PULUMI_PASSWORD_FOR_SECRETS_PRODUCTION'" >> $BASH_ENV
+              echo "export PULUMI_STATE_FILE=pulumi.state.prod" >> $BASH_ENV
+              environment=production
+            else
+              echo "export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID_PULUMI_STAGING" >> $BASH_ENV
+              echo "export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY_PULUMI_STAGING" >> $BASH_ENV
+              echo "export PULUMI_CONFIG_PASSPHRASE='$PULUMI_PASSWORD_FOR_SECRETS_STAGING'" >> $BASH_ENV
+              echo "export PULUMI_STATE_FILE=pulumi.state" >> $BASH_ENV
+              environment=staging
+            fi
+            # Various resources (especially on the load balancer side) don't support long names or special characters
+            clean_branch_name=`echo ${CIRCLE_BRANCH:0:38} | sed "s,[^A-Za-z0-9],-,g" | tr '[:upper:]' '[:lower:]'`
+            echo "STACK_NAME=webapp-${environment}--${clean_branch_name}" >> $BASH_ENV
+      - pulumi/login:
+          cloud-url: s3://${PULUMI_STATE_FILE}
+      - run:
+          name: Install Pulumi SDK
+          command: |
+            cd infra
+            npm install
+      - run:
+          name: Create Pulumi stack if it doesn't already exist
+          command: |
+            if ! $(pulumi stack ls --cwd infra | cut -d' ' -f1 | grep -xq $STACK_NAME); then
+              echo 'Creating a new Pulumi stack'
+              pulumi stack --cwd infra init $STACK_NAME
+            fi
+      - run:
+          name: pulumi refresh --stack $STACK_NAME
+          command: pulumi refresh --cwd infra --yes --stack $STACK_NAME
+      - run:
+          name: pulumi update --stack $STACK_NAME
+          command: pulumi update --cwd infra --yes --stack $STACK_NAME --skip-preview
 
 workflows:
-  main:
+  cleanup:
+    when: 
+      and:
+        - equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+        - equal: [ true, << pipeline.parameters.nightly_cleanup >> ]
     jobs:
-      - build
-      - run_unit_tests-1
-      - run_unit_tests-2
-      - test:
-          requires: 
-            - build
-            
-            #test
+      - delete-obsolete-stacks:
+          context:
+            - DockerHub-Auth
+  deploy:
+    jobs:
+      - deploy_infra:
+          context:
+            - DockerHub-Auth
+          filters:
+            branches:
+              ignore:
+                - master
 
