@@ -644,6 +644,12 @@ workflows:
           context:
             - aws-production
             - slack-secrets
+  production_3:
+    jobs:
+      - npm_install:
+          context:
+            - aws-production
+            - slack-secrets            
   production_2:
     jobs:
       - npm_install:
