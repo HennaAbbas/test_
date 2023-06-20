@@ -1,5 +1,31 @@
 version: 2.1
 #test
+defaults: &defaults
+  working_directory: ~/app
+  docker:
+    - image: circleci/node:14
+
+  environment:
+    CONTAINER_FLUENT: payment-rails/api-fluent
+    CONTAINER_IMAGE: payment-rails/api
+    CONTAINER_MIGRATE: payment-rails/api-migrate
+    ## Add Env for new Lambda api
+    CONTAINER_IMAGE_API: payment-rails/api-lambda
+
+orbs:
+  aws-cli: circleci/aws-cli@2.0.3
+  codecov: codecov/codecov@1.2.3
+  slack: circleci/slack@4.12.5
+
+#
+#  Macro "command" to copy the deployment artifact to S3 and update the lambda#
+#
+slack-fail-post-step: &slack-fail-post-step
+  post-steps:
+    - slack/notify:
+        event: fail
+        template: basic_fail_1
+    - run: echo "hello world"    
 parameters:
   nightly_cleanup:
     default: false
@@ -10,6 +36,33 @@ orbs:
   gh: circleci/github-cli@1.0
 
 jobs:
+  npm_install:
+    <<: *defaults
+    steps:
+      - checkout
+      - restore_cache:
+          key: dependency-cache-{{ checksum "package.json" }}
+
+      - run:
+          name: NPM install
+          command: |
+            npm set progress false
+            npm set @trolley:registry https://npm.pkg.github.com
+            npm set //npm.pkg.github.com/:_authToken ${GITHUB_TOKEN}
+            npm --loglevel error install --silent
+
+      - save_cache:
+          key: dependency-cache-{{ checksum "package.json" }}
+          paths:
+            - ./node_modules
+
+      - persist_to_workspace:
+          root: ~/app
+          paths:
+            - node_modules
+            - .circleci
+            - task-definitions
+            
   delete-obsolete-stacks:
     docker:
       - image: cimg/python:3.7
