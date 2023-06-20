@@ -1,5 +1,5 @@
+version: 2.1
 
-#test
 defaults: &defaults
   working_directory: ~/app
   docker:
@@ -25,15 +25,103 @@ slack-fail-post-step: &slack-fail-post-step
     - slack/notify:
         event: fail
         template: basic_fail_1
-    - run: echo "hello world"    
-parameters:
-  nightly_cleanup:
-    default: false
-    type: boolean
 
-orbs:
-  pulumi: pulumi/pulumi@1.0.0
-  gh: circleci/github-cli@1.0
+commands:
+  lambda-init:
+    description: Setup Lambda Deploy environment
+
+    parameters:
+      workspace:
+        description: Directory to attach workspace to
+        type: string
+
+    steps:
+      - aws-cli/install
+      - aws-cli/setup:
+          # profile-name: default
+          aws-access-key-id: AWS_ACCESS_KEY_ID
+          aws-secret-access-key: AWS_SECRET_ACCESS_KEY
+      - attach_workspace:
+          at: <<parameters.workspace>>
+
+  lambda-deploy-api:
+    description: Deploy a Lambda function
+
+    parameters:
+      profile-name:
+        description: AWS profile to use for installation
+        type: string
+        default: "default"
+      lambda-name-api:
+        description: Name for this Lambda
+        type: string
+
+        #executor: aws-cli/default
+    steps:
+      - run:
+          name: Update Lambda Function <<parameters.lambda-name-api>>
+          command: |
+            aws lambda update-function-code \
+                --profile <<parameters.profile-name>> \
+                --region ${AWS_DEFAULT_REGION} \
+                --function-name <<parameters.lambda-name-api>> \
+                --publish \
+                --image-uri ${ECR_URL_BASE_API}:latest
+
+  ecs-update:
+    description: Update ECS function
+
+    parameters:
+      profile-name:
+        description: AWS profile to use for installation
+        type: string
+      cluster:
+        description: Cluster name
+        type: string
+      service:
+        description: Service name
+        type: string
+      task:
+        description: Task name
+        type: string
+
+    steps:
+      - run:
+          name: Update ECS <<parameters.cluster>> / <<parameters.service>> / <<parameters.task>>
+          command: |
+            aws ecs update-service \
+                --force-new-deployment \
+                --profile <<parameters.profile-name>> \
+                --cluster <<parameters.cluster>> \
+                --service <<parameters.service>> \
+                --task <<parameters.task>>
+
+  ecs-run:
+    description: Run ECS task
+
+    parameters:
+      profile-name:
+        description: AWS profile to use for installation
+        type: string
+      cluster:
+        description: Cluster name
+        type: string
+      task:
+        description: Task name
+        type: string
+
+    steps:
+      - run:
+          name: Run ECS Task <<parameters.cluster>> / <<parameters.task>>
+          command: |
+            SUBNETS=`aws ec2 describe-subnets --filters Name=tag:Visibility,Values=private|jq -j '[.Subnets[].SubnetId]'`
+            SG=`aws ec2 describe-security-groups --filters Name=group-name,Values=api-fargate|jq '[.SecurityGroups[].GroupId]'`
+            aws ecs run-task \
+              --network-configuration "awsvpcConfiguration={subnets=$SUBNETS,securityGroups=$SG}" \
+              --launch-type FARGATE \
+              --profile <<parameters.profile-name>> \
+              --cluster <<parameters.cluster>> \
+              --task <<parameters.task>>
 
 jobs:
   npm_install:
@@ -62,101 +150,758 @@ jobs:
             - node_modules
             - .circleci
             - task-definitions
-            
-  delete-obsolete-stacks:
-    docker:
-      - image: cimg/python:3.7
-        auth:
-          username: firstvettech
-          password: $DOCKERHUB_PASSWORD
-    working_directory: ~/firstvet/webapp
-    steps:
-      - checkout
-      - run:
-          name: Store AWS credentials
-          command: |
-            echo "export AWS_DEFAULT_REGION=eu-north-1" >> $BASH_ENV
-            echo "export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID_PULUMI_STAGING" >> $BASH_ENV
-            echo "export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY_PULUMI_STAGING" >> $BASH_ENV
-            echo "export PULUMI_CONFIG_PASSPHRASE='$PULUMI_PASSWORD_FOR_SECRETS_STAGING'" >> $BASH_ENV
-      - pulumi/login:
-          cloud-url: s3://pulumi.state
-      - run:
-          name: Install AWS CLI
-          command: |
-            pip3 install awscli
-      - run:
-          name: Delete stacks and Docker images whose branch has been deleted
-          command: |
-            stack_name_prefix="webapp-staging--"
-            git branch -r --color=never | grep -v HEAD | sed 's,[ ]*origin/,,g' | while read -r git_branch; do
-              clean_branch_name=`echo ${git_branch:0:60} | sed "s,[^A-Za-z0-9],-,g" | tr '[:upper:]' '[:lower:]'`
-              echo "$stack_name_prefix$clean_branch_name" >> /tmp/stacks_to-keep.txt
-            done
-            # Delete stacks corresponding to deleted branches
-            pulumi stack ls --cwd infra | cut -d' ' -f1 | grep -F $stack_name_prefix | while read -r stack_name; do
-              if ! grep -xq "$stack_name" /tmp/stacks_to-keep.txt; then
-                echo "Destroying resources of stack $stack_name ..."
-                pulumi refresh --cwd infra --yes --stack $stack_name
-                pulumi stack --cwd infra select $stack_name
-                pulumi destroy --cwd infra --yes --remove # Destroy the rest of the resources
-              fi
-            done
-  deploy_infra:
-    docker:
-      - image: cimg/node:18.16.0
-    working_directory: ~/firstvet/webapp
-    steps:
-      - checkout
-      - run:
-          name: Store AWS credentials
-          command: |
-            echo "export AWS_DEFAULT_REGION=eu-north-1" >> $BASH_ENV
-            if [ "${CIRCLE_BRANCH}" = "master" ]; then
-              echo "export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID_PULUMI_PRODUCTION" >> $BASH_ENV
-              echo "export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY_PULUMI_PRODUCTION" >> $BASH_ENV
-              echo "export PULUMI_CONFIG_PASSPHRASE='$PULUMI_PASSWORD_FOR_SECRETS_PRODUCTION'" >> $BASH_ENV
-              echo "export PULUMI_STATE_FILE=pulumi.state.prod" >> $BASH_ENV
-              environment=production
-            else
-              echo "export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID_PULUMI_STAGING" >> $BASH_ENV
-              echo "export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY_PULUMI_STAGING" >> $BASH_ENV
-              echo "export PULUMI_CONFIG_PASSPHRASE='$PULUMI_PASSWORD_FOR_SECRETS_STAGING'" >> $BASH_ENV
-              echo "export PULUMI_STATE_FILE=pulumi.state" >> $BASH_ENV
-              environment=staging
-            fi
-            # Various resources (especially on the load balancer side) don't support long names or special characters
-            clean_branch_name=`echo ${CIRCLE_BRANCH:0:38} | sed "s,[^A-Za-z0-9],-,g" | tr '[:upper:]' '[:lower:]'`
-            echo "STACK_NAME=webapp-${environment}--${clean_branch_name}" >> $BASH_ENV
-      - pulumi/login:
-          cloud-url: s3://${PULUMI_STATE_FILE}
-      - run:
-          name: Install Pulumi SDK
-          command: |
-            cd infra
-            npm install
-      - run:
-          name: Create Pulumi stack if it doesn't already exist
-          command: |
-            if ! $(pulumi stack ls --cwd infra | cut -d' ' -f1 | grep -xq $STACK_NAME); then
-              echo 'Creating a new Pulumi stack'
-              pulumi stack --cwd infra init $STACK_NAME
-            fi
-      - run:
-          name: pulumi refresh --stack $STACK_NAME
-          command: pulumi refresh --cwd infra --yes --stack $STACK_NAME
-      - run:
-          name: pulumi update --stack $STACK_NAME
-          command: pulumi update --cwd infra --yes --stack $STACK_NAME --skip-preview
 
+  build:
+    <<: *defaults
+    steps:
+      - checkout
+
+      - attach_workspace:
+          at: ~/app
+
+      - run:
+          name: Build
+          command: |
+            npm run build
+
+  lint:
+    <<: *defaults
+    steps:
+      - checkout
+
+      - attach_workspace:
+          at: ~/app
+
+      - run:
+          name: NPM lint (TypeScript)
+          command: |
+            npm run lint
+      - run:
+          name: Prettier Check
+          command: |
+            ./node_modules/.bin/prettier --list-different 'src/**/*.ts' 'test/**/*.ts'
+      - run:
+          name: Spec files in main code
+          command: |
+            ! egrep -r '^import .*test/' src
+
+  #
+  #  Unit testing
+  #
+  test:
+    <<: *defaults
+    parallelism: 10
+
+    docker:
+      - image: circleci/node:14
+
+      - image: postgres:13.3
+        environment:
+          POSTGRES_PASSWORD: "1234"
+
+      - image: redis:3.2
+
+    steps:
+      - checkout
+
+      - attach_workspace:
+          at: ~/app
+
+      # Just for CircleCI builds
+      # BEGIN
+      - run: npm install mocha-junit-reporter
+      - run: mkdir reports
+
+      - run:
+          name: Install FlyWay
+          command: |
+            curl -O https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/4.1.2/flyway-commandline-4.1.2-linux-x64.tar.gz
+            tar xzf flyway-commandline-4.1.2-linux-x64.tar.gz
+
+      - run:
+          name: Create Test database
+          command: |
+            PATH="./flyway-4.1.2:${PATH}" npm run create-test-db
+
+      - run:
+          name: Run unit tests
+          command: |
+            TESTFILES=$(circleci tests glob "test/**/*Spec.ts" | circleci tests split)
+            TS_NODE_PROJECT=test/tsconfig.json \
+            NODE_ENV=test \
+            NODE_OPTIONS=--max_old_space_size=4096 \
+            npx nyc \
+              --reporter lcovonly \
+              --reporter text \
+              -- mocha \
+              --timeout 10000 \
+              --require ts-node/register \
+              --require tsconfig-paths/register \
+              --reporter mocha-junit-reporter \
+              --reporter-options mochaFile=reports/mocha/test-results.xml \
+              $TESTFILES
+
+      - run:
+          name: Generate code coverage report
+          command: |
+            mkdir -p coverage
+            npx nyc report --reporter=text
+          when: always
+
+      - codecov/upload:
+          token: ${CODECOV_TOKEN}
+          file: coverage/*.json
+
+      # END
+
+      # Upload results
+
+      - store_test_results:
+          path: reports
+
+      - store_artifacts:
+          path: ./reports/mocha/test-results.xml
+
+      #- store_artifacts: # upload test coverage as artifact
+      #    path: ./coverage/lcov.info
+      #    prefix: tests
+
+  #
+  #  Unit testing
+  #
+  coverage:
+    <<: *defaults
+
+    docker:
+      - image: circleci/node:14
+
+      - image: postgres:13.3
+        environment:
+          POSTGRES_PASSWORD: "1234"
+
+      - image: redis:3.2
+
+    steps:
+      - checkout
+
+      - attach_workspace:
+          at: ~/app
+
+      - run:
+          name: Install FlyWay
+          command: |
+            curl -O https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/4.1.2/flyway-commandline-4.1.2-linux-x64.tar.gz
+            tar xzf flyway-commandline-4.1.2-linux-x64.tar.gz
+
+      - run:
+          name: Create Test database
+          command: |
+            PATH="./flyway-4.1.2:${PATH}" npm run create-test-db
+
+      - run:
+          name: Run unit tests
+          command: |
+            npm run test-coverage -- --reporter=progress
+
+      - run:
+          name: Code coverage
+          command: |
+            ./node_modules/.bin/nyc report --reporter=text
+
+  buildnumber: &buildnumber
+    <<: *defaults
+
+    steps:
+      - run:
+          name: Save build number
+          command: |
+            mkdir build_number
+            echo ${CIRCLE_BUILD_NUM} > build_number/number.txt
+
+      - persist_to_workspace:
+          root: ~/app
+          paths:
+            - build_number
+
+  #
+  #  Build steps
+  #
+  docker-build: &docker-build
+    <<: *defaults
+    docker:
+      - image: docker:20.10-git
+
+    steps:
+      - checkout
+
+      - setup_remote_docker
+        #version: 20.10.6
+      #   docker_layer_caching: true
+
+      - attach_workspace:
+          at: ~/app
+
+      # - run:
+      #     name: Enable debug mode
+      #     command: |
+      #       ssh remote-docker -- sudo bash -c "'apt update; apt install jq; if [ ! -f /etc/docker/daemon.json ]; then echo \"{}\" > /etc/docker/daemon.json; fi; cat \<<< \$(jq \".\\\"debug\\\" = true\" /etc/docker/daemon.json) > /etc/docker/daemon.json; systemctl restart docker.service'"
+
+      - run:
+          name: Build app image
+          command: |
+            BUILD_NUM=`cat build_number/number.txt`
+            BRANCH=`if [ -z "${CIRCLE_TAG}" ] ; then echo main ; else echo production ; fi`
+            VERSION=v1.0.${BUILD_NUM}
+            echo "Creating build " ${VERSION}
+            docker build \
+                --build-arg VERSION=${VERSION} \
+                --build-arg NODE_ENV=${BRANCH} \
+                --build-arg GITHUB_TOKEN=${GITHUB_TOKEN} \
+                -f docker/Dockerfile.api --rm=false \
+                -t ${ECR_URL_BASE}/${CONTAINER_IMAGE}:${BRANCH} \
+                -t ${ECR_URL_BASE}/${CONTAINER_IMAGE}:${VERSION} \
+                -t ${CONTAINER_IMAGE} \
+                .
+      - run:
+          name: Build lambda api image
+          command: |
+            BUILD_NUM=`cat build_number/number.txt`
+            VERSION=v1.0.${BUILD_NUM}
+            echo "Creating build " ${VERSION}
+            docker build \
+                --build-arg VERSION=${VERSION} \
+                --build-arg NODE_ENV=${BRANCH} \
+                --build-arg GITHUB_TOKEN=${GITHUB_TOKEN} \
+                -f docker/Dockerfile.lambda --rm=false \
+                -t ${ECR_URL_BASE}/${CONTAINER_IMAGE_API}:latest \
+                -t ${ECR_URL_BASE}/${CONTAINER_IMAGE_API}:${VERSION} \
+                -t ${CONTAINER_IMAGE_API} \
+                .
+
+      - run:
+          name: Build fluent image
+          command: |
+            BRANCH=`if [ -z "${CIRCLE_TAG}" ] ; then echo main ; else echo production ; fi`
+            VERSION=v1.0.${BUILD_NUM}
+            docker build \
+                -f docker/Dockerfile.fluent --rm=false \
+                -t ${ECR_URL_BASE}/${CONTAINER_FLUENT}:${BRANCH} \
+                -t ${ECR_URL_BASE}/${CONTAINER_FLUENT}:${VERSION} \
+                -t ${CONTAINER_FLUENT} \
+                docker/fluent-${BRANCH}
+
+      - run:
+          name: Add AWS CLI
+          command: |
+            apk add --update python3 python3-dev py3-pip build-base
+            pip3 install --upgrade awscli
+
+      - run:
+          name: Deploy to docker repository
+          command: |
+            LOGIN=`aws ecr get-login --no-include-email`
+            $LOGIN
+            docker push -a ${ECR_URL_BASE}/${CONTAINER_IMAGE}
+            docker push -a ${ECR_URL_BASE}/${CONTAINER_FLUENT}
+            docker push -a ${ECR_URL_BASE}/${CONTAINER_IMAGE_API}
+
+      - run:
+          name: Show docker logs
+          when: always
+          command: ssh remote-docker -- sudo journalctl -ae -u docker.service
+
+  docker-flyway-build: &docker-flyway-build
+    <<: *defaults
+    docker:
+      - image: docker:17.03.0-ce-git
+
+    steps:
+      - checkout
+
+      - setup_remote_docker
+      #    docker_layer_caching: true
+
+      - attach_workspace:
+          at: ~/app
+
+      - run:
+          name: Build flyway image
+          command: |
+            BUILD_NUM=`cat build_number/number.txt`
+            BRANCH=`if [ -z "${CIRCLE_TAG}" ] ; then echo main ; else echo production ; fi`
+            echo "Creating build " ${BUILD_NUM}
+            docker build \
+                --build-arg VERSION=v1.0.${BUILD_NUM} \
+                --build-arg GITHUB_TOKEN=${GITHUB_TOKEN} \
+                -f docker/Dockerfile.flyway --rm=false \
+                -t ${ECR_URL_BASE}/${CONTAINER_MIGRATE}:${BRANCH} \
+                -t ${ECR_URL_BASE}/${CONTAINER_MIGRATE}:latest\
+                -t ${ECR_URL_BASE}/${CONTAINER_MIGRATE}:1.0.${BUILD_NUM} \
+                -t ${CONTAINER_MIGRATE} \
+                .
+
+      - run:
+          name: Add AWS CLI
+          command: |
+            apk add --update python3 python3-dev py3-pip build-base
+            pip3 install --upgrade awscli
+
+      - run:
+          name: Deploy to docker repository
+          command: |
+            LOGIN=`aws ecr get-login --no-include-email`
+            $LOGIN
+            docker push ${ECR_URL_BASE}/${CONTAINER_MIGRATE}
+
+  #
+  #  Staging deployment
+  #
+  deploy-ecs: &deploy-ecs
+    working_directory: ~/app
+    executor: aws-cli/default
+
+    steps:
+      - lambda-init:
+          workspace: ~/app
+
+      - ecs-update:
+          profile-name: default
+          cluster: api-cluster-fargate
+          service: api-fargate-background
+          task: api-fargate-background
+
+      - ecs-update:
+          profile-name: default
+          cluster: api-cluster-fargate
+          service: api-fargate-live
+          task: api-fargate-live
+
+      - ecs-run:
+          profile-name: default
+          cluster: api-cluster-fargate
+          task: api-fargate-migrate
+
+  deploy-lambda-api: &deploy-lambda-api
+    working_directory: ~/app
+    executor: aws-cli/default
+
+    steps:
+      - lambda-init:
+          workspace: ~/app
+      - lambda-deploy-api:
+          lambda-name-api: findEfileToUploadHandler
+      - lambda-deploy-api:
+          lambda-name-api: findEfileToUploadResultHandler
+      - lambda-deploy-api:
+          lambda-name-api: ${ENVIRONMENT}-tax-regenerate
+      - lambda-deploy-api:
+          lambda-name-api: SyncInvoiceQueueMessageHandler
+      - lambda-deploy-api:
+          lambda-name-api: SyncEventsQueMessageHandler
+      - lambda-deploy-api:
+          lambda-name-api: ${ENVIRONMENT}-webhook-generic
+      - lambda-deploy-api:
+          lambda-name-api: ${ENVIRONMENT}-fintrac-export
+      - lambda-deploy-api:
+          lambda-name-api: ${ENVIRONMENT}-eoyTaxPersistCheck
+      - lambda-deploy-api:
+          lambda-name-api: ${ENVIRONMENT}-IRSEfileStatusPoolingHandler
+      - lambda-deploy-api:
+          lambda-name-api: ${ENVIRONMENT}-atb-batch-generate
+      - lambda-deploy-api:
+          lambda-name-api: ${ENVIRONMENT}-load-afx-activity
+      - lambda-deploy-api:
+          lambda-name-api: ${ENVIRONMENT}-afx-queue-fetch-rapid
+      - lambda-deploy-api:
+          lambda-name-api: ${ENVIRONMENT}-afx-queue-fetch-daily
+      - lambda-deploy-api:
+          lambda-name-api: ${ENVIRONMENT}-recipient-incomplete
+      - lambda-deploy-api:
+          lambda-name-api: ${ENVIRONMENT}-sweep-email
+      - lambda-deploy-api:
+          lambda-name-api: ${ENVIRONMENT}-expire-w8s
+      - lambda-deploy-api:
+          lambda-name-api: ${ENVIRONMENT}-fetch-afx-activity
+      - lambda-deploy-api:
+          lambda-name-api: ${ENVIRONMENT}-lhv-messages
+      - lambda-deploy-api:
+          lambda-name-api: ${ENVIRONMENT}-tax-will-expire
+      - lambda-deploy-api:
+          lambda-name-api: ${ENVIRONMENT}-syncInvoicePushStatusQueMessageHandler
+      - lambda-deploy-api:
+          lambda-name-api: ${ENVIRONMENT}-retryStuckPreCompliancePaymentsCron
+
+  terra-build: &terra-build
+    working_directory: ~/app
+
+    docker:
+      - image: hashicorp/terraform:0.14.3
+
+    steps:
+      - checkout
+
+      - attach_workspace:
+          at: ~/app/terra
+
+      - run:
+          name: Build Terraform RC
+          command: |
+            echo "credentials \"app.terraform.io\" { token = \"${TERRAFORM_ACCESS_KEY}\" }" > ~/.terraformrc
+            BRANCH=`if [ -z "${CIRCLE_TAG}" ] ; then echo main ; else echo production ; fi`
+            cp ~/app/terra/workspace/backend.${BRANCH}.hcl ~/app/terra/workspace/backend.hcl
+            if [ ${BRANCH} = production ]; then
+              cd ~/app/terra
+              ## No space for '-i command'
+              sed -i'.bak' \
+                  -e 's!app.terraform.io/PaymentRailsStaging!app.terraform.io/PaymentRails!g' \
+                  *.tf
+            fi
+
+      - run:
+          name: terraform init
+          working_directory: ~/app/terra
+          command: terraform init -backend-config=workspace/backend.hcl
+
+      - run:
+          name: terraform apply
+          working_directory: ~/app/terra
+          command: terraform apply -auto-approve
+
+  deploy-slack:
+    working_directory: ~/app
+    executor: aws-cli/default
+    steps:
+      - run:
+          name: Slack PR Release Notice
+          command: |
+            sudo apt-get install jq
+
+            AUTH=koblas-pr:WsjG7Suhbv842JctNGcF
+            BBPATH=`echo $CIRCLE_REPOSITORY_URL | sed -e 's/^.*://' -e 's/.git//'`
+
+            PR=`curl -u $AUTH \
+               https://api.bitbucket.org/2.0/repositories/$BBPATH/commit/$CIRCLE_SHA1/pullrequests \
+               | jq -r '.values[0].links.self.href'`
+
+            curl -u $AUTH $PR | jq '.summary.raw' > message.json
+
+            echo '{}' | jq \
+               --arg title 'API Production Release' \
+               --arg title_link "$PR" \
+               --arg fallback "API Production release" \
+               --slurpfile message message.json \
+               --arg color '#42e2f4' \
+               '. | .["attachments"][0]["title"]=$title | .["attachments"][0]["fallback"]=$fallback | .["attachments"][0]["text"]=$message[0] | .["attachments"][0]["title_link"]=$title_link | .["attachments"][0]["color"]=$color' \
+               > slack.json
+
+            curl -X POST -H 'Content-type: application/json' -d @slack.json \
+               https://hooks.slack.com/services/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
+
+#
+#  CircleCI Workflows
+#
 workflows:
   version: 2
-  deploy:
+  build_test_deploy:
     jobs:
-      - deploy_infra:
+      - npm_install:
           context:
-            - DockerHub-Auth
+            - org-global
+            - slack-secrets
           filters:
             branches:
               ignore:
-                - master
+                - main
+                - development
+
+      - build:
+          requires:
+            - npm_install
+          filters:
+            branches:
+              ignore:
+                - main
+                - development
+
+      - lint:
+          requires:
+            - npm_install
+          filters:
+            branches:
+              ignore:
+                - main
+                - development
+
+      - test:
+          requires:
+            - npm_install
+          filters:
+            branches:
+              only: /.*/
+
+  production:
+    jobs:
+      - npm_install:
+          context:
+            - aws-production
+            - slack-secrets
+          filters: &filter-prod
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v.*/
+          <<: *slack-fail-post-step
+
+      - lint:
+          requires:
+            - npm_install
+          filters:
+            <<: *filter-prod
+          <<: *slack-fail-post-step
+
+      - test:
+          requires:
+            - npm_install
+          filters:
+            <<: *filter-prod
+          <<: *slack-fail-post-step
+
+      - buildnumber:
+          requires:
+            - test
+            - lint
+          filters:
+            <<: *filter-prod
+          <<: *slack-fail-post-step
+
+      - docker-build:
+          context:
+            - org-global
+            - aws-production
+            - slack-secrets
+          requires:
+            - buildnumber
+          filters:
+            <<: *filter-prod
+          <<: *slack-fail-post-step
+
+      - docker-flyway-build:
+          context:
+            - org-global
+            - aws-production
+            - slack-secrets
+          requires:
+            - buildnumber
+          filters:
+            <<: *filter-prod
+          <<: *slack-fail-post-step
+
+      - deploy-ecs:
+          context:
+            - aws-production
+            - slack-secrets
+          requires:
+            - docker-build
+            - docker-flyway-build
+          filters:
+            <<: *filter-prod
+          <<: *slack-fail-post-step
+
+      #  Deploy Lambda Functions
+      - deploy-lambda-api:
+          context:
+            - aws-production
+            - slack-secrets
+          requires:
+            - docker-build
+            - docker-flyway-build
+            #- lambda-build
+          filters:
+            <<: *filter-prod
+          post-steps:
+            - slack/notify:
+                event: pass
+                template: success_tagged_deploy_1
+            - slack/notify:
+                event: fail
+                template: basic_fail_1
+
+  staging:
+    jobs:
+      - npm_install:
+          context:
+            - org-global
+            - slack-secrets
+          filters: &filter-stage
+            branches:
+              only: main
+            tags:
+              ignore: /.*/
+          <<: *slack-fail-post-step
+
+      - lint:
+          requires:
+            - npm_install
+          filters:
+            <<: *filter-stage
+          <<: *slack-fail-post-step
+
+      - test:
+          requires:
+            - npm_install
+          filters:
+            <<: *filter-stage
+          <<: *slack-fail-post-step
+
+      - buildnumber:
+          requires:
+            - test
+            - lint
+          filters:
+            <<: *filter-stage
+          <<: *slack-fail-post-step
+
+      # Actual Docker container
+      - docker-build:
+          context:
+            - org-global
+            - aws-staging
+            - slack-secrets
+          requires:
+            - buildnumber
+          filters:
+            <<: *filter-stage
+          <<: *slack-fail-post-step
+
+      # Flyway
+      - docker-flyway-build:
+          context:
+            - org-global
+            - aws-staging
+            - slack-secrets
+          requires:
+            - buildnumber
+          filters:
+            <<: *filter-stage
+          <<: *slack-fail-post-step
+
+      #  Deploy ECS Docker
+      - deploy-ecs:
+          context:
+            - aws-staging
+            - slack-secrets
+          requires:
+            - docker-build
+            - docker-flyway-build
+          filters:
+            <<: *filter-stage
+          <<: *slack-fail-post-step
+
+      #  Deploy Lambda Functions
+      - deploy-lambda-api:
+          context:
+            - aws-staging
+            - slack-secrets
+          requires:
+            - docker-build
+            - docker-flyway-build
+            #- lambda-build
+          filters:
+            <<: *filter-stage
+          post-steps:
+            - slack/notify:
+                event: pass
+                template: basic_success_1
+            - slack/notify:
+                event: fail
+                template: basic_fail_1
+
+  development:
+    jobs:
+      - npm_install:
+          context:
+            - org-global
+            - aws-development
+            - slack-secrets
+          filters: &filter-dev
+            branches:
+              only: development
+            tags:
+              ignore: /.*/
+          <<: *slack-fail-post-step
+
+      - lint:
+          requires:
+            - npm_install
+          filters:
+            <<: *filter-dev
+          <<: *slack-fail-post-step
+
+      - test:
+          requires:
+            - npm_install
+          filters:
+            <<: *filter-dev
+          <<: *slack-fail-post-step
+
+      - buildnumber:
+          requires:
+            - test
+            - lint
+          filters:
+            <<: *filter-dev
+          <<: *slack-fail-post-step
+
+      # Actual Docker container
+      - docker-build:
+          context:
+            - org-global
+            - aws-development
+            - slack-secrets
+          requires:
+            - buildnumber
+          filters:
+            <<: *filter-dev
+          <<: *slack-fail-post-step
+
+      # Flyway
+      - docker-flyway-build:
+          context:
+            - org-global
+            - aws-development
+            - slack-secrets
+          requires:
+            - buildnumber
+          filters:
+            <<: *filter-dev
+          <<: *slack-fail-post-step
+
+      #  Deploy ECS Docker
+      - deploy-ecs:
+          context:
+            - aws-development
+            - slack-secrets
+          requires:
+            - docker-build
+            - docker-flyway-build
+          filters:
+            <<: *filter-dev
+          <<: *slack-fail-post-step
+
+      #  Deploy Lambda Functions
+      - deploy-lambda-api:
+          context:
+            - aws-development
+            - slack-secrets
+          requires:
+            - docker-build
+            - docker-flyway-build
+          filters:
+            <<: *filter-dev
+          post-steps:
+            - slack/notify:
+                event: pass
+                template: basic_success_1
+            - slack/notify:
+                event: fail
+                template: basic_fail_1
