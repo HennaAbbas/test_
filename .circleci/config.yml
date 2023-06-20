@@ -20,11 +20,11 @@ orbs:
 #
 #  Macro "command" to copy the deployment artifact to S3 and update the lambda#
 #
-# slack-fail-post-step: &slack-fail-post-step
-#   post-steps:
-#     - slack/notify:
-#         event: fail
-#         template: basic_fail_1
+slack-fail-post-step: &slack-fail-post-step
+  post-steps:
+    - slack/notify:
+        event: fail
+        template: basic_fail_1
 
 commands:
   lambda-init:
