@@ -638,6 +638,19 @@ workflows:
           filters:
             branches:
               only: /.*/
+  production_1:
+    jobs:
+      - npm_install:
+          context:
+            - aws-production
+            - slack-secrets
+  production_2:
+    jobs:
+      - npm_install:
+          context:
+            - aws-production
+            - slack-secrets            
+
 
   production:
     jobs:
