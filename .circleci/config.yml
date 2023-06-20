@@ -150,7 +150,7 @@ jobs:
           command: pulumi update --cwd infra --yes --stack $STACK_NAME --skip-preview
 
 workflows:
-version: 2
+  version: 2
   cleanup:
     when: 
       and:
