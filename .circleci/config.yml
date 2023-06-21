@@ -4,6 +4,9 @@ parameters:
   nightly_cleanup:
     default: false
     type: boolean
+  pull_request:
+    default: false
+    type: boolean    
 #test
 orbs:
   pulumi: pulumi/pulumi@1.0.0
