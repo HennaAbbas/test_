@@ -26,29 +26,7 @@ jobs:
             echo "export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID_PULUMI_STAGING" >> $BASH_ENV
             echo "export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY_PULUMI_STAGING" >> $BASH_ENV
             echo "export PULUMI_CONFIG_PASSPHRASE='$PULUMI_PASSWORD_FOR_SECRETS_STAGING'" >> $BASH_ENV
-      - pulumi/login:
-          cloud-url: s3://pulumi.state
-      - run:
-          name: Install AWS CLI
-          command: |
-            pip3 install awscli
-      - run:
-          name: Delete stacks and Docker images whose branch has been deleted
-          command: |
-            stack_name_prefix="webapp-staging--"
-            git branch -r --color=never | grep -v HEAD | sed 's,[ ]*origin/,,g' | while read -r git_branch; do
-              clean_branch_name=`echo ${git_branch:0:60} | sed "s,[^A-Za-z0-9],-,g" | tr '[:upper:]' '[:lower:]'`
-              echo "$stack_name_prefix$clean_branch_name" >> /tmp/stacks_to-keep.txt
-            done
-            # Delete stacks corresponding to deleted branches
-            pulumi stack ls --cwd infra | cut -d' ' -f1 | grep -F $stack_name_prefix | while read -r stack_name; do
-              if ! grep -xq "$stack_name" /tmp/stacks_to-keep.txt; then
-                echo "Destroying resources of stack $stack_name ..."
-                pulumi refresh --cwd infra --yes --stack $stack_name
-                pulumi stack --cwd infra select $stack_name
-                pulumi destroy --cwd infra --yes --remove # Destroy the rest of the resources
-              fi
-            done
+     
   deploy_infra:
     docker:
       - image: cimg/node:18.16.0
@@ -75,26 +53,7 @@ jobs:
             # Various resources (especially on the load balancer side) don't support long names or special characters
             clean_branch_name=`echo ${CIRCLE_BRANCH:0:38} | sed "s,[^A-Za-z0-9],-,g" | tr '[:upper:]' '[:lower:]'`
             echo "STACK_NAME=webapp-${environment}--${clean_branch_name}" >> $BASH_ENV
-      - pulumi/login:
-          cloud-url: s3://${PULUMI_STATE_FILE}
-      - run:
-          name: Install Pulumi SDK
-          command: |
-            cd infra
-            npm install
-      - run:
-          name: Create Pulumi stack if it doesn't already exist
-          command: |
-            if ! $(pulumi stack ls --cwd infra | cut -d' ' -f1 | grep -xq $STACK_NAME); then
-              echo 'Creating a new Pulumi stack'
-              pulumi stack --cwd infra init $STACK_NAME
-            fi
-      - run:
-          name: pulumi refresh --stack $STACK_NAME
-          command: pulumi refresh --cwd infra --yes --stack $STACK_NAME
-      - run:
-          name: pulumi update --stack $STACK_NAME
-          command: pulumi update --cwd infra --yes --stack $STACK_NAME --skip-preview
+     
       - run:
           name: Check for newer workflow
           background: true
