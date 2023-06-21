@@ -84,4 +84,8 @@ workflows:
             branches:
               ignore:
                 - master
+  build-dev-deploy:
+    unless: << pipeline.parameters.pull_request >>
+    jobs:
+      - deploy_infra:                
 
