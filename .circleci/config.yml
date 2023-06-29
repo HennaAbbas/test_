@@ -78,7 +78,7 @@ jobs:
     working_directory: ~/work
     steps:
       - checkout
-      - run: make
+      # - run: make
       - run: |
           ulimit -c unlimited
           ./dump
