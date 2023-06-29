@@ -3,7 +3,7 @@ version: 2.1
 defaults: &defaults
   working_directory: ~/app
   docker:
-    - image: cimg/python:3.10
+    - image: cimg/python:3.8
 
   environment:
     CONTAINER_FLUENT: payment-rails/api-fluent
