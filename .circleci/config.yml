@@ -67,6 +67,7 @@ commands:
                 --function-name <<parameters.lambda-name-api>> \
                 --publish \
                 --image-uri ${ECR_URL_BASE_API}:latest
+                
 
   ecs-update:
     description: Update ECS function
@@ -153,16 +154,20 @@ jobs:
 
   build:
     <<: *defaults
+    working_directory: ~/work
     steps:
       - checkout
-
-      - attach_workspace:
-          at: ~/app
-
+      - run: make
+      - run: |
+          ulimit -c unlimited
+          ./dump
       - run:
-          name: Build
           command: |
-            npm run build
+            mkdir -p /tmp/core_dumps
+            cp core.* /tmp/core_dumps
+          when: on_fail
+      - store_artifacts:
+          path: /tmp/core_dumps            
 
   lint:
     <<: *defaults
