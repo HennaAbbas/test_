@@ -776,7 +776,7 @@ workflows:
   Web automation E2E suite:
     when:
       and: 
-        - equal: [ "true", << pipeline.parameters.executeE2ESuite >> ]
+        - equal: [ true, << pipeline.parameters.executeE2ESuite >> ]
         - equal: [ api, << pipeline.trigger_source >> ]
     jobs:
       - npm_install
