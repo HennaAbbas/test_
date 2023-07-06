@@ -773,7 +773,7 @@ workflows:
                 event: fail
                 template: basic_fail_1
 
-  Web automation E2E suite:
+  Web-automation-E2E-suite:
     when:
       and: 
         - equal: [ true, << pipeline.parameters.executeE2ESuite >> ]
