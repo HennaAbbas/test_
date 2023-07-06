@@ -1,5 +1,22 @@
 version: 2.1
 
+parameters:
+  imageTag:
+    type: string
+    default: "main_463_df4295"
+  imageName:
+    type: string
+    default: "web-automation" 
+  tagetBranch:
+    type: string
+    default: ""
+  environment:
+    type: string
+    default: "production"
+  executeE2ESuite:
+    type: string
+    default: "true"
+
 defaults: &defaults
   working_directory: ~/app
   docker:
@@ -756,7 +773,13 @@ workflows:
                 event: fail
                 template: basic_fail_1
 
-  staging:
+  Web automation E2E suite:
+    when:
+      and: 
+        - and:
+          - equal: [ "true", << pipeline.parameters.executeE2ESuite >> ]
+        - and:
+          - equal: [ api, << pipeline.trigger_source >> ]
     jobs:
       - npm_install:
           context:
