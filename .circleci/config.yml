@@ -779,16 +779,7 @@ workflows:
         - equal: [ "true", << pipeline.parameters.executeE2ESuite >> ]
         - equal: [ api, << pipeline.trigger_source >> ]
     jobs:
-      - npm_install:
-          context:
-            - org-global
-            - slack-secrets
-          filters: &filter-stage
-            branches:
-              only: main
-            tags:
-              ignore: /.*/
-          <<: *slack-fail-post-step
+      - npm_install
 
       - lint:
           requires:
