@@ -784,9 +784,7 @@ workflows:
       - lint:
           requires:
             - npm_install
-          filters:
-            <<: *filter-stage
-          <<: *slack-fail-post-step
+
 
       - test:
           requires:
