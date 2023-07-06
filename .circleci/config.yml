@@ -14,8 +14,8 @@ parameters:
     type: string
     default: "production"
   executeE2ESuite:
-    type: string
-    default: "true"
+    type: boolean
+    default: true
 
 defaults: &defaults
   working_directory: ~/app
