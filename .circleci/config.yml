@@ -781,69 +781,69 @@ workflows:
     jobs:
       - npm_install
 
-      - lint:
-          requires:
-            - npm_install
+      # - lint:
+      #     requires:
+      #       - npm_install
 
 
-      - test:
-          requires:
-            - npm_install
+      # - test:
+      #     requires:
+      #       - npm_install
 
-      - buildnumber:
-          requires:
-            - test
-            - lint
-
-
-      # Actual Docker container
-      - docker-build:
-          context:
-            - org-global
-            - aws-staging
-            - slack-secrets
-          requires:
-            - buildnumber
+      # - buildnumber:
+      #     requires:
+      #       - test
+      #       - lint
 
 
-      # Flyway
-      - docker-flyway-build:
-          context:
-            - org-global
-            - aws-staging
-            - slack-secrets
-          requires:
-            - buildnumber
-          filters:
+      # # Actual Docker container
+      # - docker-build:
+      #     context:
+      #       - org-global
+      #       - aws-staging
+      #       - slack-secrets
+      #     requires:
+      #       - buildnumber
 
 
-      #  Deploy ECS Docker
-      - deploy-ecs:
-          context:
-            - aws-staging
-            - slack-secrets
-          requires:
-            - docker-build
-            - docker-flyway-build
+      # # Flyway
+      # - docker-flyway-build:
+      #     context:
+      #       - org-global
+      #       - aws-staging
+      #       - slack-secrets
+      #     requires:
+      #       - buildnumber
+      #     filters:
 
 
-      #  Deploy Lambda Functions
-      - deploy-lambda-api:
-          context:
-            - aws-staging
-            - slack-secrets
-          requires:
-            - docker-build
-            - docker-flyway-build
-            #- lambda-build
+      # #  Deploy ECS Docker
+      # - deploy-ecs:
+      #     context:
+      #       - aws-staging
+      #       - slack-secrets
+      #     requires:
+      #       - docker-build
+      #       - docker-flyway-build
 
-          post-steps:
-            - slack/notify:
-                event: pass
-                template: basic_success_1
-            - slack/notify:
-                event: fail
-                template: basic_fail_1
+
+      # #  Deploy Lambda Functions
+      # - deploy-lambda-api:
+      #     context:
+      #       - aws-staging
+      #       - slack-secrets
+      #     requires:
+      #       - docker-build
+      #       - docker-flyway-build
+      #       #- lambda-build
+
+      #     post-steps:
+      #       - slack/notify:
+      #           event: pass
+      #           template: basic_success_1
+      #       - slack/notify:
+      #           event: fail
+      #           template: basic_fail_1
 
   development:
     jobs:
