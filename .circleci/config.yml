@@ -789,17 +789,12 @@ workflows:
       - test:
           requires:
             - npm_install
-          filters:
-            <<: *filter-stage
-          <<: *slack-fail-post-step
 
       - buildnumber:
           requires:
             - test
             - lint
-          filters:
-            <<: *filter-stage
-          <<: *slack-fail-post-step
+
 
       # Actual Docker container
       - docker-build:
@@ -809,9 +804,7 @@ workflows:
             - slack-secrets
           requires:
             - buildnumber
-          filters:
-            <<: *filter-stage
-          <<: *slack-fail-post-step
+
 
       # Flyway
       - docker-flyway-build:
@@ -822,8 +815,7 @@ workflows:
           requires:
             - buildnumber
           filters:
-            <<: *filter-stage
-          <<: *slack-fail-post-step
+
 
       #  Deploy ECS Docker
       - deploy-ecs:
@@ -833,9 +825,7 @@ workflows:
           requires:
             - docker-build
             - docker-flyway-build
-          filters:
-            <<: *filter-stage
-          <<: *slack-fail-post-step
+
 
       #  Deploy Lambda Functions
       - deploy-lambda-api:
@@ -846,8 +836,7 @@ workflows:
             - docker-build
             - docker-flyway-build
             #- lambda-build
-          filters:
-            <<: *filter-stage
+
           post-steps:
             - slack/notify:
                 event: pass
@@ -863,34 +852,21 @@ workflows:
             - org-global
             - aws-development
             - slack-secrets
-          filters: &filter-dev
-            branches:
-              only: development
-            tags:
-              ignore: /.*/
-          <<: *slack-fail-post-step
+
 
       - lint:
           requires:
             - npm_install
-          filters:
-            <<: *filter-dev
-          <<: *slack-fail-post-step
+
 
       - test:
           requires:
             - npm_install
-          filters:
-            <<: *filter-dev
-          <<: *slack-fail-post-step
 
       - buildnumber:
           requires:
             - test
             - lint
-          filters:
-            <<: *filter-dev
-          <<: *slack-fail-post-step
 
       # Actual Docker container
       - docker-build:
@@ -900,9 +876,7 @@ workflows:
             - slack-secrets
           requires:
             - buildnumber
-          filters:
-            <<: *filter-dev
-          <<: *slack-fail-post-step
+
 
       # Flyway
       - docker-flyway-build:
@@ -912,9 +886,7 @@ workflows:
             - slack-secrets
           requires:
             - buildnumber
-          filters:
-            <<: *filter-dev
-          <<: *slack-fail-post-step
+
 
       #  Deploy ECS Docker
       - deploy-ecs:
@@ -924,9 +896,7 @@ workflows:
           requires:
             - docker-build
             - docker-flyway-build
-          filters:
-            <<: *filter-dev
-          <<: *slack-fail-post-step
+
 
       #  Deploy Lambda Functions
       - deploy-lambda-api:
@@ -936,8 +906,7 @@ workflows:
           requires:
             - docker-build
             - docker-flyway-build
-          filters:
-            <<: *filter-dev
+
           post-steps:
             - slack/notify:
                 event: pass
