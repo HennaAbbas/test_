@@ -23,7 +23,7 @@ jobs:
           password: $DOCKERHUB_PASSWORD
     working_directory: ~/firstvet/webapp
     steps:
-      - run: sleep 500
+      - run: env
       - checkout
       - run:
           name: Store AWS credentials
