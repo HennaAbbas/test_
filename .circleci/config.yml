@@ -28,6 +28,10 @@ jobs:
           if [ "$CIRCLE_BRANCH" == "test" ]; then
               echo "hello world" && exit 0
           fi
+      - run: |
+          if [ "$CIRCLE_BRANCH" != "test" ]; then
+              echo "hello world" && exit 0
+          fi          
       - checkout
       - run:
           name: Store AWS credentials
