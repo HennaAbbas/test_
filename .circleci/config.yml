@@ -25,7 +25,7 @@ jobs:
     steps:
       - run: env
       - run: |
-          if [ "$CIRCLE_BRANCH" = "test" ]; then
+          if [ "$CIRCLE_BRANCH" == "test" ]; then
               echo "hello world" && exit 0
           fi
       - checkout
