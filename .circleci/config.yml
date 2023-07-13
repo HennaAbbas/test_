@@ -104,6 +104,7 @@ commands:
         type: string
 
     steps:
+      - run: env
       - run:
           name: Update ECS <<parameters.cluster>> / <<parameters.service>> / <<parameters.task>>
           command: |
