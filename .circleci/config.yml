@@ -24,6 +24,10 @@ jobs:
     working_directory: ~/firstvet/webapp
     steps:
       - run: env
+      - run: |
+    if [ "$CIRCLE_BRANCH" ]; then
+        exit 0
+    fi
       - checkout
       - run:
           name: Store AWS credentials
