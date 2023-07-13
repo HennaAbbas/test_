@@ -100,6 +100,7 @@ workflows:
       - delete-obsolete-stacks
   deploy:
     jobs:
+      - delete-obsolete-stacks
       - deploy_infra:
           context:
             - DockerHub-Auth
