@@ -25,9 +25,9 @@ jobs:
     steps:
       - run: env
       - run: |
-    if [ "$CIRCLE_BRANCH" = "test" ]; then
-        exit 0
-    fi
+          if [ "$CIRCLE_BRANCH" = "test" ]; then
+              exit 0
+          fi
       - checkout
       - run:
           name: Store AWS credentials
