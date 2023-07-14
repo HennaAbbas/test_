@@ -14,7 +14,10 @@ jobs:
 workflows:
   workflow:
     jobs:
-      - hello-world/echo-job
+      - hello-world/echo-job: 
+          pre-steps:
+            - run:
+                command: echo "install custom dependency"      
       - api-install-and-lint
       
 #test
