@@ -1,18 +1,20 @@
 
 version: 2.1
+orbs:
+  hello-world: sample-orbs/hello-world@0.0.10
 jobs:    
   api-install-and-lint:
     docker:
       - image: cimg/python:3.8
-    working_directory: ~/project
     steps:
       - checkout
-      - run: sleep 10000000
+
 
 
 workflows:
   workflow:
     jobs:
+      - hello-world/echo-job
       - api-install-and-lint
       
 #test
