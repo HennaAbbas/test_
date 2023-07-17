@@ -53,14 +53,16 @@ jobs:
     # - BUILD_ARTIFACTS_S3_BUCKET: aetna-digital-inf-circleci-ios-builds
     # - AWS_DEFAULT_REGION: us-east-1
     steps:
-    - run: |
-    command: curl "https://s3.amazonaws.com/aws-cli/awscli-bundle.zip" -o "awscli-bundle.zip"
-          unzip awscli-bundle.zip
-          sudo ./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws
-    - run: pip install --upgrade pip
-    - run:
-        name: Install tools
-        command: pip3 install --user awscli     
+      - run:
+          name: install aws cli 
+          command: |
+            curl "https://s3.amazonaws.com/aws-cli/awscli-bundle.zip" -o "awscli-bundle.zip"
+            unzip awscli-bundle.zip
+            sudo ./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws    
+
+    - run: unzip awscli-bundle.zip
+    - run: sudo ./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws
+    - run: aws --version
   deploy_infra:
     docker:
       - image: cimg/node:18.16.0
