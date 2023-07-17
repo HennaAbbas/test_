@@ -59,10 +59,10 @@ jobs:
             curl "https://s3.amazonaws.com/aws-cli/awscli-bundle.zip" -o "awscli-bundle.zip"
             unzip awscli-bundle.zip
             sudo ./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws    
-
-    - run: unzip awscli-bundle.zip
-    - run: sudo ./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws
-    - run: aws --version
+  
+      - run: unzip awscli-bundle.zip
+      - run: sudo ./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws
+      - run: aws --version
   deploy_infra:
     docker:
       - image: cimg/node:18.16.0
