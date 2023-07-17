@@ -53,6 +53,7 @@ jobs:
     # - BUILD_ARTIFACTS_S3_BUCKET: aetna-digital-inf-circleci-ios-builds
     # - AWS_DEFAULT_REGION: us-east-1
     steps:
+      - run: python --version
       - run:
           name: install aws cli 
           command: |
