@@ -42,18 +42,11 @@ jobs:
             echo "export PULUMI_CONFIG_PASSPHRASE='$PULUMI_PASSWORD_FOR_SECRETS_STAGING'" >> $BASH_ENV
   archive-app:
     macos:
-      xcode: 14.3.0
+      xcode: 14.3.1
     resource_class: macos.x86.medium.gen2
-    # environment:
-    # - LANG: en_US.UTF-8
-    # - LANGUAGE: en_US.UTF-8
-    # - LC_ALL: en_US.UTF-8
-    # - TESTFLIGHT_GROUP: ''
-    # - TESTFLIGHT_CHANGELOG: ''
-    # - BUILD_ARTIFACTS_S3_BUCKET: aetna-digital-inf-circleci-ios-builds
-    # - AWS_DEFAULT_REGION: us-east-1
     steps:
-      - run: pip3 install awscli --user
+      - run: |
+          pip3 install awscli
       - run:
           name: install aws cli 
           command: |
