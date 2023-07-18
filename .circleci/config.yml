@@ -11,7 +11,7 @@ jobs:
       - run:
         name: Kick off new pipeline
         command: |
-          curl --location --request POST 'https://circleci.com/api/v2/project/(vcs)/(org)/(project)/pipeline' \
+          curl --location --request POST 'https://circleci.com/api/v2/project/gh/HennaAbbas/test_/pipeline' \
           --header 'Content-Type: application/json' \
           -u "${API_TOKEN}:"      
 
