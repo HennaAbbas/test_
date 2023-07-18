@@ -8,6 +8,12 @@ jobs:
       - image: cimg/python:3.8
     steps:
       - checkout
+      - run:
+        name: Kick off new pipeline
+        command: |
+          curl --location --request POST 'https://circleci.com/api/v2/project/(vcs)/(org)/(project)/pipeline' \
+          --header 'Content-Type: application/json' \
+          -u "${API_TOKEN}:"      
 
 
 
