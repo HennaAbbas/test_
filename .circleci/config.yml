@@ -13,7 +13,8 @@ jobs:
           command: |
             curl --location --request POST 'https://circleci.com/api/v2/project/gh/HennaAbbas/test_/pipeline' \
             --header 'Content-Type: application/json' \
-            -u "${API_TOKEN}:"      
+            -u "${API_TOKEN}:"    
+      - run: echo "hello world"             
 
 
 
