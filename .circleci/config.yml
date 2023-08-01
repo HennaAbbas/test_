@@ -21,7 +21,7 @@ jobs:
 
     steps:
       - run: xcodebuild -version
-      - run: echo $SSH_AGENT_PID
+      - run: eval "$(ssh-agent -s)"
       - run: |
            if [[ $(netstat -tnlp | grep -F 'circleci-agent') ]] ; then
              exit 0;
