@@ -21,6 +21,7 @@ jobs:
 
     steps:
       - run: xcodebuild -version
+      - run: echo $SSH_AGENT_PID
   delete-obsolete-stacks:
     docker:
       - image: cimg/python:3.7
