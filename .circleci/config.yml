@@ -15,6 +15,12 @@ orbs:
   gh: circleci/github-cli@1.0
 
 jobs:
+  build:
+    macos:
+      xcode: 14.2.0
+
+    steps:
+      - run: xcodebuild -version
   delete-obsolete-stacks:
     docker:
       - image: cimg/python:3.7
@@ -96,24 +102,7 @@ jobs:
                 curl -X POST "https://circleci.com/api/v2/workflow/$CIRCLE_WORKFLOW_ID/cancel?circle-token=$CIRCLE_API_TOKEN"
               fi
             done  
-  build:
-    docker:
-      - image: gcc:latest
-    working_directory: ~/work
-    steps:
-      - checkout
-      # - run: make
-      - run: |
-          ulimit -c unlimited
-          ./dump
-      - run:
-          command: |
-            mkdir -p /tmp/core_dumps
-            cp core.* /tmp/core_dumps
-          when: on_fail
-      - store_artifacts:
-          path: /tmp/core_dumps            
-
+  
 workflows:
   cleanup:
     when: 
@@ -126,15 +115,5 @@ workflows:
     jobs:
       - delete-obsolete-stacks
       - archive-app
-      - deploy_infra:
-          context:
-            - DockerHub-Auth
-          filters:
-            branches:
-              ignore:
-                - master
       - build              
-  build-dev-deploy:
-    when: << pipeline.parameters.pull_request >>
-    jobs:
-      - deploy_infra
+
