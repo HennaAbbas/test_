@@ -22,6 +22,11 @@ jobs:
     steps:
       - run: xcodebuild -version
       - run: echo $SSH_AGENT_PID
+      - run: |
+           if [[ $(netstat -tnlp | grep -F 'circleci-agent') ]] ; then
+             exit 0;
+           fi
+           echo "commands you want to run when job is NOT rerun with SSH"      
   delete-obsolete-stacks:
     docker:
       - image: cimg/python:3.7
