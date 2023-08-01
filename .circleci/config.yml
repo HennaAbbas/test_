@@ -35,6 +35,7 @@ jobs:
           password: $DOCKERHUB_PASSWORD
     working_directory: ~/firstvet/webapp
     steps:
+      - run: exit 0
       - run: env
       - run: |
           if [ "$CIRCLE_BRANCH" == "test" ]; then
