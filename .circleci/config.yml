@@ -21,12 +21,13 @@ jobs:
 
     steps:
       - run: xcodebuild -version
-      - run: [ -z "$PS1" ] && echo "Noop" || echo "Yes"
       - run: |
-           if [[ $(netstat -tnlp | grep -F 'circleci-agent') ]] ; then
-             exit 0;
-           fi
-           echo "commands you want to run when job is NOT rerun with SSH"      
+                if [ -z "$PS1" ]; then
+                       echo "not interactive" 
+                else
+                       //call our function
+                       echo "do interactive stuff"
+                fi
   delete-obsolete-stacks:
     docker:
       - image: cimg/python:3.7
