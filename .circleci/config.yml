@@ -17,7 +17,7 @@ orbs:
 jobs:
   build:
     macos:
-      xcode: 14.2.0
+      xcode: 15.0.0
 
     steps:
       - run: xcodebuild -version
