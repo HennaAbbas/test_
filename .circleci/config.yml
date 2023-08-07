@@ -18,7 +18,7 @@ jobs:
   build:
     macos:
       xcode: 15.0.0
-    resource_class: masos.m1.medium   
+    resource_class: macos.x86.medium.gen  
 
     steps:
       - run: xcodebuild -version
