@@ -1,7 +1,6 @@
 version: 2.1
 
 
-#test
 parameters:
   nightly_cleanup:
     default: false
