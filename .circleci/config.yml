@@ -1,7 +1,5 @@
 version: 2.1
 
-
-
 parameters:
   nightly_cleanup:
     default: false
