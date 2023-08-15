@@ -15,6 +15,22 @@ orbs:
   gh: circleci/github-cli@1.0
 
 jobs:
+  build-and-test-ios:
+    working_directory: ~/project/flutter/connectivity_tester_app
+    macos:
+      xcode: 14.3.1
+    resource_class: macos.x86.medium.gen2
+
+    steps:
+      # - add_ssh_keys:
+      #     fingerprints:
+      #       - "aa:8b:4f:11:cc:6f:54:e4:17:da:88:c8:3e:80:94:f7"
+
+      - checkout:
+          path: ../..
+
+      - run: git submodule sync
+      - run: git submodule update --init --depth 1
   build:
     macos:
       xcode: 15.0.0
@@ -113,15 +129,9 @@ jobs:
             done  
   
 workflows:
-  cleanup:
-    when: 
-      and:
-        - equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
-        - equal: [ true, << pipeline.parameters.nightly_cleanup >> ]
-    jobs:
-      - delete-obsolete-stacks
   deploy:
     jobs:
+      - build-and-test-ios
       - delete-obsolete-stacks
       - archive-app
       - build              
