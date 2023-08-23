@@ -17,8 +17,7 @@ jobs:
 workflows:
   my-workflow:
     when: 
-      condition: 
-        equal: [ test, << pipeline.parameters.test-suite >> ]
+      equal: [ test, << pipeline.parameters.test-suite >> ]
     
   
     jobs:
@@ -27,8 +26,7 @@ workflows:
           to: "henna" 
   my-test-workflow:
     when: 
-      condition: 
-        equal: [ test-1, << pipeline.parameters.test-suite >> ]
+      equal: [ test-1, << pipeline.parameters.test-suite >> ]
     
   
     jobs:
