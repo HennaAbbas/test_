@@ -1,137 +1,15 @@
 version: 2.1
 
-
-parameters:
-  nightly_cleanup:
-    default: false
-    type: boolean
-  pull_request:
-    default: false
-    type: boolean    
-#test
-orbs:
-  pulumi: pulumi/pulumi@1.0.0
-  gh: circleci/github-cli@1.0
-
 jobs:
-  build-and-test-ios:
-    working_directory: ~/project/flutter/connectivity_tester_app
-    macos:
-      xcode: 14.3.1
-    resource_class: macos.x86.medium.gen2
-
-    steps:
-      # - add_ssh_keys:
-      #     fingerprints:
-      #       - "aa:8b:4f:11:cc:6f:54:e4:17:da:88:c8:3e:80:94:f7"
-
-      - checkout:
-          path: ../..
-
-      - run: git submodule sync
-      - run: git submodule update --init --depth 1
-  build:
-    macos:
-      xcode: 15.0.0
-    resource_class: macos.x86.medium.gen  
-
-    steps:
-      - run: xcodebuild -version
-      - run: |
-                if [ -z "$PS1" ]; then
-                       echo "not interactive" 
-                else
-                       //call our function
-                       echo "do interactive stuff"
-                fi
-  delete-obsolete-stacks:
+  hello-job:
     docker:
-      - image: cimg/python:3.7
-        auth:
-          username: firstvettech
-          password: $DOCKERHUB_PASSWORD
-    working_directory: ~/firstvet/webapp
+      - image: cimg/node:17.2.0 # the primary container, where your job's commands are run
     steps:
-      - run: exit 0
-      - run: env
-      - run: |
-          if [ "$CIRCLE_BRANCH" == "test" ]; then
-              echo "hello world" && exit 0
-          fi
-      - run: |
-          if [ "$CIRCLE_BRANCH" != "test" ]; then
-              echo "hello world" && exit 0
-          fi          
-      - checkout
-      - run:
-          name: Store AWS credentials
-          command: |
-            echo "export AWS_DEFAULT_REGION=eu-north-1" >> $BASH_ENV
-            echo "export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID_PULUMI_STAGING" >> $BASH_ENV
-            echo "export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY_PULUMI_STAGING" >> $BASH_ENV
-            echo "export PULUMI_CONFIG_PASSPHRASE='$PULUMI_PASSWORD_FOR_SECRETS_STAGING'" >> $BASH_ENV
-  archive-app:
-    macos:
-      xcode: 14.3.1
-    resource_class: macos.x86.medium.gen2
-    steps:
-      - run: |
-          pip3 install awscli
-      - run:
-          name: install aws cli 
-          command: |
-            curl "https://s3.amazonaws.com/aws-cli/awscli-bundle.zip" -o "awscli-bundle.zip"
-            unzip awscli-bundle.zip
-            sudo ./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws    
-      - run: /usr/local/bin/aws --version
-      - run: unzip awscli-bundle.zip
-      - run: sudo ./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws
-      - run: aws --version
-  deploy_infra:
-    docker:
-      - image: cimg/node:18.16.0
-    working_directory: ~/firstvet/webapp
-    steps:
-      - checkout
-      - run:
-          name: Store AWS credentials
-          command: |
-            echo "export AWS_DEFAULT_REGION=eu-north-1" >> $BASH_ENV
-            if [ "${CIRCLE_BRANCH}" = "master" ]; then
-              echo "export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID_PULUMI_PRODUCTION" >> $BASH_ENV
-              echo "export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY_PULUMI_PRODUCTION" >> $BASH_ENV
-              echo "export PULUMI_CONFIG_PASSPHRASE='$PULUMI_PASSWORD_FOR_SECRETS_PRODUCTION'" >> $BASH_ENV
-              echo "export PULUMI_STATE_FILE=pulumi.state.prod" >> $BASH_ENV
-              environment=production
-            else
-              echo "export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID_PULUMI_STAGING" >> $BASH_ENV
-              echo "export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY_PULUMI_STAGING" >> $BASH_ENV
-              echo "export PULUMI_CONFIG_PASSPHRASE='$PULUMI_PASSWORD_FOR_SECRETS_STAGING'" >> $BASH_ENV
-              echo "export PULUMI_STATE_FILE=pulumi.state" >> $BASH_ENV
-              environment=staging
-            fi
-            # Various resources (especially on the load balancer side) don't support long names or special characters
-            clean_branch_name=`echo ${CIRCLE_BRANCH:0:38} | sed "s,[^A-Za-z0-9],-,g" | tr '[:upper:]' '[:lower:]'`
-            echo "STACK_NAME=webapp-${environment}--${clean_branch_name}" >> $BASH_ENV
-     
-      - run:
-          name: Check for newer workflow
-          background: true
-          command: |
-            while true; do
-              sleep 5
-              LATEST_COMMIT=$(git ls-remote $CIRCLE_REPOSITORY_URL | grep $CIRCLE_BRANCH | cut -f 1)
-              if [ "$LATEST_COMMIT" != "$CIRCLE_SHA1" ]; then
-                echo "more recent commit to branch, exiting"
-                curl -X POST "https://circleci.com/api/v2/workflow/$CIRCLE_WORKFLOW_ID/cancel?circle-token=$CIRCLE_API_TOKEN"
-              fi
-            done  
-  
+      - checkout # check out the code in the project directory
+      - run: echo "hello world" # run the `echo` command
+
 workflows:
-  deploy:
+  my-workflow:
     jobs:
-      - build-and-test-ios
-      - delete-obsolete-stacks
-      - archive-app
-      - build              
+      - hello-job     
 
