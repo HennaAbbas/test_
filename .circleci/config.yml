@@ -16,4 +16,6 @@ workflows:
       - hello-job
       - hello-world/greet: 
           to: "henna" 
+          when: 
+            - equal: [ test, << pipeline.git.branch >> ]
 
