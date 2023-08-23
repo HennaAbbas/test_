@@ -1,6 +1,10 @@
 version: 2.1
 orbs:
   hello-world: viar/hello-world@0.0.2
+parameters:
+  test-suite:
+    type: string
+    default: ""
 
 jobs:
   hello-job:
@@ -12,10 +16,14 @@ jobs:
 
 workflows:
   my-workflow:
+    when: 
+      condition: 
+        equal: [ test, << pipeline.parameters.test-suite >> ]
+    
+  
     jobs:
       - hello-job
       - hello-world/greet: 
           to: "henna" 
-          when: 
-            - equal: [ test, << pipeline.git.branch >> ]
+
 
