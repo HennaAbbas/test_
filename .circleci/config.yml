@@ -15,7 +15,7 @@ jobs:
   deploy_testflight:
     macos:
       xcode: 14.3.1
-    resource_class: resource_class: macos.x86.medium.gen2  
+    resource_class: macos.x86.medium.gen2  
     steps:
     - checkout
       
