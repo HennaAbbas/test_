@@ -12,7 +12,12 @@ jobs:
       - image: cimg/node:17.2.0 # the primary container, where your job's commands are run
     steps:
       - checkout # check out the code in the project directory
-      - run: tcpdump
+  deploy_testflight:
+    macos:
+      xcode: 14.3.1
+    steps:
+    - checkout
+      
 
 workflows:
   my-workflow:
@@ -25,11 +30,12 @@ workflows:
       - hello-world/greet: 
           to: "henna" 
   my-test-workflow:
-    when: 
-      equal: [ test-1, << pipeline.parameters.test-suite >> ]
+    # when: 
+    #   equal: [ test-1, << pipeline.parameters.test-suite >> ]
     
   
     jobs:
+      - deploy_testflight
       - hello-job
       - hello-world/greet: 
           to: "henna"           
