@@ -14,7 +14,7 @@ jobs:
       - checkout # check out the code in the project directory
   deploy_testflight:
     macos:
-      xcode: 14.3.1
+      xcode: 14.2.0
     steps:
     - checkout
       
