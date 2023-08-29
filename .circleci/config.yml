@@ -14,7 +14,8 @@ jobs:
       - checkout # check out the code in the project directory
   deploy_testflight:
     macos:
-      xcode: 14.2.0
+      xcode: 14.3.1
+    resource_class: resource_class: macos.x86.medium.gen2  
     steps:
     - checkout
       
