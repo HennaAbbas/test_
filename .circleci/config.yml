@@ -30,8 +30,13 @@ jobs:
       SIM_DEVICE_TYPE: com.apple.CoreSimulator.SimDeviceType.iPhone-13
       SIM_RUN_TIME: com.apple.CoreSimulator.SimRuntime.iOS-15-5
     steps:
-      - browser-tools/install-chrome
-      - browser-tools/install-chromedriver    
+
+
+      - run: sudo apt-get update
+      - browser-tools/install-chrome:
+          # TODO remove following line when fixed https://github.com/CircleCI-Public/browser-tools-orb/issues/90
+          chrome-version: 116.0.5845.96
+      - browser-tools/install-chromedriver           
       
 
 workflows:
