@@ -18,20 +18,6 @@ jobs:
       xcode: 14.3.1
     resource_class: macos.x86.medium.gen2  
     steps:
-    - checkout
-  ios_iPhone_13_V15_2:
-    macos:  # use the macOS executor
-      xcode: 13.4.1
-    resource_class: macos.x86.medium.gen2
-    environment:
-      PLATFORM: iOS
-      DEVICE_VERSION: 15.5
-      DEVICE_NAME: iPhone_13_Test
-      SIM_DEVICE_TYPE: com.apple.CoreSimulator.SimDeviceType.iPhone-13
-      SIM_RUN_TIME: com.apple.CoreSimulator.SimRuntime.iOS-15-5
-    steps:
-
-
       - run: sudo apt-get update
       - browser-tools/install-chrome:
           # TODO remove following line when fixed https://github.com/CircleCI-Public/browser-tools-orb/issues/90
