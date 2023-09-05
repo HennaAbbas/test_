@@ -31,24 +31,29 @@ jobs:
 
 workflows:
   my-workflow:
-    other-failing-workflow:  
-    jobs:
-      - failing_job  
     when: 
       equal: [ test, << pipeline.parameters.test-suite >> ]
+    
+  
     jobs:
       - hello-job
  
   my-test-workflow:
     # when: 
     #   equal: [ test-1, << pipeline.parameters.test-suite >> ]
+    
+  
     jobs:
+ 
       - hello-world/greet: 
           to: "henna"           
   my-failing-workflow:
     jobs:
       - hello-world/greet: 
           to: "henna" 
+  other-failing-workflow:  
+    jobs:
+      - failing_job     
          
 
 
