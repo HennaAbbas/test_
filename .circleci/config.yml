@@ -37,16 +37,14 @@ workflows:
   
     jobs:
       - hello-job
-      - hello-world/greet: 
-          to: "henna" 
+ 
   my-test-workflow:
     # when: 
     #   equal: [ test-1, << pipeline.parameters.test-suite >> ]
     
   
     jobs:
-      - deploy_testflight
-      - hello-job
+ 
       - hello-world/greet: 
           to: "henna"           
   my-failing-workflow:
