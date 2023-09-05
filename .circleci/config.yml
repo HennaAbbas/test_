@@ -49,7 +49,6 @@ workflows:
       - hello-job
       - hello-world/greet: 
           to: "henna"           
-workflows:
   my-failing-workflow:
     jobs:
       - hello-job
