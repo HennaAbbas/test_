@@ -21,7 +21,12 @@ jobs:
       - browser-tools/install-chrome:
           # TODO remove following line when fixed https://github.com/CircleCI-Public/browser-tools-orb/issues/90
           chrome-version: 116.0.5845.96
-      - browser-tools/install-chromedriver           
+      - browser-tools/install-chromedriver  
+  failing_job:
+    docker:
+      - image: cimg/node:17.2.0 # the primary container, where your job's commands are run
+    steps:
+      - run: wqr      
       
 
 workflows:
@@ -44,5 +49,14 @@ workflows:
       - hello-job
       - hello-world/greet: 
           to: "henna"           
+workflows:
+  my-failing-workflow:
+    jobs:
+      - hello-job
+      - hello-world/greet: 
+          to: "henna" 
+  other-failing-workflow:  
+    jobs:
+      - failing_job           
 
 
