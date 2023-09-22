@@ -31,11 +31,11 @@ jobs:
           command: |
             export COMMIT_MESSAGE=$(git log -1 --pretty=oneline)
             cd ./edgebook-manifests
-            git config --local user.email "scorebet-bot@thescore.com"
-            git config --local user.name "scorebet-bot"
-            git config --global gpg.format ssh
-            git config --global gpg.ssh.defaultKeyCommand "ssh-add -L"
-            git config --global commit.gpgsign true
+            # git config --local user.email "scorebet-bot@thescore.com"
+            # git config --local user.name "scorebet-bot"
+            # git config --global gpg.format ssh
+            # git config --global gpg.ssh.defaultKeyCommand "ssh-add -L"
+            # git config --global commit.gpgsign true
             git commit -am "CircleCI: Helm chart for edgebook ${CIRCLE_BRANCH} branch updated with \"${COMMIT_MESSAGE}\""
             git push origin $TARGET_BRANCH      
 
