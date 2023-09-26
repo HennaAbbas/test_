@@ -1,919 +1,135 @@
 version: 2.1
 
-#test
-
-parameters:
-  imageTag:
-    type: string
-    default: "main_463_df4295"
-  imageName:
-    type: string
-    default: "web-automation" 
-  tagetBranch:
-    type: string
-    default: ""
-  environment:
-    type: string
-    default: "production"
-  executeE2ESuite:
-    type: boolean
-    default: true
-
-defaults: &defaults
-  working_directory: ~/app
-  docker:
-    - image: cimg/python:3.8
-
-  environment:
-    CONTAINER_FLUENT: payment-rails/api-fluent
-    CONTAINER_IMAGE: payment-rails/api
-    CONTAINER_MIGRATE: payment-rails/api-migrate
-    ## Add Env for new Lambda api
-    CONTAINER_IMAGE_API: payment-rails/api-lambda
-
 orbs:
-  aws-cli: circleci/aws-cli@2.0.3
-  codecov: codecov/codecov@1.2.3
-  slack: circleci/slack@4.12.5
-
-#
-#  Macro "command" to copy the deployment artifact to S3 and update the lambda#
-#
-slack-fail-post-step: &slack-fail-post-step
-  post-steps:
-    - slack/notify:
-        event: fail
-        template: basic_fail_1
-
-commands:
-  lambda-init:
-    description: Setup Lambda Deploy environment
-
-    parameters:
-      workspace:
-        description: Directory to attach workspace to
-        type: string
-
-    steps:
-      - aws-cli/install
-      - aws-cli/setup:
-          # profile-name: default
-          aws-access-key-id: AWS_ACCESS_KEY_ID
-          aws-secret-access-key: AWS_SECRET_ACCESS_KEY
-      - attach_workspace:
-          at: <<parameters.workspace>>
-
-  lambda-deploy-api:
-    description: Deploy a Lambda function
-
-    parameters:
-      profile-name:
-        description: AWS profile to use for installation
-        type: string
-        default: "default"
-      lambda-name-api:
-        description: Name for this Lambda
-        type: string
-
-        #executor: aws-cli/default
-    steps:
-      - run:
-          name: Update Lambda Function <<parameters.lambda-name-api>>
-          command: |
-            aws lambda update-function-code \
-                --profile <<parameters.profile-name>> \
-                --region ${AWS_DEFAULT_REGION} \
-                --function-name <<parameters.lambda-name-api>> \
-                --publish \
-                --image-uri ${ECR_URL_BASE_API}:latest
-                
-
-  ecs-update:
-    description: Update ECS function
-
-    parameters:
-      profile-name:
-        description: AWS profile to use for installation
-        type: string
-      cluster:
-        description: Cluster name
-        type: string
-      service:
-        description: Service name
-        type: string
-      task:
-        description: Task name
-        type: string
-
-    steps:
-      - run: env
-      - run:
-          name: Update ECS <<parameters.cluster>> / <<parameters.service>> / <<parameters.task>>
-          command: |
-            aws ecs update-service \
-                --force-new-deployment \
-                --profile <<parameters.profile-name>> \
-                --cluster <<parameters.cluster>> \
-                --service <<parameters.service>> \
-                --task <<parameters.task>>
-
-  ecs-run:
-    description: Run ECS task
-
-    parameters:
-      profile-name:
-        description: AWS profile to use for installation
-        type: string
-      cluster:
-        description: Cluster name
-        type: string
-      task:
-        description: Task name
-        type: string
-
-    steps:
-      - run:
-          name: Run ECS Task <<parameters.cluster>> / <<parameters.task>>
-          command: |
-            SUBNETS=`aws ec2 describe-subnets --filters Name=tag:Visibility,Values=private|jq -j '[.Subnets[].SubnetId]'`
-            SG=`aws ec2 describe-security-groups --filters Name=group-name,Values=api-fargate|jq '[.SecurityGroups[].GroupId]'`
-            aws ecs run-task \
-              --network-configuration "awsvpcConfiguration={subnets=$SUBNETS,securityGroups=$SG}" \
-              --launch-type FARGATE \
-              --profile <<parameters.profile-name>> \
-              --cluster <<parameters.cluster>> \
-              --task <<parameters.task>>
+  docker: circleci/docker@2.4.0
 
 jobs:
-  npm_install:
-    <<: *defaults
+  build-and-push-docker-pointhq-image:
+    executor: docker/docker
     steps:
-      - checkout
-      - restore_cache:
-          key: dependency-cache-{{ checksum "package.json" }}
-
-      - run:
-          name: NPM install
-          command: |
-            npm set progress false
-            npm set @trolley:registry https://npm.pkg.github.com
-            npm set //npm.pkg.github.com/:_authToken ${GITHUB_TOKEN}
-            npm --loglevel error install --silent
-
-      - save_cache:
-          key: dependency-cache-{{ checksum "package.json" }}
-          paths:
-            - ./node_modules
-
-      - persist_to_workspace:
-          root: ~/app
-          paths:
-            - node_modules
-            - .circleci
-            - task-definitions
-
-  build:
-    <<: *defaults
-    working_directory: ~/work
-    steps:
-      - checkout
-      - run: make
-      - run: |
-          ulimit -c unlimited
-          ./dump
-      - run:
-          command: |
-            mkdir -p /tmp/core_dumps
-            cp core.* /tmp/core_dumps
-          when: on_fail
-      - store_artifacts:
-          path: /tmp/core_dumps            
-
-  lint:
-    <<: *defaults
-    steps:
-      - checkout
-
-      - attach_workspace:
-          at: ~/app
-
-      - run:
-          name: NPM lint (TypeScript)
-          command: |
-            npm run lint
-      - run:
-          name: Prettier Check
-          command: |
-            ./node_modules/.bin/prettier --list-different 'src/**/*.ts' 'test/**/*.ts'
-      - run:
-          name: Spec files in main code
-          command: |
-            ! egrep -r '^import .*test/' src
-
-  #
-  #  Unit testing
-  #
-  test:
-    <<: *defaults
-    parallelism: 10
-
-    docker:
-      - image: circleci/node:14
-
-      - image: postgres:13.3
-        environment:
-          POSTGRES_PASSWORD: "1234"
-
-      - image: redis:3.2
-
-    steps:
-      - checkout
-
-      - attach_workspace:
-          at: ~/app
-
-      # Just for CircleCI builds
-      # BEGIN
-      - run: npm install mocha-junit-reporter
-      - run: mkdir reports
-
-      - run:
-          name: Install FlyWay
-          command: |
-            curl -O https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/4.1.2/flyway-commandline-4.1.2-linux-x64.tar.gz
-            tar xzf flyway-commandline-4.1.2-linux-x64.tar.gz
-
-      - run:
-          name: Create Test database
-          command: |
-            PATH="./flyway-4.1.2:${PATH}" npm run create-test-db
-
-      - run:
-          name: Run unit tests
-          command: |
-            TESTFILES=$(circleci tests glob "test/**/*Spec.ts" | circleci tests split)
-            TS_NODE_PROJECT=test/tsconfig.json \
-            NODE_ENV=test \
-            NODE_OPTIONS=--max_old_space_size=4096 \
-            npx nyc \
-              --reporter lcovonly \
-              --reporter text \
-              -- mocha \
-              --timeout 10000 \
-              --require ts-node/register \
-              --require tsconfig-paths/register \
-              --reporter mocha-junit-reporter \
-              --reporter-options mochaFile=reports/mocha/test-results.xml \
-              $TESTFILES
-
-      - run:
-          name: Generate code coverage report
-          command: |
-            mkdir -p coverage
-            npx nyc report --reporter=text
-          when: always
-
-      - codecov/upload:
-          token: ${CODECOV_TOKEN}
-          file: coverage/*.json
-
-      # END
-
-      # Upload results
-
-      - store_test_results:
-          path: reports
-
-      - store_artifacts:
-          path: ./reports/mocha/test-results.xml
-
-      #- store_artifacts: # upload test coverage as artifact
-      #    path: ./coverage/lcov.info
-      #    prefix: tests
-
-  #
-  #  Unit testing
-  #
-  coverage:
-    <<: *defaults
-
-    docker:
-      - image: circleci/node:14
-
-      - image: postgres:13.3
-        environment:
-          POSTGRES_PASSWORD: "1234"
-
-      - image: redis:3.2
-
-    steps:
-      - checkout
-
-      - attach_workspace:
-          at: ~/app
-
-      - run:
-          name: Install FlyWay
-          command: |
-            curl -O https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/4.1.2/flyway-commandline-4.1.2-linux-x64.tar.gz
-            tar xzf flyway-commandline-4.1.2-linux-x64.tar.gz
-
-      - run:
-          name: Create Test database
-          command: |
-            PATH="./flyway-4.1.2:${PATH}" npm run create-test-db
-
-      - run:
-          name: Run unit tests
-          command: |
-            npm run test-coverage -- --reporter=progress
-
-      - run:
-          name: Code coverage
-          command: |
-            ./node_modules/.bin/nyc report --reporter=text
-
-  buildnumber: &buildnumber
-    <<: *defaults
-
-    steps:
-      - run:
-          name: Save build number
-          command: |
-            mkdir build_number
-            echo ${CIRCLE_BUILD_NUM} > build_number/number.txt
-
-      - persist_to_workspace:
-          root: ~/app
-          paths:
-            - build_number
-
-  #
-  #  Build steps
-  #
-  docker-build: &docker-build
-    <<: *defaults
-    docker:
-      - image: docker:20.10-git
-
-    steps:
-      - checkout
-
       - setup_remote_docker
-        #version: 20.10.6
-      #   docker_layer_caching: true
-
-      - attach_workspace:
-          at: ~/app
-
-      # - run:
-      #     name: Enable debug mode
-      #     command: |
-      #       ssh remote-docker -- sudo bash -c "'apt update; apt install jq; if [ ! -f /etc/docker/daemon.json ]; then echo \"{}\" > /etc/docker/daemon.json; fi; cat \<<< \$(jq \".\\\"debug\\\" = true\" /etc/docker/daemon.json) > /etc/docker/daemon.json; systemctl restart docker.service'"
-
-      - run:
-          name: Build app image
-          command: |
-            BUILD_NUM=`cat build_number/number.txt`
-            BRANCH=`if [ -z "${CIRCLE_TAG}" ] ; then echo main ; else echo production ; fi`
-            VERSION=v1.0.${BUILD_NUM}
-            echo "Creating build " ${VERSION}
-            docker build \
-                --build-arg VERSION=${VERSION} \
-                --build-arg NODE_ENV=${BRANCH} \
-                --build-arg GITHUB_TOKEN=${GITHUB_TOKEN} \
-                -f docker/Dockerfile.api --rm=false \
-                -t ${ECR_URL_BASE}/${CONTAINER_IMAGE}:${BRANCH} \
-                -t ${ECR_URL_BASE}/${CONTAINER_IMAGE}:${VERSION} \
-                -t ${CONTAINER_IMAGE} \
-                .
-      - run:
-          name: Build lambda api image
-          command: |
-            BUILD_NUM=`cat build_number/number.txt`
-            VERSION=v1.0.${BUILD_NUM}
-            echo "Creating build " ${VERSION}
-            docker build \
-                --build-arg VERSION=${VERSION} \
-                --build-arg NODE_ENV=${BRANCH} \
-                --build-arg GITHUB_TOKEN=${GITHUB_TOKEN} \
-                -f docker/Dockerfile.lambda --rm=false \
-                -t ${ECR_URL_BASE}/${CONTAINER_IMAGE_API}:latest \
-                -t ${ECR_URL_BASE}/${CONTAINER_IMAGE_API}:${VERSION} \
-                -t ${CONTAINER_IMAGE_API} \
-                .
-
-      - run:
-          name: Build fluent image
-          command: |
-            BRANCH=`if [ -z "${CIRCLE_TAG}" ] ; then echo main ; else echo production ; fi`
-            VERSION=v1.0.${BUILD_NUM}
-            docker build \
-                -f docker/Dockerfile.fluent --rm=false \
-                -t ${ECR_URL_BASE}/${CONTAINER_FLUENT}:${BRANCH} \
-                -t ${ECR_URL_BASE}/${CONTAINER_FLUENT}:${VERSION} \
-                -t ${CONTAINER_FLUENT} \
-                docker/fluent-${BRANCH}
-
-      - run:
-          name: Add AWS CLI
-          command: |
-            apk add --update python3 python3-dev py3-pip build-base
-            pip3 install --upgrade awscli
-
-      - run:
-          name: Deploy to docker repository
-          command: |
-            LOGIN=`aws ecr get-login --no-include-email`
-            $LOGIN
-            docker push -a ${ECR_URL_BASE}/${CONTAINER_IMAGE}
-            docker push -a ${ECR_URL_BASE}/${CONTAINER_FLUENT}
-            docker push -a ${ECR_URL_BASE}/${CONTAINER_IMAGE_API}
-
-      - run:
-          name: Show docker logs
-          when: always
-          command: ssh remote-docker -- sudo journalctl -ae -u docker.service
-
-  docker-flyway-build: &docker-flyway-build
-    <<: *defaults
-    docker:
-      - image: docker:17.03.0-ce-git
-
-    steps:
       - checkout
-
+      - docker/check
+      - docker/build:
+          image: pointdns/pointhq
+          cache_from: pointdns/pointhq:${IMAGE_VERSION}
+          dockerfile: docker/Dockerfile
+          extra_build_args: '--build-arg SSH_PRIVATE_KEY_BASE64=$SSH_PRIVATE_KEY_BASE64 --build-arg COMPILE_STATIC=true --build-arg RAILS_ENV=$RAILS_ENV'
+          tag: 'latest2'
+      - docker/push:
+          image: pointdns/pointhq
+          tag: 'latest2'
+  build-and-push-docker-pointhq-nginx-image:
+    executor: docker/docker
+    steps:
       - setup_remote_docker
-      #    docker_layer_caching: true
-
-      - attach_workspace:
-          at: ~/app
-
-      - run:
-          name: Build flyway image
-          command: |
-            BUILD_NUM=`cat build_number/number.txt`
-            BRANCH=`if [ -z "${CIRCLE_TAG}" ] ; then echo main ; else echo production ; fi`
-            echo "Creating build " ${BUILD_NUM}
-            docker build \
-                --build-arg VERSION=v1.0.${BUILD_NUM} \
-                --build-arg GITHUB_TOKEN=${GITHUB_TOKEN} \
-                -f docker/Dockerfile.flyway --rm=false \
-                -t ${ECR_URL_BASE}/${CONTAINER_MIGRATE}:${BRANCH} \
-                -t ${ECR_URL_BASE}/${CONTAINER_MIGRATE}:latest\
-                -t ${ECR_URL_BASE}/${CONTAINER_MIGRATE}:1.0.${BUILD_NUM} \
-                -t ${CONTAINER_MIGRATE} \
-                .
-
-      - run:
-          name: Add AWS CLI
-          command: |
-            apk add --update python3 python3-dev py3-pip build-base
-            pip3 install --upgrade awscli
-
-      - run:
-          name: Deploy to docker repository
-          command: |
-            LOGIN=`aws ecr get-login --no-include-email`
-            $LOGIN
-            docker push ${ECR_URL_BASE}/${CONTAINER_MIGRATE}
-
-  #
-  #  Staging deployment
-  #
-  deploy-ecs: &deploy-ecs
-    working_directory: ~/app
-    executor: aws-cli/default
-
+      - checkout
+      - docker/check
+      - docker/build:
+          image: pointdns/pointhq-nginx
+          cache_from: pointdns/pointhq-nginx:${IMAGE_VERSION}
+          dockerfile: nginx/Dockerfile
+          extra_build_args: '--build-arg RAILS_ENV=$RAILS_ENV --build-arg SSL_CONFIG_ENABLED=$SSL_CONFIG_ENABLED --build-arg SSL_CERTIFICATE_BASE64=$SSL_CERTIFICATE_BASE64 --build-arg SSL_CERTIFICATE_KEY_BASE64=$SSL_CERTIFICATE_KEY_BASE64'
+          tag: '${IMAGE_VERSION}'
+      - docker/push:
+          image: pointdns/pointhq-nginx
+          tag: '${IMAGE_VERSION}'
+  build-and-push-docker-pointhq-redirect-nginx-image:
+    executor: docker/docker
     steps:
-      - lambda-init:
-          workspace: ~/app
-
-      - ecs-update:
-          profile-name: default
-          cluster: api-cluster-fargate
-          service: api-fargate-background
-          task: api-fargate-background
-
-      - ecs-update:
-          profile-name: default
-          cluster: api-cluster-fargate
-          service: api-fargate-live
-          task: api-fargate-live
-
-      - ecs-run:
-          profile-name: default
-          cluster: api-cluster-fargate
-          task: api-fargate-migrate
-
-  deploy-lambda-api: &deploy-lambda-api
-    working_directory: ~/app
-    executor: aws-cli/default
-
-    steps:
-      - lambda-init:
-          workspace: ~/app
-      - lambda-deploy-api:
-          lambda-name-api: findEfileToUploadHandler
-      - lambda-deploy-api:
-          lambda-name-api: findEfileToUploadResultHandler
-      - lambda-deploy-api:
-          lambda-name-api: ${ENVIRONMENT}-tax-regenerate
-      - lambda-deploy-api:
-          lambda-name-api: SyncInvoiceQueueMessageHandler
-      - lambda-deploy-api:
-          lambda-name-api: SyncEventsQueMessageHandler
-      - lambda-deploy-api:
-          lambda-name-api: ${ENVIRONMENT}-webhook-generic
-      - lambda-deploy-api:
-          lambda-name-api: ${ENVIRONMENT}-fintrac-export
-      - lambda-deploy-api:
-          lambda-name-api: ${ENVIRONMENT}-eoyTaxPersistCheck
-      - lambda-deploy-api:
-          lambda-name-api: ${ENVIRONMENT}-IRSEfileStatusPoolingHandler
-      - lambda-deploy-api:
-          lambda-name-api: ${ENVIRONMENT}-atb-batch-generate
-      - lambda-deploy-api:
-          lambda-name-api: ${ENVIRONMENT}-load-afx-activity
-      - lambda-deploy-api:
-          lambda-name-api: ${ENVIRONMENT}-afx-queue-fetch-rapid
-      - lambda-deploy-api:
-          lambda-name-api: ${ENVIRONMENT}-afx-queue-fetch-daily
-      - lambda-deploy-api:
-          lambda-name-api: ${ENVIRONMENT}-recipient-incomplete
-      - lambda-deploy-api:
-          lambda-name-api: ${ENVIRONMENT}-sweep-email
-      - lambda-deploy-api:
-          lambda-name-api: ${ENVIRONMENT}-expire-w8s
-      - lambda-deploy-api:
-          lambda-name-api: ${ENVIRONMENT}-fetch-afx-activity
-      - lambda-deploy-api:
-          lambda-name-api: ${ENVIRONMENT}-lhv-messages
-      - lambda-deploy-api:
-          lambda-name-api: ${ENVIRONMENT}-tax-will-expire
-      - lambda-deploy-api:
-          lambda-name-api: ${ENVIRONMENT}-syncInvoicePushStatusQueMessageHandler
-      - lambda-deploy-api:
-          lambda-name-api: ${ENVIRONMENT}-retryStuckPreCompliancePaymentsCron
-
-  terra-build: &terra-build
-    working_directory: ~/app
-
+      - setup_remote_docker
+      - checkout
+      - docker/check
+      - docker/build:
+          image: pointdns/pointhq-redirect-nginx
+          cache_from: pointdns/pointhq-redirect-nginx:${IMAGE_VERSION}
+          dockerfile: nginx/Dockerfile
+          extra_build_args: '--build-arg RAILS_ENV=$RAILS_ENV --build-arg SSL_CONFIG_ENABLED=$SSL_CONFIG_ENABLED --build-arg SSL_CERTIFICATE_BASE64=$SSL_CERTIFICATE_BASE64 --build-arg SSL_CERTIFICATE_KEY_BASE64=$SSL_CERTIFICATE_KEY_BASE64 --build-arg APP_FOLDER=redirect'
+          tag: '${IMAGE_VERSION}'
+      - docker/push:
+          image: pointdns/pointhq-redirect-nginx
+          tag: '${IMAGE_VERSION}'
+  deploy-to-stage:
+    working_directory: ~/pointhq
     docker:
-      - image: hashicorp/terraform:0.14.3
-
+      - image: willhallonline/ansible:alpine
+        environment:
+          ANSIBLE_HOST_KEY_CHECKING: no
     steps:
       - checkout
-
-      - attach_workspace:
-          at: ~/app/terra
-
-      - run:
-          name: Build Terraform RC
-          command: |
-            echo "credentials \"app.terraform.io\" { token = \"${TERRAFORM_ACCESS_KEY}\" }" > ~/.terraformrc
-            BRANCH=`if [ -z "${CIRCLE_TAG}" ] ; then echo main ; else echo production ; fi`
-            cp ~/app/terra/workspace/backend.${BRANCH}.hcl ~/app/terra/workspace/backend.hcl
-            if [ ${BRANCH} = production ]; then
-              cd ~/app/terra
-              ## No space for '-i command'
-              sed -i'.bak' \
-                  -e 's!app.terraform.io/PaymentRailsStaging!app.terraform.io/PaymentRails!g' \
-                  *.tf
-            fi
-
-      - run:
-          name: terraform init
-          working_directory: ~/app/terra
-          command: terraform init -backend-config=workspace/backend.hcl
-
-      - run:
-          name: terraform apply
-          working_directory: ~/app/terra
-          command: terraform apply -auto-approve
-
-  deploy-slack:
-    working_directory: ~/app
-    executor: aws-cli/default
+      - run: echo $ANSIBLE_VAULT_PASS > ~/.vault-key-pointhq
+      - run: ansible-playbook -i ansible-pointhq/hosts -b ansible-pointhq/staging.yml --vault-password-file=~/.vault-key-pointhq --extra-vars "image_version=${IMAGE_VERSION}"
+      - run: rm ~/.vault-key-pointhq
+  deploy-to-production:
+    working_directory: ~/pointhq
+    docker:
+      - image: willhallonline/ansible:alpine
+        environment:
+          ANSIBLE_HOST_KEY_CHECKING: no
     steps:
-      - run:
-          name: Slack PR Release Notice
-          command: |
-            sudo apt-get install jq
+      - checkout
+      - run: echo $ANSIBLE_VAULT_PASS > ~/.vault-key-pointhq
+      - run: ansible-playbook -i ansible-pointhq/hosts -b ansible-pointhq/production.yml --vault-password-file=~/.vault-key-pointhq --extra-vars "image_version=${IMAGE_VERSION}"
+      - run: rm ~/.vault-key-pointhq
 
-            AUTH=koblas-pr:WsjG7Suhbv842JctNGcF
-            BBPATH=`echo $CIRCLE_REPOSITORY_URL | sed -e 's/^.*://' -e 's/.git//'`
-
-            PR=`curl -u $AUTH \
-               https://api.bitbucket.org/2.0/repositories/$BBPATH/commit/$CIRCLE_SHA1/pullrequests \
-               | jq -r '.values[0].links.self.href'`
-
-            curl -u $AUTH $PR | jq '.summary.raw' > message.json
-
-            echo '{}' | jq \
-               --arg title 'API Production Release' \
-               --arg title_link "$PR" \
-               --arg fallback "API Production release" \
-               --slurpfile message message.json \
-               --arg color '#42e2f4' \
-               '. | .["attachments"][0]["title"]=$title | .["attachments"][0]["fallback"]=$fallback | .["attachments"][0]["text"]=$message[0] | .["attachments"][0]["title_link"]=$title_link | .["attachments"][0]["color"]=$color' \
-               > slack.json
-
-            curl -X POST -H 'Content-type: application/json' -d @slack.json \
-               https://hooks.slack.com/services/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
-
-#
-#  CircleCI Workflows
-#
 workflows:
-  version: 2
-  build_test_deploy:
-    jobs:
-      - npm_install:
-          context:
-            - org-global
-            - slack-secrets
-          filters:
-            branches:
-              ignore:
-                - main
-                - development
-
-      - build:
-          requires:
-            - npm_install
-          filters:
-            branches:
-              ignore:
-                - main
-                - development
-
-      - lint:
-          requires:
-            - npm_install
-          filters:
-            branches:
-              ignore:
-                - main
-                - development
-
-      - test:
-          requires:
-            - npm_install
-          filters:
-            branches:
-              only: /.*/
-  production_1:
-    jobs:
-      - npm_install:
-          context:
-            - aws-production
-            - slack-secrets
-  production_4:
-    jobs:
-      - npm_install:
-          context:
-            - aws-production
-            - slack-secrets            
-  production_3:
-    jobs:
-      - npm_install:
-          context:
-            - aws-production
-            - slack-secrets            
-  production_2:
-    jobs:
-      - npm_install:
-          context:
-            - aws-production
-            - slack-secrets            
-
-
-  production:
-    jobs:
-      - npm_install:
-          context:
-            - aws-production
-            - slack-secrets
-          filters: &filter-prod
-            branches:
-              ignore: /.*/
-            tags:
-              only: /^v.*/
-          <<: *slack-fail-post-step
-
-      - lint:
-          requires:
-            - npm_install
-          filters:
-            <<: *filter-prod
-          <<: *slack-fail-post-step
-
-      - test:
-          requires:
-            - npm_install
-          filters:
-            <<: *filter-prod
-          <<: *slack-fail-post-step
-
-      - buildnumber:
-          requires:
-            - test
-            - lint
-          filters:
-            <<: *filter-prod
-          <<: *slack-fail-post-step
-
-      - docker-build:
-          context:
-            - org-global
-            - aws-production
-            - slack-secrets
-          requires:
-            - buildnumber
-          filters:
-            <<: *filter-prod
-          <<: *slack-fail-post-step
-
-      - docker-flyway-build:
-          context:
-            - org-global
-            - aws-production
-            - slack-secrets
-          requires:
-            - buildnumber
-          filters:
-            <<: *filter-prod
-          <<: *slack-fail-post-step
-
-      - deploy-ecs:
-          context:
-            - aws-production
-            - slack-secrets
-          requires:
-            - docker-build
-            - docker-flyway-build
-          filters:
-            <<: *filter-prod
-          <<: *slack-fail-post-step
-
-      #  Deploy Lambda Functions
-      - deploy-lambda-api:
-          context:
-            - aws-production
-            - slack-secrets
-          requires:
-            - docker-build
-            - docker-flyway-build
-            #- lambda-build
-          filters:
-            <<: *filter-prod
-          post-steps:
-            - slack/notify:
-                event: pass
-                template: success_tagged_deploy_1
-            - slack/notify:
-                event: fail
-                template: basic_fail_1
-
-  Web-automation-E2E-suite:
+  stage-deployment:
     when:
-      and: 
-        - equal: [ true, << pipeline.parameters.executeE2ESuite >> ]
-        - equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+      and:
+        - not:
+          equal: [ master, << pipeline.git.branch >> ]
     jobs:
-      - npm_install
-
-      # - lint:
-      #     requires:
-      #       - npm_install
-
-
-      # - test:
-      #     requires:
-      #       - npm_install
-
-      # - buildnumber:
-      #     requires:
-      #       - test
-      #       - lint
-
-
-      # # Actual Docker container
-      # - docker-build:
-      #     context:
-      #       - org-global
-      #       - aws-staging
-      #       - slack-secrets
-      #     requires:
-      #       - buildnumber
-
-
-      # # Flyway
-      # - docker-flyway-build:
-      #     context:
-      #       - org-global
-      #       - aws-staging
-      #       - slack-secrets
-      #     requires:
-      #       - buildnumber
-      #     filters:
-
-
-      # #  Deploy ECS Docker
-      # - deploy-ecs:
-      #     context:
-      #       - aws-staging
-      #       - slack-secrets
-      #     requires:
-      #       - docker-build
-      #       - docker-flyway-build
-
-
-      # #  Deploy Lambda Functions
-      # - deploy-lambda-api:
-      #     context:
-      #       - aws-staging
-      #       - slack-secrets
-      #     requires:
-      #       - docker-build
-      #       - docker-flyway-build
-      #       #- lambda-build
-
-      #     post-steps:
-      #       - slack/notify:
-      #           event: pass
-      #           template: basic_success_1
-      #       - slack/notify:
-      #           event: fail
-      #           template: basic_fail_1
-
-  development:
+      - approve-staging-build-pointhq:
+          type: approval
+      - approve-staging-build-pointhq-nginx:
+          type: approval
+      - approve-staging-deploy:
+          type: approval
+      - build-and-push-docker-pointhq-image:
+          context:
+            - pointhq-staging
+          requires:
+            - approve-staging-build-pointhq
+      - build-and-push-docker-pointhq-nginx-image:
+          context:
+            - pointhq-staging
+          requires:
+            - approve-staging-build-pointhq-nginx
+      - deploy-to-stage:
+          context:
+            - pointhq-staging
+          requires:
+            - approve-staging-deploy
+  production-deployment:
+    when:
+      and:
+        - equal: [ master, << pipeline.git.branch >> ]
     jobs:
-      - npm_install:
+      - approve-production-build-pointhq:
+          type: approval
+      - approve-production-build-pointhq-nginx:
+          type: approval
+      - approve-production-build-pointhq-redirect-nginx:
+          type: approval
+      - approve-production-deploy:
+          type: approval
+      - build-and-push-docker-pointhq-image:
           context:
-            - org-global
-            - aws-development
-            - slack-secrets
-
-
-      - lint:
+            - pointhq-production
           requires:
-            - npm_install
-
-
-      - test:
-          requires:
-            - npm_install
-
-      - buildnumber:
-          requires:
-            - test
-            - lint
-
-      # Actual Docker container
-      - docker-build:
+            - approve-production-build-pointhq
+      - build-and-push-docker-pointhq-nginx-image:
           context:
-            - org-global
-            - aws-development
-            - slack-secrets
+            - pointhq-production
           requires:
-            - buildnumber
-
-
-      # Flyway
-      - docker-flyway-build:
+            - approve-production-build-pointhq-nginx
+      - build-and-push-docker-pointhq-redirect-nginx-image:
           context:
-            - org-global
-            - aws-development
-            - slack-secrets
+            - pointhq-production
           requires:
-            - buildnumber
-
-
-      #  Deploy ECS Docker
-      - deploy-ecs:
+            - approve-production-build-pointhq-redirect-nginx
+      - deploy-to-production:
           context:
-            - aws-development
-            - slack-secrets
+            - pointhq-production
           requires:
-            - docker-build
-            - docker-flyway-build
-
-
-      #  Deploy Lambda Functions
-      - deploy-lambda-api:
-          context:
-            - aws-development
-            - slack-secrets
-          requires:
-            - docker-build
-            - docker-flyway-build
-
-          post-steps:
-            - slack/notify:
-                event: pass
-                template: basic_success_1
-            - slack/notify:
-                event: fail
-                template: basic_fail_1
+            - approve-production-deploy
