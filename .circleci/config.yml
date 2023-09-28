@@ -32,6 +32,11 @@ workflows:
     triggers:
       - schedule:
           cron: "* * * * *"
+          filters:
+            branches:
+              only:
+                - main
+                - test1          
     jobs:
       - api-install-and-lint   
 #test
