@@ -14,7 +14,8 @@ jobs:
             curl --location --request POST 'https://circleci.com/api/v2/project/gh/HennaAbbas/test_/pipeline' \
             --header 'Content-Type: application/json' \
             -u "${API_TOKEN}:"    
-      - run: echo "hello world!"             
+      - run: echo "hello world!"   
+      - run: echo << pipeline.trigger_source >>
 
 
 
@@ -27,4 +28,10 @@ workflows:
                 command: echo "install custom dependency"      
       - api-install-and-lint
       
+  nightly:
+    triggers:
+      - schedule:
+          cron: "* * * * *"
+    jobs:
+      - api-install-and-lint   
 #test
