@@ -28,15 +28,4 @@ workflows:
                 command: echo "install custom dependency"      
       - api-install-and-lint
       
-  nightly:
-    triggers:
-      - schedule:
-          cron: "* * * * *"
-          filters:
-            branches:
-              only:
-                - main
-                - test1          
-    jobs:
-      - api-install-and-lint   
-#test
+
