@@ -1,188 +1,1305 @@
-# version: 2.1
-# jobs:
-#   say-date:
-#     docker:
-#       - image: cimg/base:stable
-#     parameters:
-#       date:
-#         type: string
-#         default: none      
-#     steps:
-#       - checkout
-#       - run:
-#           name: set var
-#           command: echo "export DATETIME=`date +%Y%m%d.%H%M`" >> "$BASH_ENV"
-
-#       - run: echo "$DATETIME"
-#       - run: mkdir -p workspace
-#       - run: echo "export DATETIME=datetime.`date +%Y%m%d.%H%M%S`" >>workspace/new-env-vars
-#       - run: echo "export BOB=$BAZ" >> workspace/new-env-vars
-#       - run: cat workspace/new-env-vars 
-#       - run: cat workspace/new-env-vars >> $BASH_ENV
-#       - run: echo ${DATETIME:-NULL}
-#       - run: 
-#           name: make test artifacts
-#           command: |
-#             mkdir /tmp/artifacts;
-#             echo "my artifact files in a dir" > /tmp/artifacts/encap-staging-no-color_${DATETIME:-NULL}.txt 
-#       - store_artifacts:
-#           path: /tmp/artifacts
-#       - persist_to_workspace:
-#           root: workspace
-#           paths:
-#             - new-env-vars
-          
-# workflows:
-#   my-workflow:
-#     jobs:
-#       - say-date
-# Use the latest 2.1 version of CircleCI pipeline process engine.
 # See: https://circleci.com/docs/2.0/configuration-reference
-
-
-
 version: 2.1
 
+# Define a job to be invoked later in a workflow.
+# See: https://circleci.com/docs/2.0/configuration-reference/#jobs
+orbs:
+  browser-tools: circleci/browser-tools@1.4.4
+  node: circleci/node@5.1.0
+  slack: circleci/slack@4.6.3
 jobs:
- say-date:
-   docker:
-     - image: cimg/base:stable
-   steps:
-     - checkout   
-  docker-build-and-push-fr-web:
+  test: &BASE_QA
+    # Specify the execution environment. You can specify an image from Dockerhub or use one of our Convenience Images from CircleCI's Developer Hub.
+    # See: https://circleci.com/docs/2.0/configuration-reference/#docker-machine-macos-windows-executor
     docker:
-    - image: cimg/python:3.9-node
-    environment:
-    - BUILDKIT_PROGRESS: plain
+      - image: cimg/node:18.17.1-browsers
+    # Add steps to the job
+    # See: https://circleci.com/docs/2.0/configuration-reference/#steps
     steps:
-    - run:
-        command: |
-          mkdir -p ~/.ssh;
-          ssh-keyscan -H github.com >> ~/.ssh/known_hosts;
-          git clone --depth 50 "$CIRCLE_REPOSITORY_URL" --branch "$CIRCLE_BRANCH" .;
-          git checkout --force -B "$CIRCLE_BRANCH" "$CIRCLE_SHA1";
-        name: Checkout code
-    - run:
-        command: |
-          if [[ $EUID == 0 ]]; then export SUDO=""; else export SUDO="sudo"; fi
+      - checkout
+      # - browser-tools/install-chrome
+      # - browser-tools/install-chromedriver
+      - browser-tools/install-browser-tools:
+          chrome-version: 117.0.5938.88 # TODO: remove when chromedriver downloads are fixed
+          # https://googlechromelabs.github.io/chrome-for-testing/
+      - run:
+          name: "NPM version"
+          command: |
+            npm -v
+      - run:
+          name: "Node version"
+          command: |
+            node -v
+      # - run:
+      #     name: "Chrome version"
+      #     command: |
+      #       google-chrome --version
+      #       chromedriver --version
+      - run:
+          name: "Install Packages"
+          command: |
+            npm install
+      - run:
+          name: Print Env
+          command: env
+      - run:
+          name: "Running Tests"
+          command: |
+            if [ -z "${COUNTRY}" ] || [ -z "${SUITE}" ] || [ -z "${TARGET}" ]
+            then
+              exit
+            else
+              npm run test "${COUNTRY}" "${SUITE}" "${TARGET}"
+            fi
+      - store_artifacts:
+          path: tests/reports/screenshots
+          name: Screenshots
+      - store_artifacts:
+          path: tests/reports/report
+          name: HTML Report
+      - run:
+          name: Get Artifacts
+          when: always
+          command: |
+            set -x
+            artifacts=$(curl -X GET "https://circleci.com/api/v2/project/bitbucket/rituals/frontend-automation/$CIRCLE_BUILD_NUM/artifacts" \
+            -H "Accept: application/json" \
+            -H "Circle-Token: ${CIRCLE_API_TOKEN}" | grep -o 'https://[^"]*/index.html')
+            # generate a heredoc in BASH_ENV
+            # the '\<<' is a CircleCI escape
+            echo "read -r -d '' STORED_ARTIFACTS \<< 'EOF_ARTIFACTS'" >> $BASH_ENV
+            echo "$artifacts" >> $BASH_ENV
+            echo "EOF_ARTIFACTS" >> $BASH_ENV
+      - slack/notify:
+          event: fail
+          custom: |
+            {
+              "blocks": [
+                {
+                  "type": "divider"
+                },
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "${CIRCLE_JOB} Failed. :x:",
+                    "emoji": true
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Branch*: ${CIRCLE_BRANCH}"
+                    }
+                  ]
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*There is a report ready:*"
+                  },
+                  "accessory": {
+                    "type": "button",
+                    "text": {
+                      "type": "plain_text",
+                      "text": "HTML Report :receipt:",
+                      "emoji": true
+                    },
+                    "value": "Report",
+                    "url": "$STORED_ARTIFACTS",
+                    "action_id": "button-action"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*CircleCI workflow Job:*"
+                  },
+                  "accessory": {
+                    "type": "button",
+                    "text": {
+                      "type": "plain_text",
+                      "text": "CircleCI :hammer_and_wrench:",
+                      "emoji": true
+                    },
+                    "value": "View Job",
+                    "url": "${CIRCLE_BUILD_URL}",
+                    "action_id": "button-action"
+                  }
+                },
+                {
+                  "type": "divider"
+                }
+              ]
+            }
+      - slack/notify:
+          event: pass
+          channel: "C02AD8HR2UR"
+          custom: |
+            {
+              "blocks": [
+                {
+                  "type": "divider"
+                },
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "${CIRCLE_JOB} Succeeded. :white_check_mark:",
+                    "emoji": true
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Branch*: ${CIRCLE_BRANCH}"
+                    }
+                  ]
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*There is a report ready:*"
+                  },
+                  "accessory": {
+                    "type": "button",
+                    "text": {
+                      "type": "plain_text",
+                      "text": "HTML Report :receipt:",
+                      "emoji": true
+                    },
+                    "value": "Report",
+                    "url": "$STORED_ARTIFACTS",
+                    "action_id": "button-action"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*CircleCI workflow Job:*"
+                  },
+                  "accessory": {
+                    "type": "button",
+                    "text": {
+                      "type": "plain_text",
+                      "text": "CircleCI :hammer_and_wrench:",
+                      "emoji": true
+                    },
+                    "value": "View Job",
+                    "url": "${CIRCLE_BUILD_URL}",
+                    "action_id": "button-action"
+                  }
+                },
+                {
+                  "type": "divider"
+                }
+              ]
+            }
 
-          if [ ! "$(which aws)" ] || [ "$PARAM_AWS_CLI_OVERRIDE" = 1 ]; then
-              # setup
-              if [ ! "$PARAM_AWS_CLI_VERSION" = "latest" ]; then export AWS_CLI_VER_STRING="-$PARAM_AWS_CLI_VERSION"; fi
+  develop: &BASE_QA_DEV
+  # Specify the execution environment. You can specify an image from Dockerhub or use one of our Convenience Images from CircleCI's Developer Hub.
+  # See: https://circleci.com/docs/2.0/configuration-reference/#docker-machine-macos-windows-executor
+    docker:
+      - image: cimg/node:18.17.1-browsers
+    # Add steps to the job
+    # See: https://circleci.com/docs/2.0/configuration-reference/#steps
+    steps:
+      - checkout
 
-              # Uninstall existing AWS CLI if override is enabled.
-              if [ "$PARAM_AWS_CLI_OVERRIDE" = 1 ]; then
-                  AWS_CLI_PATH=$(which aws)
-                  if [ -n "$AWS_CLI_PATH" ]; then
-                      EXISTING_AWS_VERSION=$(aws --version)
-                      echo "Uninstalling ${EXISTING_AWS_VERSION}"
-                      # shellcheck disable=SC2012
-                      if [ -L "$AWS_CLI_PATH" ]; then
-                          AWS_SYMLINK_PATH=$(ls -l "$AWS_CLI_PATH" | sed -e 's/.* -> //')
-                      fi
-                      $SUDO rm -rf "$AWS_CLI_PATH" "$AWS_SYMLINK_PATH" "$HOME/.aws/" "/usr/local/bin/aws" "/usr/local/bin/aws_completer" "/usr/local/aws-cli"
-                  else
-                      echo "No AWS install found"
-                  fi
-              fi
+      - run: sudo apt-get update
+      - browser-tools/install-browser-tools:
+          chrome-version: 117.0.5938.88 # TODO: remove when chromedriver downloads are fixed
+      - run:
+          name: "NPM version"
+          command: |
+            npm -v
+      - run:
+          name: "Node version"
+          command: |
+            node -v
+ 
+      - run:
+          name: "Install Packages"
+          command: |
+            npm install
+      - run:
+          name: Print Env
+          command: env
+      - run:
+          name: "Running Tests"
+          command: |
+            if [ -z "${COUNTRY}" ] || [ -z "${SUITE}" ] || [ -z "${TARGET}" ]
+            then
+              exit
+            else
+              npm run test "${COUNTRY}" "${SUITE}" "${TARGET}"
+            fi
+      - store_artifacts:
+          path: tests/reports/screenshots
+          name: Screenshots
+      - store_artifacts:
+          path: tests/reports/report
+          name: HTML Report
+      - run:
+          name: Get Artifacts
+          when: always
+          command: |
+            set -x
+            artifacts=$(curl -X GET "https://circleci.com/api/v2/project/bitbucket/rituals/frontend-automation/$CIRCLE_BUILD_NUM/artifacts" \
+            -H "Accept: application/json" \
+            -H "Circle-Token: ${CIRCLE_API_TOKEN}" | grep -o 'https://[^"]*/index.html')
+            # generate a heredoc in BASH_ENV
+            # the '\<<' is a CircleCI escape
+            echo "read -r -d '' STORED_ARTIFACTS \<< 'EOF_ARTIFACTS'" >> $BASH_ENV
+            echo "$artifacts" >> $BASH_ENV
+            echo "EOF_ARTIFACTS" >> $BASH_ENV
+      - slack/notify:
+          event: fail
+          channel: "C02AD8HR2UR"
+          custom: |
+            {
+              "blocks": [
+                {
+                  "type": "divider"
+                },
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "${CIRCLE_JOB} Failed. :x:",
+                    "emoji": true
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Branch*: ${CIRCLE_BRANCH}"
+                    }
+                  ]
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*There is a report ready:*"
+                  },
+                  "accessory": {
+                    "type": "button",
+                    "text": {
+                      "type": "plain_text",
+                      "text": "HTML Report :receipt:",
+                      "emoji": true
+                    },
+                    "value": "Report",
+                    "url": "$STORED_ARTIFACTS",
+                    "action_id": "button-action"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*CircleCI workflow Job:*"
+                  },
+                  "accessory": {
+                    "type": "button",
+                    "text": {
+                      "type": "plain_text",
+                      "text": "CircleCI :hammer_and_wrench:",
+                      "emoji": true
+                    },
+                    "value": "View Job",
+                    "url": "${CIRCLE_BUILD_URL}",
+                    "action_id": "button-action"
+                  }
+                },
+                {
+                  "type": "divider"
+                }
+              ]
+            }
+      - slack/notify:
+          event: pass
+          channel: "C02AD8HR2UR"
+          custom: |
+            {
+              "blocks": [
+                {
+                  "type": "divider"
+                },
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "${CIRCLE_JOB} Succeeded. :white_check_mark:",
+                    "emoji": true
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Branch*: ${CIRCLE_BRANCH}"
+                    }
+                  ]
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*There is a report ready:*"
+                  },
+                  "accessory": {
+                    "type": "button",
+                    "text": {
+                      "type": "plain_text",
+                      "text": "HTML Report :receipt:",
+                      "emoji": true
+                    },
+                    "value": "Report",
+                    "url": "$STORED_ARTIFACTS",
+                    "action_id": "button-action"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*CircleCI workflow Job:*"
+                  },
+                  "accessory": {
+                    "type": "button",
+                    "text": {
+                      "type": "plain_text",
+                      "text": "CircleCI :hammer_and_wrench:",
+                      "emoji": true
+                    },
+                    "value": "View Job",
+                    "url": "${CIRCLE_BUILD_URL}",
+                    "action_id": "button-action"
+                  }
+                },
+                {
+                  "type": "divider"
+                }
+              ]
+            }
+  #   ----- TEST STAGING ------
+  #  --------------------------
+  AT_QA_ACCOUNTS_STAG:
+    environment:
+      COUNTRY: AT
+      SUITE: Accounts
+      TARGET: stag
+    <<: *BASE_QA
 
-              echo "Installing AWS CLI v2"
-              cd /tmp || exit
-              # Platform check
-              if uname -a | grep "Darwin"; then
-                  export SYS_ENV_PLATFORM=macos
-              elif uname -a | grep "x86_64 GNU/Linux"; then
-                  export SYS_ENV_PLATFORM=linux_x86
-              elif uname -a | grep "aarch64 GNU/Linux"; then
-                  export SYS_ENV_PLATFORM=linux_arm
-              else
-                  echo "This platform appears to be unsupported."
-                  uname -a
-                  exit 1
-              fi
-              echo "Platform $SYS_ENV_PLATFORM"
-              # Install per platform
-              case $SYS_ENV_PLATFORM in
-              linux_x86)
-                  curl -sSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64${AWS_CLI_VER_STRING}.zip" -o "awscliv2.zip"
-                  unzip -q -o awscliv2.zip
-                  $SUDO ./aws/install
-                  rm awscliv2.zip
-                  ;;
-              macos)
-                  curl -sSL "https://awscli.amazonaws.com/AWSCLIV2${AWS_CLI_VER_STRING}.pkg" -o "AWSCLIV2.pkg"
-                  $SUDO installer -pkg AWSCLIV2.pkg -target /
-                  rm AWSCLIV2.pkg
-                  ;;
-              linux_arm)
-                  curl -sSL "https://awscli.amazonaws.com/awscli-exe-linux-aarch64${AWS_CLI_VER_STRING}.zip" -o "awscliv2.zip"
-                  unzip -q -o awscliv2.zip
-                  $SUDO ./aws/install
-                  rm awscliv2.zip
-                  ;;
-              *)
-                  echo "This orb does not currently support your platform. If you believe it should, please consider opening an issue on the GitHub repository:"
-                  echo "https://github.com/CircleCI-Public/aws-cli-orb/issues/new"
-                  exit 1
-              ;;
-              esac
-              # Toggle AWS Pager
-              if [ "$PARAM_AWS_CLI_DISABLE_PAGER" = 1 ]; then
-                  if [ -z "${AWS_PAGER+x}" ]; then
-                      echo 'export AWS_PAGER=""' >> "$BASH_ENV"
-                      echo "AWS_PAGER is being set to the empty string to disable all output paging for AWS CLI commands."
-                      echo "You can set the 'disable-aws-pager' parameter to 'false' to disable this behavior."
-                  fi
-              fi
-          else
-              echo "AWS CLI is already installed, skipping installation."
-              aws --version
-          fi
-        environment:
-          PARAM_AWS_CLI_DISABLE_PAGER: true
-          PARAM_AWS_CLI_OVERRIDE: false
-          PARAM_AWS_CLI_VERSION: latest
-        name: Install AWS CLI - latest
-    - run:
-        command: |-
-          PARAM_AWS_CLI_ACCESS_KEY_ID=$(eval echo "\$$PARAM_AWS_CLI_ACCESS_KEY_ID")
-          PARAM_AWS_CLI_SECRET_ACCESS_KEY=$(eval echo "\$$PARAM_AWS_CLI_SECRET_ACCESS_KEY")
-          PARAM_AWS_CLI_REGION=$(eval echo "\$$PARAM_AWS_CLI_REGION")
+  NL_QA_ACCOUNTS_STAG:
+    environment:
+      COUNTRY: NL
+      SUITE: Accounts
+      TARGET: stag
+    <<: *BASE_QA
+  
+  CH_QA_ACCOUNTS_STAG:
+    environment:
+      COUNTRY: CH
+      SUITE: Accounts
+      TARGET: stag
+    <<: *BASE_QA
+    
+  DE_QA_ACCOUNTS_STAG:
+    environment:
+      COUNTRY: DE
+      SUITE: Accounts
+      TARGET: stag
+    <<: *BASE_QA
 
-          aws configure set aws_access_key_id \
-              "$PARAM_AWS_CLI_ACCESS_KEY_ID" \
-              --profile "$PARAM_AWS_CLI_PROFILE_NAME"
-          aws configure set aws_secret_access_key \
-              "$PARAM_AWS_CLI_SECRET_ACCESS_KEY" \
-              --profile "$PARAM_AWS_CLI_PROFILE_NAME"
+  ES_QA_ACCOUNTS_STAG:
+    environment:
+      COUNTRY: ES
+      SUITE: Accounts
+      TARGET: stag
+    <<: *BASE_QA
+    
+  BE_QA_ACCOUNTS_STAG:
+    environment:
+      COUNTRY: BE
+      SUITE: Accounts
+      TARGET: stag
+    <<: *BASE_QA
+    
+  UK_QA_ACCOUNTS_STAG:
+    environment:
+      COUNTRY: UK
+      SUITE: Accounts
+      TARGET: stag
+    <<: *BASE_QA
+    
+  SE_QA_ACCOUNTS_STAG:
+    environment:
+      COUNTRY: SE
+      SUITE: Accounts
+      TARGET: stag
+    <<: *BASE_QA
 
-          if [ "$PARAM_AWS_CLI_CONFIG_DEFAULT_REGION" = "1" ]; then
-              aws configure set default.region "$PARAM_AWS_CLI_REGION" \
-                  --profile "$PARAM_AWS_CLI_PROFILE_NAME"
-          fi
+  FR_QA_ACCOUNTS_STAG:
+    environment:
+      COUNTRY: FR
+      SUITE: Accounts
+      TARGET: stag
+    <<: *BASE_QA
+  
+  NOR_QA_ACCOUNTS_STAG:
+    environment:
+      COUNTRY: NOR
+      SUITE: Accounts
+      TARGET: stag
+    <<: *BASE_QA
+  
+  US_QA_ACCOUNTS_STAG:
+    environment:
+      COUNTRY: US
+      SUITE: Accounts
+      TARGET: stag
+    <<: *BASE_QA
 
-          if [ "$PARAM_AWS_CLI_CONFIG_PROFILE_REGION" = "1" ]; then
-              aws configure set region "$PARAM_AWS_CLI_REGION" \
-                  --profile "$PARAM_AWS_CLI_PROFILE_NAME"
-          fi
+  NL_QA_PAYMENTS_STAG:
+    environment:
+      COUNTRY: NL
+      SUITE: Payments
+      TARGET: stag
+    <<: *BASE_QA
 
-          if [ -n "$PARAM_AWS_CLI_ROLE_ARN" ]; then
-              aws configure set role_arn "$PARAM_AWS_CLI_ROLE_ARN" \
-                  --profile "$PARAM_AWS_CLI_PROFILE_NAME"
-          fi
-        environment:
-          PARAM_AWS_CLI_ACCESS_KEY_ID: AWS_ACCESS_KEY_ID
-          PARAM_AWS_CLI_CONFIG_DEFAULT_REGION: true
-          PARAM_AWS_CLI_CONFIG_PROFILE_REGION: true
-          PARAM_AWS_CLI_PROFILE_NAME: default
-          PARAM_AWS_CLI_REGION: AWS_DEFAULT_REGION
-          PARAM_AWS_CLI_ROLE_ARN: ''
-          PARAM_AWS_CLI_SECRET_ACCESS_KEY: AWS_SECRET_ACCESS_KEY
-        name: Configure AWS Access Key ID
-    - setup_remote_docker:
-        version: 20.10.17           
+  DE_QA_PAYMENTS_STAG:
+    environment:
+      COUNTRY: DE
+      SUITE: Payments
+      TARGET: stag
+    <<: *BASE_QA
 
+  BE_QA_PAYMENTS_STAG:
+    environment:
+      COUNTRY: BE
+      SUITE: Payments
+      TARGET: stag
+    <<: *BASE_QA
+  
+  UK_QA_PAYMENTS_STAG:
+    environment:
+      COUNTRY: UK
+      SUITE: Payments
+      TARGET: stag
+    <<: *BASE_QA
+
+  SE_QA_PAYMENTS_STAG:
+    environment:
+      COUNTRY: SE
+      SUITE: Payments
+      TARGET: stag
+    <<: *BASE_QA
+
+  FR_QA_PAYMENTS_STAG:
+    environment:
+      COUNTRY: FR
+      SUITE: Payments
+      TARGET: stag
+    <<: *BASE_QA
+
+  CH_QA_PAYMENTS_STAG:
+    environment:
+      COUNTRY: CH
+      SUITE: Payments
+      TARGET: stag
+    <<: *BASE_QA
+
+  AT_QA_PAYMENTS_STAG:
+    environment:
+      COUNTRY: AT
+      SUITE: Payments
+      TARGET: stag
+    <<: *BASE_QA
+  
+  NOR_QA_PAYMENTS_STAG:
+    environment:
+      COUNTRY: NOR
+      SUITE: Payments
+      TARGET: stag
+    <<: *BASE_QA
+
+  ES_QA_PAYMENTS_STAG:
+    environment:
+      COUNTRY: ES
+      SUITE: Payments
+      TARGET: stag
+    <<: *BASE_QA
+
+  US_QA_PAYMENTS_STAG:
+    environment:
+      COUNTRY: US
+      SUITE: Payments
+      TARGET: stag
+    <<: *BASE_QA
+
+  # NL_QA_SESSIONS:
+  #   environment:
+  #     COUNTRY: NL
+  #     SUITE: Sessions
+  #     TARGET: stag
+    # <<: *BASE_QA
+
+  #  ------------------ PROD ------------------
+  #  ------------------------------------------
+  NL_QA_PAYMENTS_PROD:
+    environment:
+      COUNTRY: NL
+      SUITE: Payments
+      TARGET: prod
+    <<: *BASE_QA
+
+  DE_QA_PAYMENTS_PROD:
+    environment:
+      COUNTRY: DE
+      SUITE: Payments
+      TARGET: prod
+    <<: *BASE_QA
+
+  BE_QA_PAYMENTS_PROD:
+    environment:
+      COUNTRY: BE
+      SUITE: Payments
+      TARGET: prod
+    <<: *BASE_QA
+  
+  UK_QA_PAYMENTS_PROD:
+    environment:
+      COUNTRY: UK
+      SUITE: Payments
+      TARGET: prod
+    <<: *BASE_QA
+
+  SE_QA_PAYMENTS_PROD:
+    environment:
+      COUNTRY: SE
+      SUITE: Payments
+      TARGET: prod
+    <<: *BASE_QA
+
+  FR_QA_PAYMENTS_PROD:
+    environment:
+      COUNTRY: FR
+      SUITE: Payments
+      TARGET: prod
+    <<: *BASE_QA
+
+  CH_QA_PAYMENTS_PROD:
+    environment:
+      COUNTRY: CH
+      SUITE: Payments
+      TARGET: prod
+    <<: *BASE_QA
+
+  AT_QA_PAYMENTS_PROD:
+    environment:
+      COUNTRY: AT
+      SUITE: Payments
+      TARGET: prod
+    <<: *BASE_QA
+  
+  NOR_QA_PAYMENTS_PROD:
+    environment:
+      COUNTRY: NOR
+      SUITE: Payments
+      TARGET: prod
+    <<: *BASE_QA
+
+  ES_QA_PAYMENTS_PROD:
+    environment:
+      COUNTRY: ES
+      SUITE: Payments
+      TARGET: prod
+    <<: *BASE_QA
+
+  US_QA_PAYMENTS_PROD:
+    environment:
+      COUNTRY: US
+      SUITE: Payments
+      TARGET: prod
+    <<: *BASE_QA 
+
+
+
+  #  ----- DEVELOPMENT -------
+  #  -------------------------
+  QA:
+    <<: *BASE_QA_DEV
+  # ----- ACCOUNTS STAGING DEVELOPMENT --------
+  AT_QA_ACCOUNTS_STAG-DEV:
+    environment:
+      COUNTRY: AT
+      SUITE: Accounts
+      TARGET: stag
+    <<: *BASE_QA_DEV
+
+  NL_QA_ACCOUNTS_STAG-DEV:
+    environment:
+      COUNTRY: NL
+      SUITE: Accounts
+      TARGET: stag
+    <<: *BASE_QA_DEV
+  
+  CH_QA_ACCOUNTS_STAG-DEV:
+    environment:
+      COUNTRY: CH
+      SUITE: Accounts
+      TARGET: stag
+    <<: *BASE_QA_DEV
+    
+  DE_QA_ACCOUNTS_STAG-DEV:
+    environment:
+      COUNTRY: DE
+      SUITE: Accounts
+      TARGET: stag
+    <<: *BASE_QA_DEV
+
+  ES_QA_ACCOUNTS_STAG-DEV:
+    environment:
+      COUNTRY: ES
+      SUITE: Accounts
+      TARGET: stag
+    <<: *BASE_QA_DEV
+    
+  BE_QA_ACCOUNTS_STAG-DEV:
+    environment:
+      COUNTRY: BE
+      SUITE: Accounts
+      TARGET: stag
+    <<: *BASE_QA_DEV
+    
+  UK_QA_ACCOUNTS_STAG-DEV:
+    environment:
+      COUNTRY: UK
+      SUITE: Accounts
+      TARGET: stag
+    <<: *BASE_QA_DEV
+    
+  SE_QA_ACCOUNTS_STAG-DEV:
+    environment:
+      COUNTRY: SE
+      SUITE: Accounts
+      TARGET: stag
+    <<: *BASE_QA_DEV
+
+  FR_QA_ACCOUNTS_STAG-DEV:
+    environment:
+      COUNTRY: FR
+      SUITE: Accounts
+      TARGET: stag
+    <<: *BASE_QA_DEV
+  
+  NOR_QA_ACCOUNTS_STAG-DEV:
+    environment:
+      COUNTRY: NOR
+      SUITE: Accounts
+      TARGET: stag
+    <<: *BASE_QA_DEV
+  
+  US_QA_ACCOUNTS_STAG-DEV:
+    environment:
+      COUNTRY: US
+      SUITE: Accounts
+      TARGET: stag
+    <<: *BASE_QA_DEV
+# ----- PAYMENTS STAGING DEVELOPMENT ----------
+  NL_QA_PAYMENTS_STAG-DEV:
+    environment:
+      COUNTRY: NL
+      SUITE: Payments
+      TARGET: stag
+    <<: *BASE_QA_DEV
+
+  DE_QA_PAYMENTS_STAG-DEV:
+    environment:
+      COUNTRY: DE
+      SUITE: Payments
+      TARGET: stag
+    <<: *BASE_QA_DEV
+
+  BE_QA_PAYMENTS_STAG-DEV:
+    environment:
+      COUNTRY: BE
+      SUITE: Payments
+      TARGET: stag
+    <<: *BASE_QA_DEV
+
+  UK_QA_PAYMENTS_STAG-DEV:
+    environment:
+      COUNTRY: UK
+      SUITE: Payments
+      TARGET: stag
+    <<: *BASE_QA_DEV
+
+  SE_QA_PAYMENTS_STAG-DEV:
+    environment:
+      COUNTRY: SE
+      SUITE: Payments
+      TARGET: stag
+    <<: *BASE_QA_DEV
+
+  FR_QA_PAYMENTS_STAG-DEV:
+    environment:
+      COUNTRY: FR
+      SUITE: Payments
+      TARGET: stag
+    <<: *BASE_QA_DEV
+
+  CH_QA_PAYMENTS_STAG-DEV:
+    environment:
+      COUNTRY: CH
+      SUITE: Payments
+      TARGET: stag
+    <<: *BASE_QA_DEV
+
+  AT_QA_PAYMENTS_STAG-DEV:
+    environment:
+      COUNTRY: AT
+      SUITE: Payments
+      TARGET: stag
+    <<: *BASE_QA_DEV
+
+  NOR_QA_PAYMENTS_STAG-DEV:
+    environment:
+      COUNTRY: NOR
+      SUITE: Payments
+      TARGET: stag
+    <<: *BASE_QA_DEV
+  
+  ES_QA_PAYMENTS_STAG-DEV:
+    environment:
+      COUNTRY: ES
+      SUITE: Payments
+      TARGET: stag
+    <<: *BASE_QA_DEV
+  
+  US_QA_PAYMENTS_STAG-DEV:
+    environment:
+      COUNTRY: US
+      SUITE: Payments
+      TARGET: stag
+    <<: *BASE_QA_DEV
+  # -------- PAYMENTS PRODUCTION  ----------
+  NL_QA_PAYMENTS_PROD-DEV:
+    environment:
+      COUNTRY: NL
+      SUITE: Payments
+      TARGET: prod
+    <<: *BASE_QA_DEV
+
+  DE_QA_PAYMENTS_PROD-DEV:
+    environment:
+      COUNTRY: DE
+      SUITE: Payments
+      TARGET: prod
+    <<: *BASE_QA_DEV
+
+  BE_QA_PAYMENTS_PROD-DEV:
+    environment:
+      COUNTRY: BE
+      SUITE: Payments
+      TARGET: prod
+    <<: *BASE_QA_DEV
+  
+  UK_QA_PAYMENTS_PROD-DEV:
+    environment:
+      COUNTRY: UK
+      SUITE: Payments
+      TARGET: prod
+    <<: *BASE_QA_DEV
+
+  SE_QA_PAYMENTS_PROD-DEV:
+    environment:
+      COUNTRY: SE
+      SUITE: Payments
+      TARGET: prod
+    <<: *BASE_QA_DEV
+
+  FR_QA_PAYMENTS_PROD-DEV:
+    environment:
+      COUNTRY: FR
+      SUITE: Payments
+      TARGET: prod
+    <<: *BASE_QA_DEV
+
+  CH_QA_PAYMENTS_PROD-DEV:
+    environment:
+      COUNTRY: CH
+      SUITE: Payments
+      TARGET: prod
+    <<: *BASE_QA_DEV
+
+  AT_QA_PAYMENTS_PROD-DEV:
+    environment:
+      COUNTRY: AT
+      SUITE: Payments
+      TARGET: prod
+    <<: *BASE_QA_DEV
+  
+  NOR_QA_PAYMENTS_PROD-DEV:
+    environment:
+      COUNTRY: NOR
+      SUITE: Payments
+      TARGET: prod
+    <<: *BASE_QA_DEV
+
+  ES_QA_PAYMENTS_PROD-DEV:
+    environment:
+      COUNTRY: ES
+      SUITE: Payments
+      TARGET: prod
+    <<: *BASE_QA_DEV
+
+  US_QA_PAYMENTS_PROD-DEV:
+    environment:
+      COUNTRY: US
+      SUITE: Payments
+      TARGET: prod
+    <<: *BASE_QA_DEV
+ 
 workflows:
-   say-date-workflow:
+  Tests:
     jobs:
-      - say-date
+      - AT_QA_ACCOUNTS_STAG-DEV:
+          filters:
+            branches:
+              ignore:
+                - master
+      - BE_QA_ACCOUNTS_STAG-DEV:
+          filters:
+            branches:
+              ignore:
+                - master
+      - CH_QA_ACCOUNTS_STAG-DEV:
+          filters:
+            branches:
+              ignore:
+                - master
+      - DE_QA_ACCOUNTS_STAG-DEV:
+          filters:
+            branches:
+              ignore:
+                - master
+      - ES_QA_ACCOUNTS_STAG-DEV:
+          filters:
+            branches:
+              ignore:
+                - master
+      - FR_QA_ACCOUNTS_STAG-DEV:
+          filters:
+            branches:
+              ignore:
+                - master
+      - NL_QA_ACCOUNTS_STAG-DEV:
+          filters:
+            branches:
+              ignore:
+                - master
+      - NOR_QA_ACCOUNTS_STAG-DEV:
+          filters:
+            branches:
+              ignore:
+                - master
+      - SE_QA_ACCOUNTS_STAG-DEV:
+          filters:
+            branches:
+              ignore:
+                - master
+      - UK_QA_ACCOUNTS_STAG-DEV:
+          filters:
+            branches:
+              ignore:
+                - master
+      - US_QA_ACCOUNTS_STAG-DEV:
+          filters:
+            branches:
+              ignore:
+                - master
+      - NL_QA_PAYMENTS_STAG-DEV:
+          filters:
+            branches:
+              ignore:
+                - master
+      - DE_QA_PAYMENTS_STAG-DEV:
+          filters:
+            branches:
+              ignore:
+                - master
+      - BE_QA_PAYMENTS_STAG-DEV:
+          filters:
+            branches:
+              ignore:
+                - master
+      - UK_QA_PAYMENTS_STAG-DEV:
+          filters:
+            branches:
+              ignore:
+                - master
+      - SE_QA_PAYMENTS_STAG-DEV:
+          filters:
+            branches:
+              ignore:
+                - master
+      - FR_QA_PAYMENTS_STAG-DEV:
+          filters:
+            branches:
+              ignore:
+                - master
+      - CH_QA_PAYMENTS_STAG-DEV:
+          filters:
+            branches:
+              ignore:
+                - master
+      - AT_QA_PAYMENTS_STAG-DEV:
+          filters:
+            branches:
+              ignore:
+                - master
+      - NOR_QA_PAYMENTS_STAG-DEV:
+          filters:
+            branches:
+              ignore:
+                - master
+      - ES_QA_PAYMENTS_STAG-DEV:
+          filters:
+            branches:
+              ignore:
+                - master
+      - US_QA_PAYMENTS_STAG-DEV:
+          filters:
+            branches:
+              ignore:
+                - master
+      - NL_QA_PAYMENTS_PROD-DEV:
+          filters:
+            branches:
+              ignore:
+                - master
+      - DE_QA_PAYMENTS_PROD-DEV:
+          filters:
+            branches:
+              ignore:
+                - master
+      - BE_QA_PAYMENTS_PROD-DEV:
+          filters:
+            branches:
+              ignore:
+                - master
+      - UK_QA_PAYMENTS_PROD-DEV:
+          filters:
+            branches:
+              ignore:
+                - master
+      - SE_QA_PAYMENTS_PROD-DEV:
+          filters:
+            branches:
+              ignore:
+                - master
+      - FR_QA_PAYMENTS_PROD-DEV:
+          filters:
+            branches:
+              ignore:
+                - master
+      - CH_QA_PAYMENTS_PROD-DEV:
+          filters:
+            branches:
+              ignore:
+                - master
+      - AT_QA_PAYMENTS_PROD-DEV:
+          filters:
+            branches:
+              ignore:
+                - master
+      - NOR_QA_PAYMENTS_PROD-DEV:
+          filters:
+            branches:
+              ignore:
+                - master
+      - ES_QA_PAYMENTS_PROD-DEV:
+          filters:
+            branches:
+              ignore:
+                - master
+      - US_QA_PAYMENTS_PROD-DEV:
+          filters:
+            branches:
+              ignore:
+                - master
+
+
+  Daily_NL:
+    triggers:
+      - schedule:
+          cron: "01 6,15 * * 1-5"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - NL_QA_ACCOUNTS_STAG
+      - NL_QA_PAYMENTS_STAG
+      # - NL_QA_SESSIONS
+
+  Daily_DE:
+    triggers:
+      - schedule:
+          cron: "10 6,15 * * 1-5"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - DE_QA_ACCOUNTS_STAG
+      - DE_QA_PAYMENTS_STAG
+
+  Daily_BE:
+    triggers:
+      - schedule:
+          cron: "15 6,15 * * 1-5"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - BE_QA_ACCOUNTS_STAG
+      - BE_QA_PAYMENTS_STAG
+  
+  Daily_UK:
+    triggers:
+      - schedule:
+          cron: "20 6,15 * * 1-5"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - UK_QA_ACCOUNTS_STAG
+      - UK_QA_PAYMENTS_STAG
+    
+  Daily_SE:
+    triggers:
+      - schedule:
+          cron: "25 6,15 * * 1-5"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - SE_QA_ACCOUNTS_STAG
+      - SE_QA_PAYMENTS_STAG
+
+  Daily_FR:
+    triggers:
+      - schedule:
+          cron: "30 6,15 * * 1-5"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - FR_QA_ACCOUNTS_STAG
+      - FR_QA_PAYMENTS_STAG
+
+  Daily_CH:
+    triggers:
+      - schedule:
+          cron: "35 6,15 * * 1-5"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - CH_QA_ACCOUNTS_STAG
+      - CH_QA_PAYMENTS_STAG
+
+  Daily_AT:
+    triggers:
+      - schedule:
+          cron: "40 6,15 * * 1-5"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - AT_QA_ACCOUNTS_STAG
+      - AT_QA_PAYMENTS_STAG
+
+  Daily_NOR:
+    triggers:
+      - schedule:
+          cron: "45 6,15 * * 1-5"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - NOR_QA_ACCOUNTS_STAG
+      - NOR_QA_PAYMENTS_STAG
+
+  Daily_ES:
+    triggers:
+      - schedule:
+          cron: "50 6,15 * * 1-5"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - ES_QA_ACCOUNTS_STAG
+      - ES_QA_PAYMENTS_STAG
+    
+  Daily_US:
+    triggers:
+      - schedule:
+          cron: "55 6,15 * * 1-5"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - US_QA_ACCOUNTS_STAG
+      - US_QA_PAYMENTS_STAG
+  
+# --------------- PROD ------------
+# ---------------------------------
+  Daily_NL_PROD:
+    triggers:
+      - schedule:
+          cron: "01 6,12 * * 1-5"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - NL_QA_PAYMENTS_PROD
+  
+  Daily_AT_PROD:
+    triggers:
+      - schedule:
+          cron: "05 6,12 * * 1-5"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - AT_QA_PAYMENTS_PROD
+
+  Daily_BE_PROD:
+    triggers:
+      - schedule:
+          cron: "10 6,12 * * 1-5"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - BE_QA_PAYMENTS_PROD
+
+  Daily_CH_PROD:
+    triggers:
+      - schedule:
+          cron: "15 6,12 * * 1-5"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - CH_QA_PAYMENTS_PROD
+    
+  Daily_DE_PROD:
+    triggers:
+      - schedule:
+          cron: "20 6,12 * * 1-5"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - DE_QA_PAYMENTS_PROD
+
+  Daily_FR_PROD:
+    triggers:
+      - schedule:
+          cron: "15 6,12 * * 1-5"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - FR_QA_PAYMENTS_PROD
+
+  Daily_ES_PROD:
+    triggers:
+      - schedule:
+          cron: "15 6,12 * * 1-5"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - ES_QA_PAYMENTS_PROD
+
+  Daily_NOR_PROD:
+    triggers:
+      - schedule:
+          cron: "20 6,12 * * 1-5"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - NOR_QA_PAYMENTS_PROD
+
+  Daily_SE_PROD:
+    triggers:
+      - schedule:
+          cron: "25 6,12 * * 1-5"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - SE_QA_PAYMENTS_PROD
+
+  Daily_UK_PROD:
+    triggers:
+      - schedule:
+          cron: "30 6,12 * * 1-5"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - UK_QA_PAYMENTS_PROD
+
+  Daily_US_PROD:
+    triggers:
+      - schedule:
+          cron: "30 6,12 * * 1-5"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - US_QA_PAYMENTS_PROD
+
+
+  
