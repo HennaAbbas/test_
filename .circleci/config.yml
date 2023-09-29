@@ -30,11 +30,6 @@ jobs:
           name: "Node version"
           command: |
             node -v
-      # - run:
-      #     name: "Chrome version"
-      #     command: |
-      #       google-chrome --version
-      #       chromedriver --version
       - run:
           name: "Install Packages"
           command: |
