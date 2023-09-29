@@ -26,23 +26,13 @@ jobs:
     docker:
       - image: cimg/node:17.2.0 # the primary container, where your job's commands are run
     steps:    
-      - run:
-          name: Commit new image to repo
-          command: |
-            export COMMIT_MESSAGE=$(git log -1 --pretty=oneline)
-            cd ./edgebook-manifests
-            # git config --local user.email "scorebet-bot@thescore.com"
-            # git config --local user.name "scorebet-bot"
-            # git config --global gpg.format ssh
-            # git config --global gpg.ssh.defaultKeyCommand "ssh-add -L"
-            # git config --global commit.gpgsign true
-            git commit -am "CircleCI: Helm chart for edgebook ${CIRCLE_BRANCH} branch updated with \"${COMMIT_MESSAGE}\""
-            git push origin $TARGET_BRANCH      
+      - run: echo $test_env_var  
 
 workflows:
   other-failing-workflow:  
     jobs:
-      - failing_job  
+      - failing_job: 
+          context: my-context
       
   my-workflow:
     when: 
