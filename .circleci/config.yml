@@ -36,17 +36,11 @@ workflows:
       
   my-workflow:
     when: 
-      equal: [ test, << pipeline.parameters.test-suite >> ]
-    
-  
+      equal: [ test, << pipeline.parameters.test-suite >> ] 
     jobs:
       - hello-job
  
-  my-test-workflow:
-    # when: 
-    #   equal: [ test-1, << pipeline.parameters.test-suite >> ]
-    
-  
+  my-test-workflow:  
     jobs:
  
       - hello-world/greet: 
