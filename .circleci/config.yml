@@ -6,7 +6,7 @@ jobs:
     resource_class: henna/testrunner
     steps:
       - run: echo "Hi I'm on a Container Runner!"
-      - run: "please work.  k thanks! "
+      - run: echo "please work.  k thanks! "
 workflows:
   build-workflow:
     jobs:
