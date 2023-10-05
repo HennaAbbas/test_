@@ -1,0 +1,5 @@
+agent:
+  resourceClasses:
+    henna/testrunner:
+      token: 476a047cebecf411a480840442640b02c1fccb99e187047410ce3381a591f164a46272b51d141b80
+
