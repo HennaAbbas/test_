@@ -32,10 +32,9 @@ workflows:
       - deploy:
           filters:
             branches:
-              only: branch_filter    
-            requires: 
-              - build
-              - test
+              only: branch_filter          
+          requires:
+            - hold              
 
 
 
