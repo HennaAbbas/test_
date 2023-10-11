@@ -27,14 +27,18 @@ workflows:
           filters:
             branches:
               only: branch_filter   
-      - test
+      - test: 
+          filters:
+            branches: 
+              only: master
       
       - deploy:
           filters:
             branches:
               only: branch_filter          
           requires:
-            - hold              
+            - test
+            - build
 
 
 
