@@ -20,6 +20,7 @@ jobs:
       - run: echo $MACOS_ORB_DEVICE_UDID
       - macos/wait-until-simulator-booted
       - run: xcrun simctl shutdown $MACOS_ORB_DEVICE_UDID
+      - run: sleep 500
       - run: xcrun simctl bootstatus -b $MACOS_ORB_DEVICE_UDID
       
       
