@@ -1,18 +1,28 @@
 version: 2.1
 
+jobs:
+  hello-job:
+    docker:
+      - image: cimg/node:17.2.0 # the primary container, where your job's commands are run
+    steps:
+      - checkout # check out the code in the project directory
+      - run: echo "hello world" # run the `echo` command
+
+
+
 workflows:
-  build-workflow:
+  my-workflow:
     jobs:
+      - hello-job
+
   nightly:
     triggers:
       - schedule:
           cron: "0 0 * * *"
-
+          filters:
+            branches:
+              only:
+                - schedule
+              
     jobs:
-      - runner
-jobs:
-  runner:
-    machine: true
-
-    steps:
-      - run: echo "Hi I'm on machine-runner!"
+      - hello-job
