@@ -1,28 +1,30 @@
-# version: 2.1
-# jobs:
-#   build:
-#     docker:
-#       - image: cimg/base:current
-#     resource_class: henna/testrunner
-#     steps:
-#       - run: echo "Hi I'm on a Container Runner!"
-#       - run: echo "please work.  k thanks! "
-
-# workflows:
-#   build-workflow:
-#     jobs:
-#       - build
-
-#       #pulled the image locally
 version: 2.1
 
-workflows:
-  build-workflow:
-    jobs:
-      - runner
+orbs:
+  macos: circleci/macos@2.4.0
+  
 jobs:
-  runner:
-    machine: true
-    resource_class: henna/testrunner
+  build:
+    macos:
+      xcode: 15.0.0
+    resource_class: macos.m1.medium.gen1
+    
     steps:
-      - run: echo "Hi I'm on machine-runner!"
+      - run: xcodebuild -version
+      - run: brew --version
+      - macos/add-uitest-permissions
+      - macos/preboot-simulator:
+          version: "17.0"
+          platform: "iOS"
+          device: "iPhone 15 Pro"
+      - run: echo $MACOS_ORB_DEVICE_UDID
+      - macos/wait-until-simulator-booted
+      - run: xcrun simctl shutdown $MACOS_ORB_DEVICE_UDID
+      - run: xcrun simctl bootstatus -b $MACOS_ORB_DEVICE_UDID
+      
+      
+workflows:
+  say-hello-workflow:
+    jobs:
+      - build
+      
