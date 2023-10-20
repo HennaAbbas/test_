@@ -2,60 +2,32 @@ version: 2.1
 orbs:
   hello-world: viar/hello-world@0.0.2
   browser-tools: circleci/browser-tools@1.4.4
-parameters:
-  test-suite:
-    type: string
-    default: ""
+
 
 jobs:
   hello-job:
     docker:
-      - image: cimg/node:17.2.0 # the primary container, where your job's commands are run
+      - cimg/ruby:3.1-browsers
     steps:
-      - checkout # check out the code in the project directory
-  deploy_testflight:
-    macos:
-      xcode: 14.3.1
-    resource_class: macos.x86.medium.gen2  
-    steps:
-      - browser-tools/install-chrome:
-          # TODO remove following line when fixed https://github.com/CircleCI-Public/browser-tools-orb/issues/90
-          chrome-version: 116.0.5845.96
-      - browser-tools/install-chromedriver  
-  failing_job:
-    docker:
-      - image: cimg/node:17.2.0 # the primary container, where your job's commands are run
-    steps:    
-      - run: echo $test_env_var  
+      - run: sudo apt-get -o 'Acquire::http::Timeout=10' -o 'Acquire::https::Timeout=10' update && sudo apt-get -o 'Acquire::http::Timeout=10' -o 'Acquire::https::Timeout=10' install -y libmagickcore-dev libmagic-dev
+  # deploy_testflight:
+  #   macos:
+  #     xcode: 14.3.1
+  #   resource_class: macos.x86.medium.gen2  
+  #   steps:
+  #     - browser-tools/install-chrome:
+  #         # TODO remove following line when fixed https://github.com/CircleCI-Public/browser-tools-orb/issues/90
+  #         chrome-version: 116.0.5845.96
+  #     - browser-tools/install-chromedriver  
+  # failing_job:
+  #   docker:
+  #     - image: cimg/node:17.2.0 # the primary container, where your job's commands are run
+  #   steps:    
+  #     - run: echo $test_env_var  
 
 workflows:
   other-failing-workflow:  
     jobs:
-      - failing_job: 
-          context: my-context
-      
-  my-workflow:
-    when: 
-      equal: [ test, << pipeline.parameters.test-suite >> ]
-    
-  
-    jobs:
       - hello-job
- 
-  my-test-workflow:
-    # when: 
-    #   equal: [ test-1, << pipeline.parameters.test-suite >> ]
-    
-  
-    jobs:
- 
-      - hello-world/greet: 
-          to: "henna"           
-  my-failing-workflow:
-    jobs:
-      - hello-world/greet: 
-          to: "henna" 
-
-   #this is a comment still - Marty
 
 
