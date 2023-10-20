@@ -1,29 +1,13 @@
 version: 2.1
-
 jobs:
-  hello-job:
+  build:
     docker:
-      - cimg/ruby:3.1-browsers
+      - image: cimg/ruby:3.1-browsers
     steps:
       - run: sudo apt-get -o 'Acquire::http::Timeout=10' -o 'Acquire::https::Timeout=10' update && sudo apt-get -o 'Acquire::http::Timeout=10' -o 'Acquire::https::Timeout=10' install -y libmagickcore-dev libmagic-dev
-  # deploy_testflight:
-  #   macos:
-  #     xcode: 14.3.1
-  #   resource_class: macos.x86.medium.gen2  
-  #   steps:
-  #     - browser-tools/install-chrome:
-  #         # TODO remove following line when fixed https://github.com/CircleCI-Public/browser-tools-orb/issues/90
-  #         chrome-version: 116.0.5845.96
-  #     - browser-tools/install-chromedriver  
-  # failing_job:
-  #   docker:
-  #     - image: cimg/node:17.2.0 # the primary container, where your job's commands are run
-  #   steps:    
-  #     - run: echo $test_env_var  
+    
 
 workflows:
-  other-failing-workflow:  
+  build-workflow:
     jobs:
-      - hello-job
-
-
+      - build
