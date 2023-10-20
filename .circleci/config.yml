@@ -21,7 +21,7 @@ jobs:
       - macos/wait-until-simulator-booted
       - run: xcrun simctl shutdown $MACOS_ORB_DEVICE_UDID
       - run: sleep 500
-      - run: xcrun simctl bootstatus -b $MACOS_ORB_DEVICE_UDID
+      # - run: xcrun simctl bootstatus -b $MACOS_ORB_DEVICE_UDID
       - macos/preboot-simulator:
           version: "17.0"
           platform: "iOS"
