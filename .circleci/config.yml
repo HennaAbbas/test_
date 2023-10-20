@@ -1,8 +1,4 @@
 version: 2.1
-orbs:
-  hello-world: viar/hello-world@0.0.2
-  browser-tools: circleci/browser-tools@1.4.4
-
 
 jobs:
   hello-job:
