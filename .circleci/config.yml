@@ -7,7 +7,7 @@ jobs:
     resource_class: xlarge
     steps:
       - run: |
-          scpu
+          lscpu
           lscpu | egrep 'Model name|Socket|Thread|NUMA|CPU\(s\)'
           lscpu -p
     
