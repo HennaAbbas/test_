@@ -1,13 +1,591 @@
-
-version: 2.1
-
-workflows:
-  build-workflow:
-    jobs:
-      - runner
-jobs:
-  runner:
-    machine: true
-    resource_class: henna/testrunner
+version: 2
+jobs:  
+    build:
+    docker:
+    - image: cimg/node:18.13.0
     steps:
-      - run: echo "Hi I'm on machine-runner!"
+    - run:
+        command: sudo apt update && sudo apt install python3 -y
+    - run:
+        command: sudo apt update && sudo apt install python3-pip
+    - run:
+        command: pip install boto3
+    - run:
+        command: |
+          # have to pin 0.14.3 https://github.com/evanw/esbuild/issues/1852
+          yarn global add esbuild@0.14.3
+        name: install esbuild
+    - run:
+        command: |
+          mkdir -p ~/.ssh
+          touch ~/.ssh/known_hosts
+          ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
+          git config --global --add url."git@github.com:".insteadOf "https://github.com/"
+        name: Update git config to use ssh
+    - attach_workspace:
+        at: .
+    - run:
+        command: |
+          if cat /etc/issue | grep "Alpine" >/dev/null 2>&1; then
+              if [ "$ID" = 0 ]; then export SUDO=""; else export SUDO="sudo"; fi
+          else
+              if [[ $EUID == 0 ]]; then export SUDO=""; else export SUDO="sudo"; fi
+          fi
+
+          Install_AWS_CLI() {
+              echo "Installing AWS CLI v2"
+              cd /tmp || exit
+              # Platform check
+              if uname -a | grep "Darwin"; then
+                  export SYS_ENV_PLATFORM=macos
+              elif uname -a | grep "x86_64 GNU/Linux"; then
+                  export SYS_ENV_PLATFORM=linux_x86
+              elif uname -a | grep "aarch64 GNU/Linux"; then
+                  export SYS_ENV_PLATFORM=linux_arm
+              elif uname -a | grep "x86_64 Msys"; then
+                  export SYS_ENV_PLATFORM=windows
+              elif cat /etc/issue | grep "Alpine" >/dev/null 2>&1; then
+                  export SYS_ENV_PLATFORM=linux_alpine
+              else
+                  echo "This platform appears to be unsupported."
+                  uname -a
+                  exit 1
+              fi
+
+              # Install per platform
+              case $SYS_ENV_PLATFORM in
+              linux_x86)
+                  curl -sSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64$1.zip" -o "awscliv2.zip"
+                  unzip -q -o awscliv2.zip
+                  $SUDO ./aws/install -i "${PARAM_AWS_CLI_INSTALL_DIR}" -b "${PARAM_AWS_CLI_BINARY_DIR}"
+                  rm -r awscliv2.zip ./aws
+                  ;;
+              windows)
+                  if [ ! "$(command -v choco)" ]; then
+                      echo "Chocolatey is required to uninstall AWS"
+                      exit 1
+                  fi
+                  choco install awscli --version="$1"
+                  echo "$1"
+                  if echo "$1" | grep "2."; then
+                      echo 'export PATH="${PATH}:/c/Program Files/Amazon/AWSCLIV2"' >>"$BASH_ENV"
+                  else
+                      echo 'export PATH="${PATH}:/c/Program Files/Amazon/AWSCLI/bin"' >>"$BASH_ENV"
+                  fi
+                  ;;
+              macos)
+                  curl -sSL "https://awscli.amazonaws.com/AWSCLIV2$1.pkg" -o "AWSCLIV2.pkg"
+                  $SUDO installer -pkg AWSCLIV2.pkg -target /
+                  rm AWSCLIV2.pkg
+                  ;;
+              linux_arm)
+                  curl -sSL "https://awscli.amazonaws.com/awscli-exe-linux-aarch64$1.zip" -o "awscliv2.zip"
+                  unzip -q -o awscliv2.zip
+                  $SUDO ./aws/install -i "${PARAM_AWS_CLI_INSTALL_DIR}" -b "${PARAM_AWS_CLI_BINARY_DIR}"
+                  rm -r awscliv2.zip ./aws
+                  ;;
+              linux_alpine)
+                  apk --no-cache add \
+                      binutils \
+                      curl
+
+                  curl -L https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub -o /etc/apk/keys/sgerrand.rsa.pub
+                  curl -LO https://github.com/sgerrand/alpine-pkg-glibc/releases/download/2.34-r0/glibc-2.34-r0.apk
+                  curl -LO https://github.com/sgerrand/alpine-pkg-glibc/releases/download/2.34-r0/glibc-bin-2.34-r0.apk
+                  curl -LO https://github.com/sgerrand/alpine-pkg-glibc/releases/download/2.34-r0/glibc-i18n-2.34-r0.apk
+
+                  apk add --force-overwrite --no-cache \
+                      glibc-2.34-r0.apk \
+                      glibc-bin-2.34-r0.apk \
+                      glibc-i18n-2.34-r0.apk
+
+                  /usr/glibc-compat/bin/localedef -i en_US -f UTF-8 en_US.UTF-8
+                  curl -sSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64$1.zip" -o "awscliv2.zip"
+
+                  echo "https://awscli.amazonaws.com/awscli-exe-linux-x86_64$1.zip"
+                  unzip awscliv2.zip
+                  aws/install
+                  rm -r awscliv2.zip ./aws
+                  ;;
+              *)
+                  echo "This orb does not currently support your platform. If you believe it should, please consider opening an issue on the GitHub repository:"
+                  echo "https://github.com/CircleCI-Public/aws-cli-orb/issues/new"
+                  exit 1
+                  ;;
+              esac
+              # Toggle AWS Pager
+              if [ "$PARAM_AWS_CLI_DISABLE_PAGER" = 1 ]; then
+                  if [ -z "${AWS_PAGER+x}" ]; then
+                      echo 'export AWS_PAGER=""' >>"$BASH_ENV"
+                      echo "AWS_PAGER is being set to the empty string to disable all output paging for AWS CLI commands."
+                      echo "You can set the 'disable-aws-pager' parameter to 'false' to disable this behavior."
+                  fi
+              fi
+          }
+
+          Uninstall_AWS_CLI() {
+              if uname -a | grep "x86_64 Msys"; then
+                  if [ ! "$(command -v choco)" ]; then
+                      echo "Chocolatey is required to uninstall AWS"
+                      exit 1
+                  fi
+                  choco uninstall awscli
+              else
+                  AWS_CLI_PATH=$(command -v aws)
+                  echo "$AWS_CLI_PATH"
+                  if [ -n "$AWS_CLI_PATH" ]; then
+                      EXISTING_AWS_VERSION=$(aws --version)
+                      echo "Uninstalling ${EXISTING_AWS_VERSION}"
+                      # shellcheck disable=SC2012
+                      if [ -L "$AWS_CLI_PATH" ]; then
+                          AWS_SYMLINK_PATH=$(ls -l "$AWS_CLI_PATH" | sed -e 's/.* -> //')
+                      fi
+                      if uname -a | grep "x86_64 Msys"; then export SUDO=""; fi
+                      $SUDO rm -rf "$AWS_CLI_PATH" "$AWS_SYMLINK_PATH" "$HOME/.aws/" "/usr/local/bin/aws" "/usr/local/bin/aws_completer" "/usr/local/aws-cli"
+                  else
+                      echo "No AWS install found"
+                  fi
+              fi
+          }
+
+          if [ ! "$(command -v aws)" ]; then
+              if [ "$PARAM_AWS_CLI_VERSION" = "latest" ]; then
+                  Install_AWS_CLI
+              else
+                  if uname -a | grep "x86_64 Msys"; then
+                      Install_AWS_CLI "${PARAM_AWS_CLI_VERSION}"
+                  else
+                      Install_AWS_CLI "-${PARAM_AWS_CLI_VERSION}"
+                  fi
+              fi
+          elif [ "$PARAM_AWS_CLI_OVERRIDE" = 1 ]; then
+              Uninstall_AWS_CLI
+              if uname -a | grep "x86_64 Msys"; then
+                  Install_AWS_CLI "${PARAM_AWS_CLI_VERSION}"
+              else
+                  Install_AWS_CLI "-${PARAM_AWS_CLI_VERSION}"
+              fi
+          else
+              echo "AWS CLI is already installed, skipping installation."
+              aws --version
+          fi
+        environment:
+          PARAM_AWS_CLI_BINARY_DIR: /usr/local/bin
+          PARAM_AWS_CLI_DISABLE_PAGER: true
+          PARAM_AWS_CLI_INSTALL_DIR: /usr/local/aws-cli
+          PARAM_AWS_CLI_OVERRIDE: false
+          PARAM_AWS_CLI_VERSION: latest
+        name: Install AWS CLI - latest
+    - run:
+        command: "PARAM_ROLE_SESSION_NAME=$(eval echo \"${PARAM_ROLE_SESSION_NAME}\")\nPARAM_AWS_CLI_ROLE_ARN=$(eval echo \"${PARAM_AWS_CLI_ROLE_ARN}\")\n\nif [ -z \"${PARAM_ROLE_SESSION_NAME}\" ]; then\n    echo \"Role session name is required\"\n    exit 1\nfi\n\nif [ -z \"${CIRCLE_OIDC_TOKEN_V2}\" ]; then\n    echo \"OIDC Token cannot be found. A CircleCI context must be specified.\"\n    exit 1\nfi\n\nif [ ! \"$(command -v aws)\" ]; then\n    echo \"AWS CLI is not installed. Please run the setup or install command first.\"\n    exit 1\nfi\n\nread -r AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN <<EOF\n$(aws sts assume-role-with-web-identity \\\n--role-arn \"${PARAM_AWS_CLI_ROLE_ARN}\" \\\n--role-session-name \"${PARAM_ROLE_SESSION_NAME}\" \\\n--web-identity-token \"${CIRCLE_OIDC_TOKEN_V2}\" \\\n--duration-seconds \"${PARAM_SESSION_DURATION}\" \\\n--query 'Credentials.[AccessKeyId,SecretAccessKey,SessionToken]' \\\n--output text)\nEOF\n\nif [ -z \"${AWS_ACCESS_KEY_ID}\" ] || [ -z \"${AWS_SECRET_ACCESS_KEY}\" ] || [ -z \"${AWS_SESSION_TOKEN}\" ]; then\n    echo \"Failed to assume role\";\n    exit 1\nelse \n    {\n        echo \"export AWS_ACCESS_KEY_ID=\\\"${AWS_ACCESS_KEY_ID}\\\"\"\n        echo \"export AWS_SECRET_ACCESS_KEY=\\\"${AWS_SECRET_ACCESS_KEY}\\\"\"\n        echo \"export AWS_SESSION_TOKEN=\\\"${AWS_SESSION_TOKEN}\\\"\"\n    } >>\"$BASH_ENV\"\n    echo \"Assume role with web identity succeeded\"\nfi\n"
+        environment:
+          PARAM_AWS_CLI_PROFILE_NAME: default
+          PARAM_AWS_CLI_ROLE_ARN: arn:aws:iam::${AWS_ACCOUNT_ID}:role/${ASSUME_AWS_PROFILE}
+          PARAM_ROLE_SESSION_NAME: ${CIRCLE_WORKFLOW_ID}
+          PARAM_SESSION_DURATION: '3600'
+        name: Generate shortlived AWS Keys using CircleCI OIDC token.
+    - run:
+        command: "#!/bin/sh\nif cat /etc/issue | grep \"Alpine\" >/dev/null 2>&1; then\n    . $BASH_ENV\nfi\n\nPARAM_AWS_CLI_ACCESS_KEY_ID=$(eval echo \"\\$$PARAM_AWS_CLI_ACCESS_KEY_ID\")\nPARAM_AWS_CLI_SECRET_ACCESS_KEY=$(eval echo \"\\$$PARAM_AWS_CLI_SECRET_ACCESS_KEY\")\nPARAM_AWS_CLI_REGION=$(eval echo \"\\$$PARAM_AWS_CLI_REGION\")\n\nif [ -z \"$PARAM_AWS_CLI_ACCESS_KEY_ID\" ] || [ -z \"${PARAM_AWS_CLI_SECRET_ACCESS_KEY}\" ]; then \n    echo \"Cannot configure profile. AWS access key id and AWS secret access key must be provided.\"\n    exit 1\nfi\n\naws configure set aws_access_key_id \\\n    \"$PARAM_AWS_CLI_ACCESS_KEY_ID\" \\\n    --profile \"$PARAM_AWS_CLI_PROFILE_NAME\"\n\naws configure set aws_secret_access_key \\\n    \"$PARAM_AWS_CLI_SECRET_ACCESS_KEY\" \\\n    --profile \"$PARAM_AWS_CLI_PROFILE_NAME\"\n\nif [ -n \"${AWS_SESSION_TOKEN}\" ]; then\n    aws configure set aws_session_token \\\n        \"${AWS_SESSION_TOKEN}\" \\\n        --profile \"$PARAM_AWS_CLI_PROFILE_NAME\"\nfi\n\nif [ \"$PARAM_AWS_CLI_CONFIG_DEFAULT_REGION\" = \"1\" ]; then\n    aws configure set default.region \"$PARAM_AWS_CLI_REGION\" \\\n        --profile \"$PARAM_AWS_CLI_PROFILE_NAME\"\nfi\n\nif [ \"$PARAM_AWS_CLI_CONFIG_PROFILE_REGION\" = \"1\" ]; then\n    aws configure set region \"$PARAM_AWS_CLI_REGION\" \\\n        --profile \"$PARAM_AWS_CLI_PROFILE_NAME\"\nfi\n"
+        environment:
+          PARAM_AWS_CLI_ACCESS_KEY_ID: AWS_ACCESS_KEY_ID
+          PARAM_AWS_CLI_CONFIG_DEFAULT_REGION: true
+          PARAM_AWS_CLI_CONFIG_PROFILE_REGION: true
+          PARAM_AWS_CLI_PROFILE_NAME: default
+          PARAM_AWS_CLI_REGION: AWS_DEFAULT_REGION
+          PARAM_AWS_CLI_SECRET_ACCESS_KEY: AWS_SECRET_ACCESS_KEY
+        name: Configure AWS Access Key ID
+    - run:
+        command: |
+          if [[ $EUID == 0 ]]; then export SUDO=""; else export SUDO="sudo"; fi
+
+          # FUNCTIONS
+          get_yarn_version () {
+              if [[ "$NODE_PARAM_YARN_VERSION" == "" ]]; then
+              YARN_ORB_VERSION=$(curl -s https://cdn.jsdelivr.net/npm/yarn/package.json | sed -n 's/.*version": "\(.*\)".*/\1/p')
+              echo "Latest version of Yarn is $YARN_ORB_VERSION"
+              else
+              YARN_ORB_VERSION="$NODE_PARAM_YARN_VERSION"
+
+              echo "Selected version of Yarn is $YARN_ORB_VERSION"
+              fi
+          }
+
+          installation_check () {
+              echo "Checking if YARN is already installed..."
+              if command -v yarn > /dev/null 2>&1; then
+              if yarn --version | grep "$YARN_ORB_VERSION" > /dev/null 2>&1; then
+                  echo "Yarn $YARN_ORB_VERSION is already installed"
+                  exit 0
+              else
+                  echo "A different version of Yarn is installed ($(yarn --version)); removing it"
+
+                  if uname -a | grep Darwin > /dev/null 2>&1; then
+                  brew uninstall yarn > /dev/null 2>&1
+                  elif grep Alpine /etc/issue > /dev/null 2>&1; then
+                  apk del yarn > /dev/null 2>&1
+                  elif grep Debian /etc/issue > /dev/null 2>&1; then
+                  $SUDO apt-get remove yarn > /dev/null 2>&1 && \
+                      $SUDO apt-get purge yarn > /dev/null 2>&1
+                  elif grep Ubuntu /etc/issue > /dev/null 2>&1; then
+                  $SUDO apt-get remove yarn > /dev/null 2>&1 && \
+                      $SUDO apt-get purge yarn > /dev/null 2>&1
+                  elif command -v yum > /dev/null 2>&1; then
+                  yum remove yarn > /dev/null 2>&1
+                  fi
+
+                  $SUDO rm -rf "$HOME/.yarn" > /dev/null 2>&1
+                  $SUDO rm -f /usr/local/bin/yarn /usr/local/bin/yarnpkg > /dev/null 2>&1
+              fi
+              fi
+          }
+
+          # cd to home so that yarn --version will not use relative installed yarn from .yarn/releases
+          cd ~ || echo "Cannot change directory to home directory, yarn version may be mismatched."
+
+          get_yarn_version
+          installation_check
+
+          # install yarn
+          echo "Installing YARN v$YARN_ORB_VERSION"
+          curl --retry 5 -L -o yarn.tar.gz --silent "https://yarnpkg.com/downloads/$YARN_ORB_VERSION/yarn-v$YARN_ORB_VERSION.tar.gz"
+
+          $SUDO tar -xzf yarn.tar.gz && rm yarn.tar.gz
+
+          $SUDO mkdir -p /opt/yarn
+          $SUDO mv yarn-v"${YARN_ORB_VERSION}"/* /opt/yarn
+
+          $SUDO rm -rf "yarn-v${YARN_ORB_VERSION}"
+
+          $SUDO chmod 777 "/opt/yarn"
+
+          $SUDO ln -s /opt/yarn/bin/yarn /usr/local/bin/yarn
+          $SUDO ln -s /opt/yarn/bin/yarnpkg /usr/local/bin/yarnpkg
+          $SUDO ln -s /opt/yarn/bin/yarn.js /usr/local/bin/yarn.js
+
+          $SUDO mkdir -p ~/.config
+
+          if uname -a | grep Darwin; then
+              $SUDO chown -R "$USER:$GROUP" ~/.config
+              $SUDO chown -R "$USER:$GROUP" /opt/yarn
+          else
+              $SUDO chown -R "$(whoami):$(whoami)" /opt/yarn
+              $SUDO chown -R "$(whoami):$(whoami)" ~/.config
+          fi
+
+          # test/verify version
+          echo "Verifying YARN install"
+          if yarn --version | grep "$YARN_ORB_VERSION" > /dev/null 2>&1; then
+              echo "Success! Yarn $(yarn --version) has been installed to $(command -v yarn)"
+          else
+              echo "Something went wrong; the specified version of Yarn could not be installed"
+              exit 1
+          fi
+        environment:
+          NODE_PARAM_YARN_VERSION: ''
+        name: Install Yarn
+    - run:
+        command: yarn --version
+        name: yarn version
+    - run:
+        command: yarn list
+        name: yarn list
+        working_directory: .
+    - run:
+        command: "assume_creds=$(aws sts assume-role --role-session-name ${CIRCLE_WORKFLOW_ID} --role-arn arn:aws:iam::$AWS_ACCOUNT_ID:role/$ASSUME_AWS_PROFILE)\nexport AWS_ACCESS_KEY_ID=$(echo $assume_creds | jq -r .Credentials.AccessKeyId)\nexport AWS_SECRET_ACCESS_KEY=$(echo $assume_creds | jq -r .Credentials.SecretAccessKey)\nexport AWS_SESSION_TOKEN=$(echo $assume_creds | jq -r .Credentials.SessionToken)\ncd .\nnpx cdk diff '*' --require-approval=never --ci --progress=events \n"
+        name: Run Cdk Command
+        no_output_timeout: 60m
+        working_directory: .
+  Diff cdk - Master Staging:
+    docker:
+    - image: cimg/node:18.13.0
+    steps:
+    - run:
+        command: |
+          # have to pin 0.14.3 https://github.com/evanw/esbuild/issues/1852
+          yarn global add esbuild@0.14.3
+        name: install esbuild
+    - run:
+        command: |
+          mkdir -p ~/.ssh
+          touch ~/.ssh/known_hosts
+          ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
+          git config --global --add url."git@github.com:".insteadOf "https://github.com/"
+        name: Update git config to use ssh
+    - attach_workspace:
+        at: .
+    - run:
+        command: |
+          if cat /etc/issue | grep "Alpine" >/dev/null 2>&1; then
+              if [ "$ID" = 0 ]; then export SUDO=""; else export SUDO="sudo"; fi
+          else
+              if [[ $EUID == 0 ]]; then export SUDO=""; else export SUDO="sudo"; fi
+          fi
+
+          Install_AWS_CLI() {
+              echo "Installing AWS CLI v2"
+              cd /tmp || exit
+              # Platform check
+              if uname -a | grep "Darwin"; then
+                  export SYS_ENV_PLATFORM=macos
+              elif uname -a | grep "x86_64 GNU/Linux"; then
+                  export SYS_ENV_PLATFORM=linux_x86
+              elif uname -a | grep "aarch64 GNU/Linux"; then
+                  export SYS_ENV_PLATFORM=linux_arm
+              elif uname -a | grep "x86_64 Msys"; then
+                  export SYS_ENV_PLATFORM=windows
+              elif cat /etc/issue | grep "Alpine" >/dev/null 2>&1; then
+                  export SYS_ENV_PLATFORM=linux_alpine
+              else
+                  echo "This platform appears to be unsupported."
+                  uname -a
+                  exit 1
+              fi
+
+              # Install per platform
+              case $SYS_ENV_PLATFORM in
+              linux_x86)
+                  curl -sSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64$1.zip" -o "awscliv2.zip"
+                  unzip -q -o awscliv2.zip
+                  $SUDO ./aws/install -i "${PARAM_AWS_CLI_INSTALL_DIR}" -b "${PARAM_AWS_CLI_BINARY_DIR}"
+                  rm -r awscliv2.zip ./aws
+                  ;;
+              windows)
+                  if [ ! "$(command -v choco)" ]; then
+                      echo "Chocolatey is required to uninstall AWS"
+                      exit 1
+                  fi
+                  choco install awscli --version="$1"
+                  echo "$1"
+                  if echo "$1" | grep "2."; then
+                      echo 'export PATH="${PATH}:/c/Program Files/Amazon/AWSCLIV2"' >>"$BASH_ENV"
+                  else
+                      echo 'export PATH="${PATH}:/c/Program Files/Amazon/AWSCLI/bin"' >>"$BASH_ENV"
+                  fi
+                  ;;
+              macos)
+                  curl -sSL "https://awscli.amazonaws.com/AWSCLIV2$1.pkg" -o "AWSCLIV2.pkg"
+                  $SUDO installer -pkg AWSCLIV2.pkg -target /
+                  rm AWSCLIV2.pkg
+                  ;;
+              linux_arm)
+                  curl -sSL "https://awscli.amazonaws.com/awscli-exe-linux-aarch64$1.zip" -o "awscliv2.zip"
+                  unzip -q -o awscliv2.zip
+                  $SUDO ./aws/install -i "${PARAM_AWS_CLI_INSTALL_DIR}" -b "${PARAM_AWS_CLI_BINARY_DIR}"
+                  rm -r awscliv2.zip ./aws
+                  ;;
+              linux_alpine)
+                  apk --no-cache add \
+                      binutils \
+                      curl
+
+                  curl -L https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub -o /etc/apk/keys/sgerrand.rsa.pub
+                  curl -LO https://github.com/sgerrand/alpine-pkg-glibc/releases/download/2.34-r0/glibc-2.34-r0.apk
+                  curl -LO https://github.com/sgerrand/alpine-pkg-glibc/releases/download/2.34-r0/glibc-bin-2.34-r0.apk
+                  curl -LO https://github.com/sgerrand/alpine-pkg-glibc/releases/download/2.34-r0/glibc-i18n-2.34-r0.apk
+
+                  apk add --force-overwrite --no-cache \
+                      glibc-2.34-r0.apk \
+                      glibc-bin-2.34-r0.apk \
+                      glibc-i18n-2.34-r0.apk
+
+                  /usr/glibc-compat/bin/localedef -i en_US -f UTF-8 en_US.UTF-8
+                  curl -sSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64$1.zip" -o "awscliv2.zip"
+
+                  echo "https://awscli.amazonaws.com/awscli-exe-linux-x86_64$1.zip"
+                  unzip awscliv2.zip
+                  aws/install
+                  rm -r awscliv2.zip ./aws
+                  ;;
+              *)
+                  echo "This orb does not currently support your platform. If you believe it should, please consider opening an issue on the GitHub repository:"
+                  echo "https://github.com/CircleCI-Public/aws-cli-orb/issues/new"
+                  exit 1
+                  ;;
+              esac
+              # Toggle AWS Pager
+              if [ "$PARAM_AWS_CLI_DISABLE_PAGER" = 1 ]; then
+                  if [ -z "${AWS_PAGER+x}" ]; then
+                      echo 'export AWS_PAGER=""' >>"$BASH_ENV"
+                      echo "AWS_PAGER is being set to the empty string to disable all output paging for AWS CLI commands."
+                      echo "You can set the 'disable-aws-pager' parameter to 'false' to disable this behavior."
+                  fi
+              fi
+          }
+
+          Uninstall_AWS_CLI() {
+              if uname -a | grep "x86_64 Msys"; then
+                  if [ ! "$(command -v choco)" ]; then
+                      echo "Chocolatey is required to uninstall AWS"
+                      exit 1
+                  fi
+                  choco uninstall awscli
+              else
+                  AWS_CLI_PATH=$(command -v aws)
+                  echo "$AWS_CLI_PATH"
+                  if [ -n "$AWS_CLI_PATH" ]; then
+                      EXISTING_AWS_VERSION=$(aws --version)
+                      echo "Uninstalling ${EXISTING_AWS_VERSION}"
+                      # shellcheck disable=SC2012
+                      if [ -L "$AWS_CLI_PATH" ]; then
+                          AWS_SYMLINK_PATH=$(ls -l "$AWS_CLI_PATH" | sed -e 's/.* -> //')
+                      fi
+                      if uname -a | grep "x86_64 Msys"; then export SUDO=""; fi
+                      $SUDO rm -rf "$AWS_CLI_PATH" "$AWS_SYMLINK_PATH" "$HOME/.aws/" "/usr/local/bin/aws" "/usr/local/bin/aws_completer" "/usr/local/aws-cli"
+                  else
+                      echo "No AWS install found"
+                  fi
+              fi
+          }
+
+          if [ ! "$(command -v aws)" ]; then
+              if [ "$PARAM_AWS_CLI_VERSION" = "latest" ]; then
+                  Install_AWS_CLI
+              else
+                  if uname -a | grep "x86_64 Msys"; then
+                      Install_AWS_CLI "${PARAM_AWS_CLI_VERSION}"
+                  else
+                      Install_AWS_CLI "-${PARAM_AWS_CLI_VERSION}"
+                  fi
+              fi
+          elif [ "$PARAM_AWS_CLI_OVERRIDE" = 1 ]; then
+              Uninstall_AWS_CLI
+              if uname -a | grep "x86_64 Msys"; then
+                  Install_AWS_CLI "${PARAM_AWS_CLI_VERSION}"
+              else
+                  Install_AWS_CLI "-${PARAM_AWS_CLI_VERSION}"
+              fi
+          else
+              echo "AWS CLI is already installed, skipping installation."
+              aws --version
+          fi
+        environment:
+          PARAM_AWS_CLI_BINARY_DIR: /usr/local/bin
+          PARAM_AWS_CLI_DISABLE_PAGER: true
+          PARAM_AWS_CLI_INSTALL_DIR: /usr/local/aws-cli
+          PARAM_AWS_CLI_OVERRIDE: false
+          PARAM_AWS_CLI_VERSION: latest
+        name: Install AWS CLI - latest
+    - run:
+        command: "PARAM_ROLE_SESSION_NAME=$(eval echo \"${PARAM_ROLE_SESSION_NAME}\")\nPARAM_AWS_CLI_ROLE_ARN=$(eval echo \"${PARAM_AWS_CLI_ROLE_ARN}\")\n\nif [ -z \"${PARAM_ROLE_SESSION_NAME}\" ]; then\n    echo \"Role session name is required\"\n    exit 1\nfi\n\nif [ -z \"${CIRCLE_OIDC_TOKEN_V2}\" ]; then\n    echo \"OIDC Token cannot be found. A CircleCI context must be specified.\"\n    exit 1\nfi\n\nif [ ! \"$(command -v aws)\" ]; then\n    echo \"AWS CLI is not installed. Please run the setup or install command first.\"\n    exit 1\nfi\n\nread -r AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN <<EOF\n$(aws sts assume-role-with-web-identity \\\n--role-arn \"${PARAM_AWS_CLI_ROLE_ARN}\" \\\n--role-session-name \"${PARAM_ROLE_SESSION_NAME}\" \\\n--web-identity-token \"${CIRCLE_OIDC_TOKEN_V2}\" \\\n--duration-seconds \"${PARAM_SESSION_DURATION}\" \\\n--query 'Credentials.[AccessKeyId,SecretAccessKey,SessionToken]' \\\n--output text)\nEOF\n\nif [ -z \"${AWS_ACCESS_KEY_ID}\" ] || [ -z \"${AWS_SECRET_ACCESS_KEY}\" ] || [ -z \"${AWS_SESSION_TOKEN}\" ]; then\n    echo \"Failed to assume role\";\n    exit 1\nelse \n    {\n        echo \"export AWS_ACCESS_KEY_ID=\\\"${AWS_ACCESS_KEY_ID}\\\"\"\n        echo \"export AWS_SECRET_ACCESS_KEY=\\\"${AWS_SECRET_ACCESS_KEY}\\\"\"\n        echo \"export AWS_SESSION_TOKEN=\\\"${AWS_SESSION_TOKEN}\\\"\"\n    } >>\"$BASH_ENV\"\n    echo \"Assume role with web identity succeeded\"\nfi\n"
+        environment:
+          PARAM_AWS_CLI_PROFILE_NAME: default
+          PARAM_AWS_CLI_ROLE_ARN: arn:aws:iam::${AWS_ACCOUNT_ID}:role/${ASSUME_AWS_PROFILE}
+          PARAM_ROLE_SESSION_NAME: ${CIRCLE_WORKFLOW_ID}
+          PARAM_SESSION_DURATION: '3600'
+        name: Generate shortlived AWS Keys using CircleCI OIDC token.
+    - run:
+        command: "#!/bin/sh\nif cat /etc/issue | grep \"Alpine\" >/dev/null 2>&1; then\n    . $BASH_ENV\nfi\n\nPARAM_AWS_CLI_ACCESS_KEY_ID=$(eval echo \"\\$$PARAM_AWS_CLI_ACCESS_KEY_ID\")\nPARAM_AWS_CLI_SECRET_ACCESS_KEY=$(eval echo \"\\$$PARAM_AWS_CLI_SECRET_ACCESS_KEY\")\nPARAM_AWS_CLI_REGION=$(eval echo \"\\$$PARAM_AWS_CLI_REGION\")\n\nif [ -z \"$PARAM_AWS_CLI_ACCESS_KEY_ID\" ] || [ -z \"${PARAM_AWS_CLI_SECRET_ACCESS_KEY}\" ]; then \n    echo \"Cannot configure profile. AWS access key id and AWS secret access key must be provided.\"\n    exit 1\nfi\n\naws configure set aws_access_key_id \\\n    \"$PARAM_AWS_CLI_ACCESS_KEY_ID\" \\\n    --profile \"$PARAM_AWS_CLI_PROFILE_NAME\"\n\naws configure set aws_secret_access_key \\\n    \"$PARAM_AWS_CLI_SECRET_ACCESS_KEY\" \\\n    --profile \"$PARAM_AWS_CLI_PROFILE_NAME\"\n\nif [ -n \"${AWS_SESSION_TOKEN}\" ]; then\n    aws configure set aws_session_token \\\n        \"${AWS_SESSION_TOKEN}\" \\\n        --profile \"$PARAM_AWS_CLI_PROFILE_NAME\"\nfi\n\nif [ \"$PARAM_AWS_CLI_CONFIG_DEFAULT_REGION\" = \"1\" ]; then\n    aws configure set default.region \"$PARAM_AWS_CLI_REGION\" \\\n        --profile \"$PARAM_AWS_CLI_PROFILE_NAME\"\nfi\n\nif [ \"$PARAM_AWS_CLI_CONFIG_PROFILE_REGION\" = \"1\" ]; then\n    aws configure set region \"$PARAM_AWS_CLI_REGION\" \\\n        --profile \"$PARAM_AWS_CLI_PROFILE_NAME\"\nfi\n"
+        environment:
+          PARAM_AWS_CLI_ACCESS_KEY_ID: AWS_ACCESS_KEY_ID
+          PARAM_AWS_CLI_CONFIG_DEFAULT_REGION: true
+          PARAM_AWS_CLI_CONFIG_PROFILE_REGION: true
+          PARAM_AWS_CLI_PROFILE_NAME: default
+          PARAM_AWS_CLI_REGION: AWS_DEFAULT_REGION
+          PARAM_AWS_CLI_SECRET_ACCESS_KEY: AWS_SECRET_ACCESS_KEY
+        name: Configure AWS Access Key ID
+    - run:
+        command: |
+          if [[ $EUID == 0 ]]; then export SUDO=""; else export SUDO="sudo"; fi
+
+          # FUNCTIONS
+          get_yarn_version () {
+              if [[ "$NODE_PARAM_YARN_VERSION" == "" ]]; then
+              YARN_ORB_VERSION=$(curl -s https://cdn.jsdelivr.net/npm/yarn/package.json | sed -n 's/.*version": "\(.*\)".*/\1/p')
+              echo "Latest version of Yarn is $YARN_ORB_VERSION"
+              else
+              YARN_ORB_VERSION="$NODE_PARAM_YARN_VERSION"
+
+              echo "Selected version of Yarn is $YARN_ORB_VERSION"
+              fi
+          }
+
+          installation_check () {
+              echo "Checking if YARN is already installed..."
+              if command -v yarn > /dev/null 2>&1; then
+              if yarn --version | grep "$YARN_ORB_VERSION" > /dev/null 2>&1; then
+                  echo "Yarn $YARN_ORB_VERSION is already installed"
+                  exit 0
+              else
+                  echo "A different version of Yarn is installed ($(yarn --version)); removing it"
+
+                  if uname -a | grep Darwin > /dev/null 2>&1; then
+                  brew uninstall yarn > /dev/null 2>&1
+                  elif grep Alpine /etc/issue > /dev/null 2>&1; then
+                  apk del yarn > /dev/null 2>&1
+                  elif grep Debian /etc/issue > /dev/null 2>&1; then
+                  $SUDO apt-get remove yarn > /dev/null 2>&1 && \
+                      $SUDO apt-get purge yarn > /dev/null 2>&1
+                  elif grep Ubuntu /etc/issue > /dev/null 2>&1; then
+                  $SUDO apt-get remove yarn > /dev/null 2>&1 && \
+                      $SUDO apt-get purge yarn > /dev/null 2>&1
+                  elif command -v yum > /dev/null 2>&1; then
+                  yum remove yarn > /dev/null 2>&1
+                  fi
+
+                  $SUDO rm -rf "$HOME/.yarn" > /dev/null 2>&1
+                  $SUDO rm -f /usr/local/bin/yarn /usr/local/bin/yarnpkg > /dev/null 2>&1
+              fi
+              fi
+          }
+
+          # cd to home so that yarn --version will not use relative installed yarn from .yarn/releases
+          cd ~ || echo "Cannot change directory to home directory, yarn version may be mismatched."
+
+          get_yarn_version
+          installation_check
+
+          # install yarn
+          echo "Installing YARN v$YARN_ORB_VERSION"
+          curl --retry 5 -L -o yarn.tar.gz --silent "https://yarnpkg.com/downloads/$YARN_ORB_VERSION/yarn-v$YARN_ORB_VERSION.tar.gz"
+
+          $SUDO tar -xzf yarn.tar.gz && rm yarn.tar.gz
+
+          $SUDO mkdir -p /opt/yarn
+          $SUDO mv yarn-v"${YARN_ORB_VERSION}"/* /opt/yarn
+
+          $SUDO rm -rf "yarn-v${YARN_ORB_VERSION}"
+
+          $SUDO chmod 777 "/opt/yarn"
+
+          $SUDO ln -s /opt/yarn/bin/yarn /usr/local/bin/yarn
+          $SUDO ln -s /opt/yarn/bin/yarnpkg /usr/local/bin/yarnpkg
+          $SUDO ln -s /opt/yarn/bin/yarn.js /usr/local/bin/yarn.js
+
+          $SUDO mkdir -p ~/.config
+
+          if uname -a | grep Darwin; then
+              $SUDO chown -R "$USER:$GROUP" ~/.config
+              $SUDO chown -R "$USER:$GROUP" /opt/yarn
+          else
+              $SUDO chown -R "$(whoami):$(whoami)" /opt/yarn
+              $SUDO chown -R "$(whoami):$(whoami)" ~/.config
+          fi
+
+          # test/verify version
+          echo "Verifying YARN install"
+          if yarn --version | grep "$YARN_ORB_VERSION" > /dev/null 2>&1; then
+              echo "Success! Yarn $(yarn --version) has been installed to $(command -v yarn)"
+          else
+              echo "Something went wrong; the specified version of Yarn could not be installed"
+              exit 1
+          fi
+        environment:
+          NODE_PARAM_YARN_VERSION: ''
+        name: Install Yarn
+    - run:
+        command: yarn --version
+        name: yarn version
+    - run:
+        command: yarn list
+        name: yarn list
+        working_directory: .
+    - run: ls /home/circleci/project/lib | grep LogsToElasticsearch   
+    - run:
+        command: "assume_creds=$(aws sts assume-role --role-session-name ${CIRCLE_WORKFLOW_ID} --role-arn arn:aws:iam::$AWS_ACCOUNT_ID:role/$ASSUME_AWS_PROFILE)\nexport AWS_ACCESS_KEY_ID=$(echo $assume_creds | jq -r .Credentials.AccessKeyId)\nexport AWS_SECRET_ACCESS_KEY=$(echo $assume_creds | jq -r .Credentials.SecretAccessKey)\nexport AWS_SESSION_TOKEN=$(echo $assume_creds | jq -r .Credentials.SessionToken)\ncd .\nnpx cdk diff '*' --require-approval=never --ci --progress=events \n"
+        name: Run Cdk Command
+        no_output_timeout: 60m
+        working_directory: .
+workflows:
+  build:
+    jobs:
+      - build
