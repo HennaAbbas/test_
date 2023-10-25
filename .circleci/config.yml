@@ -1,6 +1,5 @@
-version: 2.1
-jobs:
-  build:
+
+  test_job:
     docker:
       - image: cimg/node:18.13.0
     steps:
@@ -297,7 +296,4 @@ jobs:
           no_output_timeout: 60m
           working_directory: .
 
-workflows:
-  build:
-    jobs:
-      - build
+
