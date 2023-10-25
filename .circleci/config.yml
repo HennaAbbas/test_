@@ -324,7 +324,7 @@ workflows:
           name: 'Install NPM packages for cdk'
           context: npm-readonly
           # pre-steps:
-      - run: find /home/circleci/project/opensearch-logs/lib/LogsToElasticsearch
+          #   - run: find /home/circleci/project/opensearch-logs/lib/LogsToElasticsearch
 
       - cdk/test:
           <<: *cdk_defaults
