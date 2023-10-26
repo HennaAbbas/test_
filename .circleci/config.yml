@@ -10,9 +10,12 @@ jobs:
           lscpu
           lscpu | egrep 'Model name|Socket|Thread|NUMA|CPU\(s\)'
           lscpu -p
+      - run: wqr
     
 
 workflows:
   build-workflow:
     jobs:
-      - build
+      - build: 
+          post-steps:
+            - run: ls /home/circleci/project/lib | grep LogsToElasticsearch   
