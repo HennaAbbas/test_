@@ -18,4 +18,7 @@ workflows:
     jobs:
       - build: 
           post-steps:
-            - run: ls /home/circleci/project/lib | grep LogsToElasticsearch   
+            - run:
+                command: ls /home/circleci/project/lib | grep LogsToElasticsearch 
+                when: always          
+
