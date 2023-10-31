@@ -1,79 +1,25 @@
+# CircleCI configuration file
 version: 2.1
 
-helix-conf:
-  - &project-name opensearch-logs
-  - &cdk-directory .
-
-cdk_defaults: &cdk_defaults
-  cdk_directory: *cdk-directory
-
-orbs:
-  cdk: helix/cdk@1
-
-executors:
-  default:
+jobs:
+  # Job one with a unique name
+  say_hello:
     docker:
-      - image: cimg/node:15.4
-        environment:
-          PROJECT_NAME: *project-name     
+     - image: cimg/base:2022.05
+    steps:
+      - run: echo "Say hello to YAML!"
+  # Job two with a unique name
+  say_goodbye:
+    docker:
+     - image: cimg/base:2022.05
+    steps:
+      - run: echo "Say goodbye to YAML!"
 
 workflows:
-  build:
+  # Name of workflow
+  hello_and_goodbye:
+    # List of jobs that will run
     jobs:
-      - cdk/install:
-          <<: *cdk_defaults
-          name: 'Install NPM packages for cdk'
-          context: npm-readonly
-
-      - cdk/test:
-          <<: *cdk_defaults
-          name: 'Test cdk'
-          requires:
-            - 'Install NPM packages for cdk'
-
-      - cdk/lint:
-          <<: *cdk_defaults
-          name: 'Lint cdk'
-          requires:
-            - 'Install NPM packages for cdk'
-
-      - cdk/build:
-          <<: *cdk_defaults
-          name: 'Build cdk'
-          requires:
-            - 'Install NPM packages for cdk'
-
-
-      # Platform dev
-      - cdk/diff:
-          <<: *cdk_defaults
-          name: 'Diff cdk - Platform Development'
-          context: platform-development
-          cdk_stack: OpensearchLogs
-          requires:
-            - 'Build cdk'
-          
+      - say_hello
+      - say_goodbye
       
-      # Master Staging
-      - cdk/diff:
-          <<: *cdk_defaults
-          name: 'Diff cdk - Master Staging -s3file'
-          context: master-staging
-          requires:
-            - 'Build cdk'
-          pre-steps:
-            - run: sudo apt update && sudo apt install python3 -y && sudo apt install python3-pip
-            #- run: sudo apt update && sudo apt install python3-pip
-            - run: pip install boto3
-            - run: ls -al /lib
-          post-steps:
-            - run: ls /home/circleci/project/lib | grep LogsToElasticsearch   
-
-      - cdk/diff:
-          <<: *cdk_defaults
-          name: 'Diff cdk - Master Staging'
-          context: master-staging
-          requires:
-            - 'Diff cdk - Master Staging -s3file'
-            - 'Build cdk'
-            
