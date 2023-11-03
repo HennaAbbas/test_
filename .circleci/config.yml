@@ -19,7 +19,7 @@ jobs:
     macos:
       xcode: 14.1.0 # indicate your selected version of Xcode
     steps: # a series of commands to run
-      - run: libyaml --version  
+      - run: psych --version  
 
 
           
@@ -27,7 +27,7 @@ jobs:
     macos:
       xcode: 14.3.1 # indicate your selected version of Xcode
     steps: # a series of commands to run
-      - run: libyaml --version   
+      - run: psych --version   
       
 
 workflows:
