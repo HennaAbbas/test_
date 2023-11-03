@@ -15,7 +15,7 @@ jobs:
     steps:
       - run: echo "Say goodbye to YAML!"
 
-  test-mac-14.1: # your job name
+  test-mac-one: # your job name
     macos:
       xcode: 14.1.0 # indicate your selected version of Xcode
     steps: # a series of commands to run
@@ -23,7 +23,7 @@ jobs:
 
 
           
-  test-mac-14.3: # your job name
+  test-mac-two: # your job name
     macos:
       xcode: 14.3.1 # indicate your selected version of Xcode
     steps: # a series of commands to run
@@ -37,5 +37,7 @@ workflows:
     jobs:
       - say_hello
       - say_goodbye
+      - test-mac-one
+      - test-mac-two
       
 #test
