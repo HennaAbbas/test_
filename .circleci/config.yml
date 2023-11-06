@@ -5,9 +5,9 @@ jobs:
   # Job one with a unique name
   say_hello:
     docker:
-     - image: cimg/base:2022.05
+     - image: cimg/ruby:2.7-browsers
     steps:
-      - run: echo "Say hello to YAML!"
+      - run: node --version
   # Job two with a unique name
   say_goodbye:
     docker:
