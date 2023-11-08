@@ -16,6 +16,11 @@ jobs:
     steps:
       - run: time git clone --filter=tree:0 git@github.com:HennaAbbas/test_.git -b $CIRCLE_BRANCH --single-branch
       - run: git clone -b "$CIRCLE_BRANCH" "$CIRCLE_REPOSITORY_URL"
+  custom_checkout_1:
+    docker:
+     - image: cimg/base:2022.05
+    steps:
+      - run: git clone -b "$CIRCLE_BRANCH" "$CIRCLE_REPOSITORY_URL"      
 
       
 
@@ -26,6 +31,7 @@ workflows:
     jobs:
       - checkout
       - custom_checkout
+      - custom_checkout_1
 
       
 #test
