@@ -3,31 +3,19 @@ version: 2.1
 
 jobs:
   # Job one with a unique name
-  say_hello:
+  checkout:
     docker:
      - image: cimg/ruby:2.7-browsers
     steps:
-      - run: node --version
-  # Job two with a unique name
-  say_goodbye:
+      - checkout
+
+
+  custom_checkout:
     docker:
      - image: cimg/base:2022.05
     steps:
-      - run: echo "Say goodbye to YAML!"
+      - run: time git clone --filter=tree:0 git@github.com:HennaAbbas/test_.git -b $CIRCLE_BRANCH --single-branch
 
-  test-mac-one: # your job name
-    macos:
-      xcode: 14.1.0 # indicate your selected version of Xcode
-    steps: # a series of commands to run
-      - run: psych --version  
-
-
-          
-  test-mac-two: # your job name
-    macos:
-      xcode: 14.3.1 # indicate your selected version of Xcode
-    steps: # a series of commands to run
-      - run: psych --version   
       
 
 workflows:
@@ -35,9 +23,8 @@ workflows:
   hello_and_goodbye:
     # List of jobs that will run
     jobs:
-      - say_hello
-      - say_goodbye
-      - test-mac-one
-      - test-mac-two
+      - checkout
+      - custom_checkout
+
       
 #test
