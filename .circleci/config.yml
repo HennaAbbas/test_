@@ -1,77 +1,24 @@
 version: 2.1
 
-jobs:
-  build:
-    docker:
-      - image: circleci/ruby:2.3.8-jessie-node-browsers-legacy
-        environment:
-          PG_HOST: localhost
-          PG_USERNAME: postgres
-          RAILS_ENV: test
-          RACK_ENV: test
-          DEFAULT_HOST: lvh.me
-          REDIS_CACHE_URL: redis://127.0.0.1:6379
-          REDIS_QUEUE_URL: redis://127.0.0.1:6379
-          default_stripe_secret_key: sk_test_N1mo2uNMTt8rtt1lDBqRiAwK
-          default_stripe_publishable_key: pk_test_4GPgBL03kzlHcEYYG5FNAtsv
-          freshdesk_secret: 271c7863429da73436445f24ba57b44c
-      - image: circleci/postgres:9.6-bullseye-ram
-        environment:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: rsportz_dev
-    working_directory: ~/app
-    parallelism: 1
-    resource_class: small
-    steps:
-      - checkout
-      - run: |
-          gem install bundler -v 1.16.6
-          google-chrome --headless --disable-gpu --remote-debugging-port=9222 http://localhost &
-          cp config/database.travis.yml config/database.yml
-      - restore_cache:
-          name: Restore gem cache
-          keys:
-            - gem-cache-v1-{{ arch }}-{{ .Branch }}-{{ checksum "Gemfile.lock" }}
-            - gem-cache-v1-{{ arch }}-{{ .Branch }}
-            - gem-cache-v1-{{ arch }}
-            - gem-cache-v1
-      - run:
-          name: Set up assets cache key
-          command: find app/assets -type f -exec md5sum {} \; > dependency_checksum
-      - restore_cache:
-          name: Restore assets cache
-          keys:
-            - assets-cache-v1-{{ arch }}-{{ .Branch }}-{{ checksum "dependency_checksum" }}
-            - assets-cache-v1-{{ arch }}-{{ .Branch }}
-            - assets-cache-v1-{{ arch }}
-            - assets-cache-v1
-      - run:
-          name: Install gem dependencies
-          command: |
-            bundle install --without development test --jobs=6 --retry=3 --path=vendor/bundle
-      - run:
-          name: Precompile assets
-          command: RAILS_ENV=test bundle exec rake assets:precompile
-      - save_cache:
-          name: Save gem cache
-          paths:
-            - vendor/bundle
-          key: gem-cache-v1-{{ arch }}-{{ .Branch }}-{{ checksum "Gemfile.lock" }}
-      - save_cache:
-          name: Save assets cache
-          paths:
-            - tmp/cache/assets
-          key: assets-cache-v1-{{ arch }}-{{ .Branch }}-{{ checksum "dependency_checksum" }}
-      - run:
-          name: Set up DB
-          command: |
-            bundle exec rake db:create RAILS_ENV=test
-            bundle exec rake db:setup RAILS_ENV=test
-            bundle exec rake db:load_procedures
-      - run:
-          name: Run Tests
-          command: bundle exec rubocop
+orbs:
+  slack: circleci/slack@4.1
 
-      
+workflows:
+  on-hold-example:
+    jobs:
+      - my_test_job
+      - slack/on-hold:
+          context: slack-secrets
+          requires:
+            - my_test_job
+      - pause_workflow:
+          requires:
+            - my_test_job
+            - slack/on-hold
+          type: approval
+      - my_deploy_job:
+          requires:
+            - pause_workflow
+
+
 #test
