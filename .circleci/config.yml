@@ -8,13 +8,9 @@ workflows:
     jobs:
       - slack/on-hold:
           context: slack-secrets
-          requires:
-            - my_test_job
-      - pause_workflow:
-          requires:
-
-            - slack/on-hold
           type: approval
+
+
 
 
 
