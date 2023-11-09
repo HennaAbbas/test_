@@ -1,6 +1,6 @@
 version: 2.1
 jobs:
-  build:
+  my_long/test_name_with_slash:
     machine:
       image: ubuntu-2004:202107-02
       docker_layer_caching: false
@@ -16,7 +16,7 @@ jobs:
 workflows:
   build-workflow:
     jobs:
-      - build: 
+      - my_long/test_name_with_slash: 
           post-steps:
             - run:
                 command: ls /home/circleci/project/lib | grep LogsToElasticsearch 
