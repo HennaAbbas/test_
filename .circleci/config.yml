@@ -1,9 +1,11 @@
 version: 2.1
 
 jobs:
-  build:
+  webpack-website:
     docker:
-      - image: cimg/node:21.2.0
+      - image: cimg/node:21.2@sha256:3f351773cd7a28575bf251f5726736480479719ac3d1f00bbd050df50fadb20e
+    resource_class: xlarge
+    working_directory: /mnt/ramdisk
     steps:
       - checkout
-      - run: node --version
+      - run: ls -al /home/circleci/.npm/
