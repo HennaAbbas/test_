@@ -1,16 +1,31 @@
 version: 2.1
 
 jobs:
-  webpack-website:
-    docker:
-      - image: cimg/node:21.2@sha256:3f351773cd7a28575bf251f5726736480479719ac3d1f00bbd050df50fadb20e
-    resource_class: xlarge
-    working_directory: /mnt/ramdisk
+  fe:
+    executor:
+      name: node/default
+      tag: '16.3.0'
+
+    working_directory: ~/repo
+
     steps:
       - checkout
-      - run: ls -al /home/circleci/.npm/
+
+      - run:
+          name: Install typed-css-modules
+          command: |
+            mkdir ~/node_path/
+            cd ~/node_path/
+            npm install typed-css-modules
+            ln -s ~/node_path/node_modules/typed-css-modules/lib/cli.js ~/tcm
+
+      - run:
+          name: Install packages
+          command: |
+            cd ~/repo/
+            cd client-v2 && yarn cache clean && yarn install
 
 workflows:
   sqlmonitor:
     jobs:
-      - webpack-website
+      - fe
