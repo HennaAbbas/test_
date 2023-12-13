@@ -26,7 +26,7 @@ jobs:
           name: Install packages
           command: |
             cd ~/repo/
-            cd client-v2 && yarn cache clean && yarn install
+            yarn cache clean && yarn install
 
 workflows:
   sqlmonitor:
