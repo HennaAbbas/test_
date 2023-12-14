@@ -13,20 +13,8 @@ jobs:
 
     steps:
       - checkout
+      - run: sleep 50000
 
-      - run:
-          name: Install typed-css-modules
-          command: |
-            mkdir ~/node_path/
-            cd ~/node_path/
-            npm install typed-css-modules
-            ln -s ~/node_path/node_modules/typed-css-modules/lib/cli.js ~/tcm
-
-      - run:
-          name: Install packages
-          command: |
-            cd ~/repo/
-            yarn cache clean && yarn install
 
 workflows:
   sqlmonitor:
