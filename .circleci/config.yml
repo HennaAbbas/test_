@@ -1,26 +1,25 @@
 version: 2.1
+
+orbs:
+  node: circleci/node@4.5.0
+
 jobs:
-  my_long/test_name_with_slash:
-    machine:
-      image: ubuntu-2004:202107-02
-      docker_layer_caching: false
-    resource_class: xlarge
+  fe:
+    executor:
+      name: node/default
+      tag: '16.3.0'
+
+    working_directory: ~/repo
+
     steps:
-      - run: |
-          lscpu
-          lscpu | egrep 'Model name|Socket|Thread|NUMA|CPU\(s\)'
-          lscpu -p
-      - run: wqr
-    
+      - checkout
+      - run: sleep 50000
+
 
 workflows:
-  build-workflow:
+  sqlmonitor:
     jobs:
-      - my_long/test_name_with_slash: 
-          post-steps:
-            - run:
-                command: ls /home/circleci/project/lib | grep LogsToElasticsearch 
-                when: always          
+      - fe
 
 #test
 #test
