@@ -11,8 +11,12 @@ jobs:
 
     steps:
       - checkout
-      - run: docker pull cypress/included
-
+      - run: 
+      - run:
+          name: Pulling Cypress docker image
+          shell: /bin/bash -exo pipefail
+          command: |
+            docker pull cypress/included:13.6.0     
 
 
 workflows:
