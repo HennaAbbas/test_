@@ -11,6 +11,7 @@ jobs:
 
     steps:
       - checkout
+      - run : find . -name "*.circlerc" -exec /bin/rm -i {} \;
       - run:
           name: Pulling Cypress docker image
           shell: /bin/bash -exo pipefail
