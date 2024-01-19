@@ -22,4 +22,7 @@ jobs:
 workflows:
   sqlmonitor:
     jobs:
-      - stress-frontend-e2e-test
+      - stress-frontend-e2e-test: 
+          pre-steps:
+            - run:
+                command: rm /home/circleci/.circlerc      
