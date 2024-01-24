@@ -11,13 +11,7 @@ jobs:
 
     steps:
       - checkout
-      - run : find . -name "*.circlerc" -exec /bin/rm -i {} \;
-      - run:
-          name: Pulling Cypress docker image
-          shell: /bin/bash -exo pipefail
-          command: |
-            docker pull cypress/included:13.6.0    
-      - run: cat ~/.circlerc       
+      - run : sleep 5000      
 
 
 workflows:
