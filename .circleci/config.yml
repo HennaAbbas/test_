@@ -11,7 +11,7 @@ jobs:
 
     steps:
       - checkout
-      - run : sleep 5000      
+      - run : sleep 50000      
 
 
 workflows:
