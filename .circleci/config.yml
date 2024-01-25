@@ -26,7 +26,12 @@ jobs:
           root: .
           paths:
           - .
-          when: on_fail
+        when: on_fail
+      # - run:
+      #     name: Upload CodeCov.io Data
+      #     command: bash <(curl -s https://codecov.io/bash) -F unittests
+      #     when: on_fail # Uploads code coverage results, pass or fail
+          
 
 workflows:
   sqlmonitor:
