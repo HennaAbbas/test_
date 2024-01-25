@@ -11,11 +11,25 @@ jobs:
 
     steps:
       - checkout
-      - run : sleep 5000   
+      - persist_to_workspace:
+          root: .
+          paths:
+          - .
+  test:
+    machine:
+      docker_layer_caching: false
+      image: ubuntu-2204:current
 
+    steps:
+      - checkout
+      - attatch_workspace:
+          root: .
+          paths:
+          - .
+          when: on_fail
 
 workflows:
   sqlmonitor:
     jobs:
-      - stress-frontend-e2e-test:  
-          type: approval
+      - stress-frontend-e2e-test
+      - test 
