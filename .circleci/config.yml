@@ -15,7 +15,7 @@ jobs:
       - run: pwd
       - run: echo "Hello, world!" > $CIRCLE_WORKFLOW_JOB_ID/echo-output
       - run: cd $CIRCLE_WORKFLOW_JOB_ID
-      - run: pwd
+      - run: ls -al
 
       # Persist the specified paths (workspace/echo-output) into the workspace for use in downstream job.
       - persist_to_workspace:
