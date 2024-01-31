@@ -10,7 +10,7 @@ jobs:
   flow:
     executor: my-executor
     steps:
-      - run: mkdir -p workspace
+      - run: mkdir -p $CIRCLE_WORKFLOW_JOB_ID
       - run: echo "Hello, world!" > $CIRCLE_WORKFLOW_JOB_ID/echo-output
 
       # Persist the specified paths (workspace/echo-output) into the workspace for use in downstream job.
@@ -25,7 +25,7 @@ jobs:
   test:
     executor: my-executor
     steps:
-      - run: mkdir -p workspace
+      - run: mkdir -p $CIRCLE_WORKFLOW_JOB_ID
       - run: echo "Hello, world!" > $CIRCLE_WORKFLOW_JOB_ID/echo-output
 
       # Persist the specified paths (workspace/echo-output) into the workspace for use in downstream job.
@@ -39,7 +39,7 @@ jobs:
   testing:
     executor: my-executor
     steps:
-      - run: mkdir -p workspace
+      - run: mkdir -p $CIRCLE_WORKFLOW_JOB_ID
       - run: echo "Hello, world!" > $CIRCLE_WORKFLOW_JOB_ID/echo-output
 
       # Persist the specified paths (workspace/echo-output) into the workspace for use in downstream job.
