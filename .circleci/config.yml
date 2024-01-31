@@ -22,6 +22,36 @@ jobs:
           paths:
             - echo-output
 
+  test:
+    executor: my-executor
+    steps:
+      - run: mkdir -p workspace
+      - run: echo "Hello, world!" > $CIRCLE_WORKFLOW_JOB_ID/echo-output
+
+      # Persist the specified paths (workspace/echo-output) into the workspace for use in downstream job.
+      - persist_to_workspace:
+          # Must be an absolute path, or relative path from working_directory. This is a directory in the execution
+          # environment which is taken to be the root directory of the workspace.
+          root: $CIRCLE_WORKFLOW_JOB_ID
+          # Must be relative path from root
+          paths:
+            - echo-output
+  testing:
+    executor: my-executor
+    steps:
+      - run: mkdir -p workspace
+      - run: echo "Hello, world!" > $CIRCLE_WORKFLOW_JOB_ID/echo-output
+
+      # Persist the specified paths (workspace/echo-output) into the workspace for use in downstream job.
+      - persist_to_workspace:
+          # Must be an absolute path, or relative path from working_directory. This is a directory in the execution
+          # environment which is taken to be the root directory of the workspace.
+          root: $CIRCLE_WORKFLOW_JOB_ID
+          # Must be relative path from root
+          paths:
+            - echo-output            
+            
+
   downstream:
     executor: my-executor
     steps:
@@ -40,6 +70,8 @@ workflows:
   btd:
     jobs:
       - flow
+      - test
+      - testing
       - downstream:
           requires:
             - flow
