@@ -11,6 +11,8 @@ jobs:
     executor: my-executor
     steps:
       - run: mkdir -p $CIRCLE_WORKFLOW_JOB_ID
+      - run: ls -al
+      - run: pwd
       - run: echo "Hello, world!" > $CIRCLE_WORKFLOW_JOB_ID/echo-output
       - run: cd $CIRCLE_WORKFLOW_JOB_ID
       - run: pwd
