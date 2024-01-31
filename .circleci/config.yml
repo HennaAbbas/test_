@@ -24,8 +24,7 @@ jobs:
           root: /tmp
           # Must be relative path from root
           paths:
-            - echo-output
-
+            - $CIRCLE_WORKFLOW_JOB_ID/echo-output
   test:
     executor: my-executor
     steps:
