@@ -1230,9 +1230,7 @@ jobs:
             - project
 
   init_release:
-    executor:
-      name: jdk
-      version: << pipeline.parameters.jdk >>
+    executor: jdk
     resource_class: small
     steps:
       - attach_workspace:
