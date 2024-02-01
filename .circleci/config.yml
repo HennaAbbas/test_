@@ -629,12 +629,12 @@ executors:
 
   jdk:
     parameters:
-      version:
+      number:
         description: Major version for openjdk image tag
         type: integer
         default: << pipeline.parameters.jdk >>
     docker:
-      - image: cimg/openjdk:<< parameters.version >>.0-node
+      - image: cimg/openjdk:<< parameters.number >>.0-node
     environment:
       # - multithreading by default (1 thread per core)
       # - explicitly specify non-interactive mode
