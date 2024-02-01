@@ -17,6 +17,7 @@ jobs:
       - run: cat /tmp/$CIRCLE_WORKFLOW_JOB_ID/echo-output
       - run: ls -al
       - run: find $CIRCLE_WORKFLOW_JOB_ID/echo-output
+      - run: cat $CIRCLE_WORKFLOW_JOB_ID/echo-output
 
       # Persist the specified paths (workspace/echo-output) into the workspace for use in downstream job.
       - persist_to_workspace:
