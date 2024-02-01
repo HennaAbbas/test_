@@ -1,919 +1,2271 @@
 version: 2.1
 
-#test
+orbs:
+  aws-s3: circleci/aws-s3@3.0.0 # Do not bump unless you made sure the benchmark upload still works
+  slack: circleci/slack@4.12.6
+  git-shallow-clone: guitarrapc/git-shallow-clone@2.8.0
+  python: circleci/python@2.1.1
+  docker: circleci/docker@2.5.0
+  github-cli: circleci/github-cli@2.3.0
 
 parameters:
-  imageTag:
+  version:
     type: string
-    default: "main_463_df4295"
-  imageName:
+    default: 6.0.12 # edited by pipeline
+  base_branch:
     type: string
-    default: "web-automation" 
-  tagetBranch:
+    default: "6.0"
+  jdk:
+    type: integer
+    default: 11
+  jira:
     type: string
     default: ""
-  environment:
+  continuous_release_workflow:
     type: string
-    default: "production"
-  executeE2ESuite:
+    default: ""
+  previous_branch:
+    type: string
+    default: "5.11"
+  run_benchmark_workflow:
     type: boolean
-    default: true
-
-defaults: &defaults
-  working_directory: ~/app
-  docker:
-    - image: cimg/python:3.8
-
-  environment:
-    CONTAINER_FLUENT: payment-rails/api-fluent
-    CONTAINER_IMAGE: payment-rails/api
-    CONTAINER_MIGRATE: payment-rails/api-migrate
-    ## Add Env for new Lambda api
-    CONTAINER_IMAGE_API: payment-rails/api-lambda
-
-orbs:
-  aws-cli: circleci/aws-cli@2.0.3
-  codecov: codecov/codecov@1.2.3
-  slack: circleci/slack@4.12.5
-
-#
-#  Macro "command" to copy the deployment artifact to S3 and update the lambda#
-#
-slack-fail-post-step: &slack-fail-post-step
-  post-steps:
-    - slack/notify:
-        event: fail
-        template: basic_fail_1
+    default: false
+  enforced_style:
+    type: boolean
+    default: false
+  run_tests:
+    type: boolean
+    default: false
+  run_check_workflow:
+    type: boolean
+    default: false
+  run_sonar:
+    type: boolean
+    default: false
+  run_atoti_python_api_ci:
+    type: boolean
+    default: false
+  # These following parameters act as CONSTANT values, rather than parameters
+  node_image:
+    type: string
+    default: "cimg/node:18.18.2"
+  java_11_version:
+    type: string
+    default: "11.0.21"
+  java_11_image:
+    type: string
+    default: "cimg/openjdk:11.0.20-node"
+  java_17_version:
+    type: string
+    default: "17.0.9"
+  java_17_image:
+    type: string
+    default: "cimg/openjdk:17.0.8-node"
 
 commands:
-  lambda-init:
-    description: Setup Lambda Deploy environment
-
-    parameters:
-      workspace:
-        description: Directory to attach workspace to
-        type: string
-
-    steps:
-      - aws-cli/install
-      - aws-cli/setup:
-          # profile-name: default
-          aws-access-key-id: AWS_ACCESS_KEY_ID
-          aws-secret-access-key: AWS_SECRET_ACCESS_KEY
-      - attach_workspace:
-          at: <<parameters.workspace>>
-
-  lambda-deploy-api:
-    description: Deploy a Lambda function
-
-    parameters:
-      profile-name:
-        description: AWS profile to use for installation
-        type: string
-        default: "default"
-      lambda-name-api:
-        description: Name for this Lambda
-        type: string
-
-        #executor: aws-cli/default
+  setup_npm:
     steps:
       - run:
-          name: Update Lambda Function <<parameters.lambda-name-api>>
+          name: Setup private NPM registry
           command: |
-            aws lambda update-function-code \
-                --profile <<parameters.profile-name>> \
-                --region ${AWS_DEFAULT_REGION} \
-                --function-name <<parameters.lambda-name-api>> \
-                --publish \
-                --image-uri ${ECR_URL_BASE_API}:latest
-                
+            npm config set @activeviam:registry https://activeviam.jfrog.io/activeviam/api/npm/npm-internal/
+            npm config set //activeviam.jfrog.io/activeviam/api/npm/npm-internal/:_authToken ${NPM_TOKEN}
 
-  ecs-update:
-    description: Update ECS function
-
-    parameters:
-      profile-name:
-        description: AWS profile to use for installation
-        type: string
-      cluster:
-        description: Cluster name
-        type: string
-      service:
-        description: Service name
-        type: string
-      task:
-        description: Task name
-        type: string
-
-    steps:
-      - run: env
-      - run:
-          name: Update ECS <<parameters.cluster>> / <<parameters.service>> / <<parameters.task>>
-          command: |
-            aws ecs update-service \
-                --force-new-deployment \
-                --profile <<parameters.profile-name>> \
-                --cluster <<parameters.cluster>> \
-                --service <<parameters.service>> \
-                --task <<parameters.task>>
-
-  ecs-run:
-    description: Run ECS task
-
-    parameters:
-      profile-name:
-        description: AWS profile to use for installation
-        type: string
-      cluster:
-        description: Cluster name
-        type: string
-      task:
-        description: Task name
-        type: string
-
+  setup_cloud_credentials:
     steps:
       - run:
-          name: Run ECS Task <<parameters.cluster>> / <<parameters.task>>
+          name: Install credentials for cloud testing
           command: |
-            SUBNETS=`aws ec2 describe-subnets --filters Name=tag:Visibility,Values=private|jq -j '[.Subnets[].SubnetId]'`
-            SG=`aws ec2 describe-security-groups --filters Name=group-name,Values=api-fargate|jq '[.SecurityGroups[].GroupId]'`
-            aws ecs run-task \
-              --network-configuration "awsvpcConfiguration={subnets=$SUBNETS,securityGroups=$SG}" \
-              --launch-type FARGATE \
-              --profile <<parameters.profile-name>> \
-              --cluster <<parameters.cluster>> \
-              --task <<parameters.task>>
+            mkdir $HOME/{.aws,.azure,.google}
+            echo $CLOUD_AWS_CREDENTIALS2 | base64 --d > $HOME/.aws/credentials
+            echo $CLOUD_AZURE_CREDENTIALS | base64 --d > $HOME/.azure/credentials
+            echo $CLOUD_GOOGLE_CREDENTIALS | base64 --d > $HOME/.google/credentials
 
-jobs:
-  npm_install:
-    <<: *defaults
+  setup_directquery_cloud_credentials:
     steps:
-      - checkout
+      - run:
+          name: Write DirectQuery Cloud Credentials to a file
+          command: |
+            mkdir -p $HOME/{.aws,.google}
+            echo $DIRECTQUERY_AWS_CREDENTIALS | base64 --d > $HOME/.aws/direct-query-credentials
+            echo $DIRECTQUERY_GCP_CREDENTIALS | base64 --d > $HOME/.google/direct-query-credentials
+
+  save_git_hash_for_cli:
+    steps:
+      - run:
+          name: Identify last changes in CLI for caching
+          command: |
+            CHECKSUM_CLI_SOURCE="$(find cli/src -type f -print0 |
+              # Sorted for consistent order
+              sort -z |
+              # checksum for each file
+              xargs -0 sha1sum |
+              # checksum of all checksums
+              sha1sum |
+              # only return the checksum
+              cut -d ' ' -f 1)"
+            echo "$CHECKSUM_CLI_SOURCE" | tee /tmp/activepivot_javascript_cli.custom_lock
+
+  create_pr_version:
+    parameters:
+      variable_name:
+        type: string
+        description: Name of the environment variable to create
+    steps:
+      - run:
+          environment:
+            BASE_BRANCH: << pipeline.parameters.base_branch >>
+            PR_VAR_NAME: << parameters.variable_name >>
+          name: Create a env var with the release version for the PR
+          command: |
+            DATE=$(date '+%Y%m%d')
+            VERSION="$BASE_BRANCH-CI-$DATE-${CIRCLE_SHA1:0:10}"
+            echo "export $PR_VAR_NAME=$VERSION" >> $BASH_ENV
+
+  shallow_checkout:
+    steps:
+      - git-shallow-clone/checkout:
+          no_tags: true
+
+  gracefully_stop_job:
+    parameters:
+      rest_of_job_should_run:
+        description: "True if this command should not stop the job, but let it run its course"
+        type: boolean
+        default: true
+    steps:
+      - unless:
+          condition: << parameters.rest_of_job_should_run >>
+          steps:
+            - run:
+                name: Stop job
+                description: "Gracefully stop the current job, without marking it as failed"
+                command: circleci-agent step halt
+
+  install_javascript_env:
+    steps:
       - restore_cache:
-          key: dependency-cache-{{ checksum "package.json" }}
-
+          keys:
+            - javascript-v1-{{ checksum "yarn.lock" }}
+            - javascript-v1-
+            - javascript-
       - run:
-          name: NPM install
-          command: |
-            npm set progress false
-            npm set @trolley:registry https://npm.pkg.github.com
-            npm set //npm.pkg.github.com/:_authToken ${GITHUB_TOKEN}
-            npm --loglevel error install --silent
-
+          name: Install
+          command: yarn install --frozen-lockfile
       - save_cache:
-          key: dependency-cache-{{ checksum "package.json" }}
+          key: javascript-v1-{{ checksum "yarn.lock" }}
           paths:
-            - ./node_modules
-
-      - persist_to_workspace:
-          root: ~/app
-          paths:
+            - ~/.cache/yarn
             - node_modules
-            - .circleci
-            - task-definitions
 
-  build:
-    <<: *defaults
-    working_directory: ~/work
+  install_standalone_cli:
     steps:
-      - checkout
-      - run: make
-      - run: |
-          ulimit -c unlimited
-          ./dump
+      - save_git_hash_for_cli
+      - restore_cache:
+          name: Restore CLI from cache
+          keys:
+            - javascript-cli-v2-{{ checksum "/tmp/activepivot_javascript_cli.custom_lock" }}
       - run:
+          name: Compile CLI
           command: |
-            mkdir -p /tmp/core_dumps
-            cp core.* /tmp/core_dumps
-          when: on_fail
-      - store_artifacts:
-          path: /tmp/core_dumps            
-
-  lint:
-    <<: *defaults
-    steps:
-      - checkout
-
-      - attach_workspace:
-          at: ~/app
-
-      - run:
-          name: NPM lint (TypeScript)
-          command: |
-            npm run lint
-      - run:
-          name: Prettier Check
-          command: |
-            ./node_modules/.bin/prettier --list-different 'src/**/*.ts' 'test/**/*.ts'
-      - run:
-          name: Spec files in main code
-          command: |
-            ! egrep -r '^import .*test/' src
-
-  #
-  #  Unit testing
-  #
-  test:
-    <<: *defaults
-    parallelism: 10
-
-    docker:
-      - image: circleci/node:14
-
-      - image: postgres:13.3
-        environment:
-          POSTGRES_PASSWORD: "1234"
-
-      - image: redis:3.2
-
-    steps:
-      - checkout
-
-      - attach_workspace:
-          at: ~/app
-
-      # Just for CircleCI builds
-      # BEGIN
-      - run: npm install mocha-junit-reporter
-      - run: mkdir reports
-
-      - run:
-          name: Install FlyWay
-          command: |
-            curl -O https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/4.1.2/flyway-commandline-4.1.2-linux-x64.tar.gz
-            tar xzf flyway-commandline-4.1.2-linux-x64.tar.gz
-
-      - run:
-          name: Create Test database
-          command: |
-            PATH="./flyway-4.1.2:${PATH}" npm run create-test-db
-
-      - run:
-          name: Run unit tests
-          command: |
-            TESTFILES=$(circleci tests glob "test/**/*Spec.ts" | circleci tests split)
-            TS_NODE_PROJECT=test/tsconfig.json \
-            NODE_ENV=test \
-            NODE_OPTIONS=--max_old_space_size=4096 \
-            npx nyc \
-              --reporter lcovonly \
-              --reporter text \
-              -- mocha \
-              --timeout 10000 \
-              --require ts-node/register \
-              --require tsconfig-paths/register \
-              --reporter mocha-junit-reporter \
-              --reporter-options mochaFile=reports/mocha/test-results.xml \
-              $TESTFILES
-
-      - run:
-          name: Generate code coverage report
-          command: |
-            mkdir -p coverage
-            npx nyc report --reporter=text
-          when: always
-
-      - codecov/upload:
-          token: ${CODECOV_TOKEN}
-          file: coverage/*.json
-
-      # END
-
-      # Upload results
-
-      - store_test_results:
-          path: reports
-
-      - store_artifacts:
-          path: ./reports/mocha/test-results.xml
-
-      #- store_artifacts: # upload test coverage as artifact
-      #    path: ./coverage/lcov.info
-      #    prefix: tests
-
-  #
-  #  Unit testing
-  #
-  coverage:
-    <<: *defaults
-
-    docker:
-      - image: circleci/node:14
-
-      - image: postgres:13.3
-        environment:
-          POSTGRES_PASSWORD: "1234"
-
-      - image: redis:3.2
-
-    steps:
-      - checkout
-
-      - attach_workspace:
-          at: ~/app
-
-      - run:
-          name: Install FlyWay
-          command: |
-            curl -O https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/4.1.2/flyway-commandline-4.1.2-linux-x64.tar.gz
-            tar xzf flyway-commandline-4.1.2-linux-x64.tar.gz
-
-      - run:
-          name: Create Test database
-          command: |
-            PATH="./flyway-4.1.2:${PATH}" npm run create-test-db
-
-      - run:
-          name: Run unit tests
-          command: |
-            npm run test-coverage -- --reporter=progress
-
-      - run:
-          name: Code coverage
-          command: |
-            ./node_modules/.bin/nyc report --reporter=text
-
-  buildnumber: &buildnumber
-    <<: *defaults
-
-    steps:
-      - run:
-          name: Save build number
-          command: |
-            mkdir build_number
-            echo ${CIRCLE_BUILD_NUM} > build_number/number.txt
-
-      - persist_to_workspace:
-          root: ~/app
+            if [ ! -e ./jmp.js ]
+            then
+              rm -rf cli/lib cli/tsconfig.tsbuildinfo
+              yarn build-cli
+              yarn compile-cli
+            else
+              echo "Jean-Michel Pivot CLI restored from cache and not compiled"
+            fi
+      - save_cache:
+          name: Store compiled CLI in cache
+          key: javascript-cli-v2-{{ checksum "/tmp/activepivot_javascript_cli.custom_lock" }}
           paths:
-            - build_number
+            - ./jmp.js
 
-  #
-  #  Build steps
-  #
-  docker-build: &docker-build
-    <<: *defaults
-    docker:
-      - image: docker:20.10-git
-
+  install_cli:
     steps:
-      - checkout
+      - install_javascript_env
+      - install_standalone_cli
 
-      - setup_remote_docker
-        #version: 20.10.6
-      #   docker_layer_caching: true
-
-      - attach_workspace:
-          at: ~/app
-
-      # - run:
-      #     name: Enable debug mode
-      #     command: |
-      #       ssh remote-docker -- sudo bash -c "'apt update; apt install jq; if [ ! -f /etc/docker/daemon.json ]; then echo \"{}\" > /etc/docker/daemon.json; fi; cat \<<< \$(jq \".\\\"debug\\\" = true\" /etc/docker/daemon.json) > /etc/docker/daemon.json; systemctl restart docker.service'"
-
-      - run:
-          name: Build app image
-          command: |
-            BUILD_NUM=`cat build_number/number.txt`
-            BRANCH=`if [ -z "${CIRCLE_TAG}" ] ; then echo main ; else echo production ; fi`
-            VERSION=v1.0.${BUILD_NUM}
-            echo "Creating build " ${VERSION}
-            docker build \
-                --build-arg VERSION=${VERSION} \
-                --build-arg NODE_ENV=${BRANCH} \
-                --build-arg GITHUB_TOKEN=${GITHUB_TOKEN} \
-                -f docker/Dockerfile.api --rm=false \
-                -t ${ECR_URL_BASE}/${CONTAINER_IMAGE}:${BRANCH} \
-                -t ${ECR_URL_BASE}/${CONTAINER_IMAGE}:${VERSION} \
-                -t ${CONTAINER_IMAGE} \
-                .
-      - run:
-          name: Build lambda api image
-          command: |
-            BUILD_NUM=`cat build_number/number.txt`
-            VERSION=v1.0.${BUILD_NUM}
-            echo "Creating build " ${VERSION}
-            docker build \
-                --build-arg VERSION=${VERSION} \
-                --build-arg NODE_ENV=${BRANCH} \
-                --build-arg GITHUB_TOKEN=${GITHUB_TOKEN} \
-                -f docker/Dockerfile.lambda --rm=false \
-                -t ${ECR_URL_BASE}/${CONTAINER_IMAGE_API}:latest \
-                -t ${ECR_URL_BASE}/${CONTAINER_IMAGE_API}:${VERSION} \
-                -t ${CONTAINER_IMAGE_API} \
-                .
-
-      - run:
-          name: Build fluent image
-          command: |
-            BRANCH=`if [ -z "${CIRCLE_TAG}" ] ; then echo main ; else echo production ; fi`
-            VERSION=v1.0.${BUILD_NUM}
-            docker build \
-                -f docker/Dockerfile.fluent --rm=false \
-                -t ${ECR_URL_BASE}/${CONTAINER_FLUENT}:${BRANCH} \
-                -t ${ECR_URL_BASE}/${CONTAINER_FLUENT}:${VERSION} \
-                -t ${CONTAINER_FLUENT} \
-                docker/fluent-${BRANCH}
-
-      - run:
-          name: Add AWS CLI
-          command: |
-            apk add --update python3 python3-dev py3-pip build-base
-            pip3 install --upgrade awscli
-
-      - run:
-          name: Deploy to docker repository
-          command: |
-            LOGIN=`aws ecr get-login --no-include-email`
-            $LOGIN
-            docker push -a ${ECR_URL_BASE}/${CONTAINER_IMAGE}
-            docker push -a ${ECR_URL_BASE}/${CONTAINER_FLUENT}
-            docker push -a ${ECR_URL_BASE}/${CONTAINER_IMAGE_API}
-
-      - run:
-          name: Show docker logs
-          when: always
-          command: ssh remote-docker -- sudo journalctl -ae -u docker.service
-
-  docker-flyway-build: &docker-flyway-build
-    <<: *defaults
-    docker:
-      - image: docker:17.03.0-ce-git
-
+  install_java_version:
+    parameters:
+      java_version:
+        description: The version of java to install, selected from the pipeline parameter options
+        type: string
     steps:
-      - checkout
-
-      - setup_remote_docker
-      #    docker_layer_caching: true
-
-      - attach_workspace:
-          at: ~/app
-
+      - restore_cache:
+          name: "Restoring Java Installation from CircleCI cache"
+          keys:
+            - cache-jdk-<< parameters.java_version >>
       - run:
-          name: Build flyway image
+          name: Install Java << parameters.java_version >>
+          environment:
+            JAVA_VERSION: << parameters.java_version >>
           command: |
-            BUILD_NUM=`cat build_number/number.txt`
-            BRANCH=`if [ -z "${CIRCLE_TAG}" ] ; then echo main ; else echo production ; fi`
-            echo "Creating build " ${BUILD_NUM}
-            docker build \
-                --build-arg VERSION=v1.0.${BUILD_NUM} \
-                --build-arg GITHUB_TOKEN=${GITHUB_TOKEN} \
-                -f docker/Dockerfile.flyway --rm=false \
-                -t ${ECR_URL_BASE}/${CONTAINER_MIGRATE}:${BRANCH} \
-                -t ${ECR_URL_BASE}/${CONTAINER_MIGRATE}:latest\
-                -t ${ECR_URL_BASE}/${CONTAINER_MIGRATE}:1.0.${BUILD_NUM} \
-                -t ${CONTAINER_MIGRATE} \
-                .
-
-      - run:
-          name: Add AWS CLI
-          command: |
-            apk add --update python3 python3-dev py3-pip build-base
-            pip3 install --upgrade awscli
-
-      - run:
-          name: Deploy to docker repository
-          command: |
-            LOGIN=`aws ecr get-login --no-include-email`
-            $LOGIN
-            docker push ${ECR_URL_BASE}/${CONTAINER_MIGRATE}
-
-  #
-  #  Staging deployment
-  #
-  deploy-ecs: &deploy-ecs
-    working_directory: ~/app
-    executor: aws-cli/default
-
-    steps:
-      - lambda-init:
-          workspace: ~/app
-
-      - ecs-update:
-          profile-name: default
-          cluster: api-cluster-fargate
-          service: api-fargate-background
-          task: api-fargate-background
-
-      - ecs-update:
-          profile-name: default
-          cluster: api-cluster-fargate
-          service: api-fargate-live
-          task: api-fargate-live
-
-      - ecs-run:
-          profile-name: default
-          cluster: api-cluster-fargate
-          task: api-fargate-migrate
-
-  deploy-lambda-api: &deploy-lambda-api
-    working_directory: ~/app
-    executor: aws-cli/default
-
-    steps:
-      - lambda-init:
-          workspace: ~/app
-      - lambda-deploy-api:
-          lambda-name-api: findEfileToUploadHandler
-      - lambda-deploy-api:
-          lambda-name-api: findEfileToUploadResultHandler
-      - lambda-deploy-api:
-          lambda-name-api: ${ENVIRONMENT}-tax-regenerate
-      - lambda-deploy-api:
-          lambda-name-api: SyncInvoiceQueueMessageHandler
-      - lambda-deploy-api:
-          lambda-name-api: SyncEventsQueMessageHandler
-      - lambda-deploy-api:
-          lambda-name-api: ${ENVIRONMENT}-webhook-generic
-      - lambda-deploy-api:
-          lambda-name-api: ${ENVIRONMENT}-fintrac-export
-      - lambda-deploy-api:
-          lambda-name-api: ${ENVIRONMENT}-eoyTaxPersistCheck
-      - lambda-deploy-api:
-          lambda-name-api: ${ENVIRONMENT}-IRSEfileStatusPoolingHandler
-      - lambda-deploy-api:
-          lambda-name-api: ${ENVIRONMENT}-atb-batch-generate
-      - lambda-deploy-api:
-          lambda-name-api: ${ENVIRONMENT}-load-afx-activity
-      - lambda-deploy-api:
-          lambda-name-api: ${ENVIRONMENT}-afx-queue-fetch-rapid
-      - lambda-deploy-api:
-          lambda-name-api: ${ENVIRONMENT}-afx-queue-fetch-daily
-      - lambda-deploy-api:
-          lambda-name-api: ${ENVIRONMENT}-recipient-incomplete
-      - lambda-deploy-api:
-          lambda-name-api: ${ENVIRONMENT}-sweep-email
-      - lambda-deploy-api:
-          lambda-name-api: ${ENVIRONMENT}-expire-w8s
-      - lambda-deploy-api:
-          lambda-name-api: ${ENVIRONMENT}-fetch-afx-activity
-      - lambda-deploy-api:
-          lambda-name-api: ${ENVIRONMENT}-lhv-messages
-      - lambda-deploy-api:
-          lambda-name-api: ${ENVIRONMENT}-tax-will-expire
-      - lambda-deploy-api:
-          lambda-name-api: ${ENVIRONMENT}-syncInvoicePushStatusQueMessageHandler
-      - lambda-deploy-api:
-          lambda-name-api: ${ENVIRONMENT}-retryStuckPreCompliancePaymentsCron
-
-  terra-build: &terra-build
-    working_directory: ~/app
-
-    docker:
-      - image: hashicorp/terraform:0.14.3
-
-    steps:
-      - checkout
-
-      - attach_workspace:
-          at: ~/app/terra
-
-      - run:
-          name: Build Terraform RC
-          command: |
-            echo "credentials \"app.terraform.io\" { token = \"${TERRAFORM_ACCESS_KEY}\" }" > ~/.terraformrc
-            BRANCH=`if [ -z "${CIRCLE_TAG}" ] ; then echo main ; else echo production ; fi`
-            cp ~/app/terra/workspace/backend.${BRANCH}.hcl ~/app/terra/workspace/backend.hcl
-            if [ ${BRANCH} = production ]; then
-              cd ~/app/terra
-              ## No space for '-i command'
-              sed -i'.bak' \
-                  -e 's!app.terraform.io/PaymentRailsStaging!app.terraform.io/PaymentRails!g' \
-                  *.tf
+            INSTALL_PATH="$HOME/tools/java"
+            if [ ! -d "$INSTALL_PATH/bin" ]
+            then
+              echo "Installing java version $JAVA_VERSION"
+              case $JAVA_VERSION in
+                11.0.21)
+                  BINARY_URL="https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.21%2B9/OpenJDK11U-jdk_x64_linux_hotspot_11.0.21_9.tar.gz"
+                  ;;
+                17.0.9)
+                  BINARY_URL="https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.9%2B9/OpenJDK17U-jdk_x64_linux_hotspot_17.0.9_9.tar.gz"
+                  ;;
+                *)
+                  echo "No url for JDK $JAVA_VERSION"
+                  exit 1
+                  ;;
+              esac
+              curl -sL "$BINARY_URL" -o /tmp/java.tar.gz
+              rm -rf "$INSTALL_PATH"
+              mkdir -p "$INSTALL_PATH"
+              tar --strip-components=1 -C "$INSTALL_PATH" -zxf /tmp/java.tar.gz
+            else
+              echo "Java was restored from CircleCI cache and is already installed."
             fi
 
-      - run:
-          name: terraform init
-          working_directory: ~/app/terra
-          command: terraform init -backend-config=workspace/backend.hcl
+            # Test the version with the explicit path
+            $HOME/tools/java/bin/java -version
 
-      - run:
-          name: terraform apply
-          working_directory: ~/app/terra
-          command: terraform apply -auto-approve
+            # Export to the standard env for future steps
+            echo 'export JAVA_HOME="$HOME/tools/java"' >> "$BASH_ENV"
+            echo 'export PATH="$HOME/tools/java/bin:$PATH"' >> "$BASH_ENV"
+      - save_cache:
+          name: "Saving Java Installation from CircleCI cache"
+          paths: [ ~/tools/java ]
+          key: cache-jdk-<< parameters.java_version >>
 
-  deploy-slack:
-    working_directory: ~/app
-    executor: aws-cli/default
+  rewrite_internal_into_deprecated:
     steps:
       - run:
-          name: Slack PR Release Notice
+          name: Turn InternalApi into Deprecated
+          # Use grep to recover all @InternalApi annotations, filtering only .java extensions.
+          # Then use xargs to place them as file option for sed.
+          # Finally, the sed command adds in place Deprecated, with datation.
           command: |
-            sudo apt-get install jq
+            grep --files-with-matches --include *.java --recursive --fixed-strings -- '@InternalApi' . | xargs -I {} sed -i -E 's/@InternalApi\(since = "(.*)"\)/\0\n@Deprecated(since = "\1", forRemoval = true)/g' {}
 
-            AUTH=koblas-pr:WsjG7Suhbv842JctNGcF
-            BBPATH=`echo $CIRCLE_REPOSITORY_URL | sed -e 's/^.*://' -e 's/.git//'`
+  compile_project:
+    parameters:
+      parallel:
+        description: Parallelism of the task. E.g. '-T 1C'
+        type: string
+        default: ""
+    steps:
+      - run:
+          name: Compile project
+          command: |
+            ./jmp.js build << parameters.parallel >>
 
-            PR=`curl -u $AUTH \
-               https://api.bitbucket.org/2.0/repositories/$BBPATH/commit/$CIRCLE_SHA1/pullrequests \
-               | jq -r '.values[0].links.self.href'`
+  validate_checkstyle_and_formatting:
+    parameters:
+      should_run:
+        description: True if this command should run.
+        type: boolean
+        default: true
+    steps:
+      #      Use a conditional step here because validate_checkstyle_and_formatting runs conditionally,
+      #      but should not stop the job it is part of. Don't replace with gracefully_stop_job
+      - when:
+          condition: << parameters.should_run >>
+          steps:
+            - run:
+                name: "Validate code style"
+                command: ./jmp.js check --only "Check code style"
+            - run:
+                name: "Validate formatting"
+                command: ./jmp.js check --only "Check formatter"
+            - run:
+                name: "Validate documentation spelling"
+                command: ./jmp.js check --only "Check spelling"
+            - run:
+                environment:
+                  BASE_BRANCH: << pipeline.parameters.base_branch >>
+                name: Generate checkstyle report
+                command: bash continuous-integration/common/scripts/report-checkstyle/generateCheckstyleReport.bash "$BASE_BRANCH"
+                when: on_fail
+            - store_artifacts:
+                path: checkstyle_report
+                destination: report-file
+            - run:
+                name: clear uploaded report
+                command: rm -f checkstyle_report
+                when: on_fail
 
-            curl -u $AUTH $PR | jq '.summary.raw' > message.json
+  run_benchmark:
+    parameters:
+      docker_image:
+        description: Docker image to run benchmark
+        type: string
+      timeout:
+        description: Timeout for running benchmark
+        type: string
+        default: "360m"
+    steps:
+      - run:
+          name: Run benchmark
+          no_output_timeout: 1h
+          command: | # We use this dirty "true || X " trick to always return CODE 0 on this step so we can run the latest steps (when: does not exist as arg of the aws_sync orb)
+            sudo sysctl -w vm.overcommit_memory=1
+            cp .circleci/resources/settings.xml $HOME/.m2/
+            # First capture the output to receive error code from python ...
+            EXECUTED_TAGS=$(python3 .circleci/resources/list-benchmark.py $CIRCLE_NODE_INDEX $CIRCLE_NODE_TOTAL)
+            # ... then export the var
+            export EXECUTED_TAGS
+            cd benchmarks/
+            timeout << parameters.timeout >> docker run --rm --privileged \
+              -e ACTIVEPIVOT_LICENSE -e ARTIFACTORY_USER -e ARTIFACTORY_TOKEN \
+              -v "$HOME/.m2/repository:/tmp/repository" \
+              -v "/tmp/av-heap-dumps:/tmp/av-heap-dumps" \
+              -v "$PWD:/home/circleci/activepivot" \
+              -v "$HOME/.aws:/root/.aws" -v "$HOME/.azure:/root/.azure" -v "$HOME/.google:/root/.google" \
+              -w /home/circleci/activepivot -u root \
+              << parameters.docker_image >> \
+              mvn  -Dmaven.repo.local=/tmp/repository compile exec:exec@run-benchmarks -DargumentString=$EXECUTED_TAGS || true
 
-            echo '{}' | jq \
-               --arg title 'API Production Release' \
-               --arg title_link "$PR" \
-               --arg fallback "API Production release" \
-               --slurpfile message message.json \
-               --arg color '#42e2f4' \
-               '. | .["attachments"][0]["title"]=$title | .["attachments"][0]["fallback"]=$fallback | .["attachments"][0]["text"]=$message[0] | .["attachments"][0]["title_link"]=$title_link | .["attachments"][0]["color"]=$color' \
-               > slack.json
+  save_test_results:
+    steps:
+      - run:
+          name: Save test results
+          command: |
+            mkdir -p ~/test-results/junit/
+            find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} ~/test-results/junit/ \;
+          when: always
+      - store_test_results:
+          path: ~/test-results
 
-            curl -X POST -H 'Content-type: application/json' -d @slack.json \
-               https://hooks.slack.com/services/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
+  save_artifacts:
+    steps:
+      - run:
+          name: Save artifacts in workspace
+          command: |
+            mkdir --parents ~/java-workspace/m2/com
+            mkdir --parents ~/java-workspace/m2/io
+            find ~/.m2/repository -name _remote.repositories -delete
+            mv ~/.m2/repository/com/activeviam ~/java-workspace/m2/com/activeviam
+            mv ~/.m2/repository/io/atoti ~/java-workspace/m2/io/atoti
 
-#
-#  CircleCI Workflows
-#
+  install_artifacts:
+    steps:
+      - run:
+          name: Install workspace artifacts
+          command: |
+            mkdir -p ~/.m2/repository/com
+            mkdir -p ~/.m2/repository/io
+            mv ~/java-workspace/m2/com/activeviam ~/.m2/repository/com/activeviam
+            mv ~/java-workspace/m2/io/atoti ~/.m2/repository/io/atoti
+
+  store_heap_dumps_on_failure:
+    steps:
+      - store_artifacts:
+          path: /tmp/av-heap-dumps
+          destination: heap-dumps
+
+  save_java_cache_without_activeviam:
+    steps:
+      - run:
+          name: Clean ActiveViam artifacts from the cache
+          command: |
+            find ~/.m2/repository -name _remote.repositories -delete
+            rm -rf ~/.m2/repository/com/activeviam
+            rm -rf ~/.m2/repository/io/atoti
+      - save_cache:
+          paths: [ ~/.m2/repository ]
+          # Use vXYZ to identify the version of the cache.
+          # This is the recommended solution from CircleCI to be able to clean a cache
+          # See https://support.circleci.com/hc/en-us/articles/115015426888-Clear-project-dependency-cache
+          key: activepivot-circleci-java-v1-<< pipeline.git.branch >>-{{ checksum "pom.xml" }}-{{ checksum "sandboxes/pom.xml" }}--{{ checksum "direct-query/pom.xml" }}---{{checksum "atoti/pom.xml"}}
+
+  restore_java_cache:
+    steps:
+      - restore_cache:
+          keys:
+            - activepivot-circleci-java-v1-<< pipeline.git.branch >>-{{ checksum "pom.xml" }}-{{ checksum "sandboxes/pom.xml" }}--{{ checksum "direct-query/pom.xml" }}---{{checksum "atoti/pom.xml"}}
+            - activepivot-circleci-java-v1-<< pipeline.git.branch >>
+            - activepivot-circleci-java-v1-
+            - activepivot-circleci-java-
+
+  cancel_atoti_python_api_ci:
+    steps:
+      - run:
+          name: Cancel precedent Atoti repository's CI pipeline
+          command: |
+            if [ -e ~/pr-atoti-vars ]; then
+              cat ~/pr-atoti-vars >> $BASH_ENV
+              curl -X POST "https://circleci.com/api/v2/workflow/$ATOTI_PYTHON_PREVIOUS_WORKFLOW_ID/cancel?circle-token=$ATOTI_SERVER_TOKEN"
+            fi
+
+  install_jfrog:
+    description: Install and configure Activeviam Artifactory instance
+    steps:
+      - run:
+          name: Install and configure JFrog CLI
+          command: |
+            curl -fL https://install-cli.jfrog.io | sh
+            jf config add activeviam --url $ARTIFACTORY_URL --user $ARTIFACTORY_USER --access-token $ARTIFACTORY_API_KEY
+
+  install_az_cli:
+    description: Install Azure CLI `az`
+    steps:
+      - run:
+          name: Install Azure CLI
+          command: curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+
+  install_rsync:
+    description: Install rsync
+    steps:
+      - run:
+          name: Install rsync
+          command: |
+            sudo apt update
+            sudo apt install -y rsync
+
+  install_ssh_credentials_artifacts_server:
+    description: Install credentials for server artifacts
+    steps:
+      - run:
+          name: Install SSH configuration for artifacts server
+          command: |
+            mkdir -p ~/.ssh
+            echo "Host ${ARTIFACTS_URL}" >> ~/.ssh/config
+            echo "  Hostname ${ARTIFACTS_URL}" >> ~/.ssh/config
+            echo "  User ${ARTIFACTS_USER}" >> ~/.ssh/config
+            echo "  Port ${ARTIFACTS_PORT}" >> ~/.ssh/config
+            echo "  BatchMode yes" >> ~/.ssh/config
+            echo "  HostKeyAlgorithms +ssh-rsa" >> ~/.ssh/config
+            echo "  PubkeyAcceptedAlgorithms +ssh-rsa" >> ~/.ssh/config
+      - run:
+          name: Recognize server fingerprint for security
+          command: echo "${ARTIFACTS_FINGERPRINT}" >> ~/.ssh/known_hosts
+
+  install_ssh_credentials_github:
+    description: Install credentials for Github
+    steps:
+      - run:
+          name: Add Github public key to known hosts
+          command: |
+            mkdir -p ~/.ssh
+            ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
+      - add_ssh_keys:
+          fingerprints:
+            - "e9:46:96:f7:9c:24:a3:ba:42:3c:e4:46:91:86:4b:01"
+
+  install_chevron:
+    description: Install chevron (mustache executable)
+    steps:
+      - run:
+          name: Install chevron (mustache executable)
+          command: |
+            sudo apt update
+            sudo apt install -y pip
+            pip install chevron
+            chevron --version
+
+  update_version_in_poms:
+    description: Update target version in POM
+    parameters:
+      version:
+        type: string
+        description: "Version to set in the project"
+    steps:
+      - run:
+          name: Update target version in POM
+          environment:
+            _VERSION: << parameters.version >>
+          command: |
+            mvn versions:set "-DnewVersion=$_VERSION" -DprocessAllModules
+            mvn versions:commit
+
+  update_compiler_version_in_pom:
+    description: Update compiler versions in POM
+    parameters:
+      jdk:
+        type: integer
+        description: "JDK version to set in the project"
+    steps:
+      - run:
+          name: Update compiler versions in POM
+          environment:
+            _JDK_VERSION: << parameters.jdk >>
+          command: |
+            sed -i "s:<java.compileVersion>.*</java.compileVersion>:<java.compileVersion>${_JDK_VERSION}</java.compileVersion>:" sandboxes/pom.xml
+
+  update_version_in_release_project:
+    description: Update the target version for assembling the release artifacts
+    parameters:
+      version:
+        type: string
+        description: "Version to set in the project"
+    steps:
+      - run:
+          name: Sets the released version in the side release project
+          environment:
+            _VERSION: << parameters.version >>
+          command: |
+            sed -i "s:<atotiserver.version>.*</atotiserver.version>:<atotiserver.version>${_VERSION}</atotiserver.version>:" continuous-integration/release/java/pom.xml
+
+  date_changelog_at_current_date:
+    steps:
+      - run:
+          name: Date changelog with release date
+          command: |
+            sed -i "s/{@today: -}/$(date +'%F')/" docs/release/changelog.md
+
+  send-message-on-slack:
+    # See README.md for documentation on slack integration
+    description: Sends a notification in Slack for the main branches
+    parameters:
+      message:
+        type: string
+      event:
+        type: enum
+        enum: ["fail", "pass", "always"]
+    steps:
+      - slack/notify:
+          event: << parameters.event >>
+          branch_pattern: << pipeline.parameters.base_branch >>
+          custom: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "<< parameters.message >>"
+                  },
+                  "accessory": {
+                    "type": "button",
+                    "text": {
+                      "type": "plain_text",
+                      "text": "Check",
+                      "emoji": true
+                    },
+                    "value": "click_me_123",
+                    "url": "${CIRCLE_BUILD_URL}",
+                    "action_id": "button-action"
+                  }
+                }
+              ]
+            }
+
+  send-nightly-test-failure-on-slack:
+    steps:
+      - send-message-on-slack:
+          message: "Job ${CIRCLE_JOB} of nightly tests *failed* on branch ${CIRCLE_BRANCH}"
+          event: fail
+
+  send-release-preparation-failure-on-slack:
+    steps:
+      - send-message-on-slack:
+          message: "Job ${CIRCLE_JOB} of the release preparation *failed* on branch ${CIRCLE_BRANCH}"
+          event: fail
+
+  send-continuous-release-failure-on-slack:
+    steps:
+      - send-message-on-slack:
+          message: "Job ${CIRCLE_JOB} of the continuous release *failed* on branch ${CIRCLE_BRANCH}"
+          event: fail
+
+  send-benchmark-execution-failure-on-slack:
+    steps:
+      - send-message-on-slack:
+          message: "Job ${CIRCLE_JOB} of the benchmarks *failed* on branch ${CIRCLE_BRANCH}"
+          event: fail
+
+  download_artifacts_from_workflow:
+    description: Retrieve artifacts from specific workflow and move io/atoti and com/activeviam to java-workspace
+    steps:
+      - run:
+          name: Retrieve artifacts from workflow << pipeline.parameters.continuous_release_workflow >>
+          # The first curl retrieve all jobs from a given workflow.
+          # Then, jq filter only the identifiers of those jobs.
+          # xargs and the second grep get the list of urls where artifacts are stored.
+          # The finals grep and wget respectively filter and download those files.
+          command: |
+            mkdir current-release
+            cd current-release
+            curl --silent --request GET --url https://circleci.com/api/v2/workflow/<< pipeline.parameters.continuous_release_workflow >>/job --header "Circle-Token: $CIRCLE_TOKEN" \
+              | jq '.items[].job_number' \
+              | xargs -I {} curl --silent --request GET --url 'https://circleci.com/api/v2/project/gh/activeviam/activepivot/{}/artifacts' --header "Circle-Token: $CIRCLE_TOKEN" \
+              | grep -o -E 'https://([^"]*)' \
+              | wget --verbose --header "Circle-Token: $CIRCLE_TOKEN" --no-verbose --input-file -
+            ls
+      - run:
+          name: Move compiled artifacts repositories to java-workspace
+          command: |
+            mkdir -p ~/java-workspace/
+            cd current-release
+            unzip m2-artifacts-repository.zip -d ~/java-workspace/
+            rm m2-artifacts-repository.zip
+
+executors:
+  jdk17-docker:
+    docker:
+      - image: << pipeline.parameters.java_17_image >>
+    environment:
+      LANG: C.UTF-8
+      LC_ALL: C.UTF-8
+
+  node-docker:
+    docker:
+      - image: << pipeline.parameters.node_image >>
+    environment:
+      LANG: C.UTF-8
+      LC_ALL: C.UTF-8
+      YARN_CACHE_FOLDER: /home/circleci/.cache/yarn
+
+  vm:
+    environment:
+      LANG: C.UTF-8
+      LC_ALL: C.UTF-8
+    machine: # https://www.testcontainers.org/supported_docker_environment/continuous_integration/circle_ci/
+      image: ubuntu-2204:2023.10.1
+
+  base:
+    docker:
+      - image: cimg/base:current
+
+  jdk:
+    parameters:
+      version:
+        description: Major version for openjdk image tag
+        type: integer
+        default: << pipeline.parameters.jdk >>
+    docker:
+      - image: cimg/openjdk:<< parameters.version >>.0-node
+    environment:
+      # - multithreading by default (1 thread per core)
+      # - explicitly specify non-interactive mode
+      # - remove Download(ing) logs for clarity
+      # - absolute path for subfolder operations
+      MAVEN_ARGS: -T 1C --batch-mode --no-transfer-progress --settings /home/circleci/project/.circleci/resources/settings.xml
+
+jobs:
+  do_nothing_job:
+    executor: node-docker
+    resource_class: small
+    steps:
+      - run:
+          name: Useless Step
+          command: echo "Do nothing, just here to show the name of the branch triggering this job"
+
+  build_artifacts:
+    executor: jdk17-docker
+    resource_class: large
+    working_directory: ~/activepivot
+    environment:
+      MVN_REPO: /home/circleci/.m2/repository
+      MVN_SETTINGS: .circleci/resources/settings.xml
+    parameters:
+      validate_checkstyle_and_formatting:
+        type: boolean
+        default: false
+    steps:
+      - checkout
+      - install_cli
+      - restore_java_cache
+      - restore_cache:
+          key: atoti-python-api-ci-{{ .Branch }}-
+      - when:
+          condition: << pipeline.parameters.run_atoti_python_api_ci >>
+          steps:
+            - cancel_atoti_python_api_ci
+      - compile_project:
+          parallel: -T 1C
+      - validate_checkstyle_and_formatting:
+          should_run: << parameters.validate_checkstyle_and_formatting >>
+      - run:
+          environment:
+            BASE_BRANCH: << pipeline.parameters.base_branch >>
+          name: Find changed modules
+          command: |
+            if [ -z "$CIRCLE_PULL_REQUEST" ]; then
+              CHANGED_MODULES=ALL
+            else
+              ./jmp.js ci --info changed-modules --base "origin/$BASE_BRANCH" --ref "$CIRCLE_BRANCH" --output /tmp/changed-modules.txt
+              CHANGED_MODULES=$(cat /tmp/changed-modules.txt)
+            fi
+            ./jmp.js ci --info list-modules --changed-modules "$CHANGED_MODULES" --output /tmp/modules-to-test.txt
+
+            echo "export CHANGED_MODULES='$CHANGED_MODULES'" >> ~/pr-env-vars
+            echo "export TESTED_MODULES='$(cat /tmp/modules-to-test.txt)'" >> ~/pr-env-vars
+            cat ~/pr-env-vars
+      - save_artifacts
+      - persist_to_workspace:
+          root: /home/circleci
+          paths:
+            - java-workspace/m2
+            - pr-env-vars
+      - save_java_cache_without_activeviam
+
+  test_artifacts:
+    parameters:
+      java_version:
+        type: string
+      should_run:
+        type: boolean
+        default: true
+      bundle:
+        type: string
+      resource_class:
+        type: enum
+        default: "large"
+        enum: [ "small", "medium", "medium+", "large", "xlarge" ]
+      mode:
+        type: enum
+        default: "unit"
+        enum: [ "unit", "full" ]
+      timeout:
+        type: string
+        default: "20m"
+    executor: vm
+    resource_class: << parameters.resource_class >>
+    working_directory: ~/activepivot
+    steps:
+      - gracefully_stop_job:
+          rest_of_job_should_run: << parameters.should_run >>
+      - shallow_checkout
+      - restore_java_cache
+      - install_java_version:
+          java_version: << parameters.java_version >>
+      - attach_workspace:
+          at: /home/circleci
+      - install_artifacts
+      - setup_cloud_credentials
+      - setup_directquery_cloud_credentials
+      - install_standalone_cli
+      - run:
+          name: Run unit tests
+          environment:
+            MAVEN_SETTINGS: .circleci/resources/settings.xml
+            NO_GCE_CHECK: "true"
+            AV_BUNDLE: << parameters.bundle >>
+            TEST_MODE: << parameters.mode >>
+            TEST_TIMEOUT: << parameters.timeout >>
+          command: |
+            sudo sysctl -w vm.overcommit_memory=1
+            export MAVEN_REPO="$HOME/.m2/repository"
+
+            case $TEST_MODE in
+              'full')
+                export MAVEN_TEST_PROFILE='--profiles test-nightly,!test-unitOnly'
+                echo "Running nightly tests"
+                ;;
+              *)
+                export MAVEN_TEST_PROFILE=""
+                ;;
+            esac
+
+            FORKS=1
+            case $AV_BUNDLE in
+              'atoti-directquery'|'direct-query'|'dq-bigquery'|'dq-clickhouse'|'dq-databricks'|'dq-mssql'|'dq-redshift'|'dq-snowflake'|'dq-synapse'|'_other_')
+                unset AWS_SECRET_ACCESS_KEY
+                export AWS_CREDENTIAL_PROFILES_FILE="$HOME/.aws/direct-query-credentials"
+                export GOOGLE_APPLICATION_CREDENTIALS="$HOME/.google/direct-query-credentials"
+                FORKS=4
+                echo "Using DirectQuery custom credentials"
+                ;;
+              'tech'|'cloud-sources'|'server')
+                FORKS=2
+                echo "Forking $FORKS process for $AV_BUNDLE"
+                ;;
+              'activepivot')
+                FORKS=3
+                echo "Forking $FORKS process for $AV_BUNDLE"
+                ;;
+            esac
+
+            # basic check: print version maven+java
+            mvn --version
+            source ~/pr-env-vars
+            echo "Testing modules: <{ $TESTED_MODULES }>"
+
+            FLAG_DIR="$HOME/circleci-executions/<< parameters.java_version >>"
+            LOG_DIR="$HOME/test-executions/<< parameters.java_version >>"
+            mkdir -p "$FLAG_DIR" "$LOG_DIR"
+            timeout --signal=KILL $TEST_TIMEOUT ./jmp.js test $MAVEN_TEST_PROFILE \
+               --until "Record execution" \
+               --bundle "$AV_BUNDLE" --modules "$TESTED_MODULES" \
+               --log-dir "$LOG_DIR" --forks $FORKS \
+               --flag-dir "$FLAG_DIR"
+      - persist_to_workspace:
+          root: /home/circleci
+          paths:
+            - circleci-executions
+      - save_test_results
+      - store_heap_dumps_on_failure
+      # Always store execution logs to be able to investigate timings of tests
+      - store_artifacts:
+          path: ~/test-executions
+
+  check_tests:
+    # This job depends on the execution of the "test_artifacts" job
+    executor: jdk17-docker
+    resource_class: small
+    parameters:
+      java_version:
+        type: string
+      should_run:
+        type: boolean
+        default: true
+    working_directory: ~/activepivot
+    steps:
+      - gracefully_stop_job:
+          rest_of_job_should_run: << parameters.should_run >>
+      - shallow_checkout
+      - attach_workspace:
+          at: /home/circleci
+      - install_standalone_cli
+      - run:
+          name: "Check that all the modules that were supposed to be tested indeed were tested."
+          command: |
+            ./jmp.js test --from "Double-check" --flag-dir "$HOME/circleci-executions/<< parameters.java_version >>"
+
+  run_benchmark:
+    executor: vm
+    resource_class: xlarge
+    parallelism: 4
+    working_directory: ~/activepivot
+    steps:
+      - git-shallow-clone/checkout:
+          no_tags: true
+      - restore_java_cache
+      - attach_workspace:
+          at: /home/circleci
+      - install_artifacts
+      - setup_cloud_credentials
+      - run_benchmark:
+          docker_image: << pipeline.parameters.java_11_image >>
+      - run:
+          name: chmod the output folder to 777
+          command: sudo chmod -R 777 benchmarks/target
+      - run:
+          name: Append stuff to "session.csv"
+          # First generate the path to the session.csv file by assuming the first entry in the
+          # benchmarks/target/benchmarks/output folder is the session Timestamp
+          # Then append the branch, SHA1, InstanceID properties to the session file on the resolved path.
+          command: PATHVAR="benchmarks/target/benchmarks/output/"
+            && PATHVAR+=$(ls benchmarks/target/benchmarks/output/>__tmp && head -n1 __tmp)
+            && PATHVAR+="/session.csv"
+            && rm __tmp
+            && echo -n ", << pipeline.git.branch >>, <<pipeline.git.revision>>, $(sudo dmidecode --string system-uuid), CIRCLECI" >> $PATHVAR
+      - persist_to_workspace:
+          # Must be an absolute path, or relative path from working_directory. This is a directory on the container which is
+          # taken to be the root directory of the workspace.
+          root: benchmarks/target/
+          # Must be relative path from root
+          paths:
+            - benchmarks/
+      - store_heap_dumps_on_failure
+
+  upload_to_aws:
+    executor: base
+    resource_class: small
+    steps:
+      - git-shallow-clone/checkout:
+          no_tags: true
+      - attach_workspace:
+          # Must be absolute path or relative path from working_directory
+          at: benchmarks/target
+      - aws-s3/sync:
+          #Requires the AWS AWS_SECRET_ACCESS_KEY and AWS_ACCESS_KEY_ID to be in the circleCI env, or it breaks.
+          from: benchmarks/target/benchmarks/output/
+          to: "s3://rndserver-benchmark-storage/$CIRCLE_BRANCH"
+          arguments: |
+            --exclude "*" --include "*.csv" \
+            --acl private \
+            --cache-control "max-age=86400"
+      - store_heap_dumps_on_failure
+
+  generate_and_push_benchmark_report:
+    docker:
+      - image: cimg/python:3.11
+    working_directory: ~/activepivot
+    resource_class: small
+    steps:
+      - git-shallow-clone/checkout:
+          no_tags: true
+      - python/install-packages:
+          pip-dependency-file: ./benchmarks/scripts/requirements_source.txt
+          pkg-manager: pip
+      - setup_cloud_credentials
+      # If benchmark run triggered via the api : the workflow comes from a PR, the run branch is the PR branch, and the
+      # Fallback one is the PR base branch
+      # In that case we publish a GitHub comment on the PR
+      - unless:
+          condition:
+            equal: [ "scheduled_pipeline" , << pipeline.trigger_source >> ]
+          steps:
+            - run:
+                name: Run report generation script
+                working_directory: ./benchmarks/scripts
+                command: |
+                  python3 reporting.py "<< pipeline.git.branch >>" "<< pipeline.parameters.base_branch >>"
+            - run:
+                name: Run publish script
+                working_directory: ./benchmarks/scripts
+                command: |
+                  python3 publishing.py "<< pipeline.git.branch >>" $GITHUB_TOKEN_90_DAYS $CIRCLE_PULL_REQUEST ""
+      # If benchmark run triggered via the scheduler : the workflow comes from the current branch anf the previous branch can be "computed"
+      # In that case we send a mail
+      - when:
+          condition:
+            equal: [ "scheduled_pipeline" , << pipeline.trigger_source >> ]
+          steps:
+            - run:
+                name: Run report generation script
+                working_directory: ./benchmarks/scripts
+                command: |
+                  python3 reporting.py "<< pipeline.parameters.base_branch >>" "<<pipeline.parameters.previous_branch>>"
+            - run:
+                name: Run publish script
+                working_directory: ./benchmarks/scripts
+                command: |
+                  python3 publishing.py "<< pipeline.git.branch >>" $GITHUB_TOKEN_90_DAYS "" $MAIL_APP_SECRET
+  check_api:
+    executor: jdk
+    resource_class: small
+    working_directory: ~/activepivot
+    steps:
+      - shallow_checkout
+      - install_cli
+      - restore_java_cache
+      - attach_workspace:
+          at: /home/circleci
+      - install_artifacts
+      - run:
+          name: Create export folders
+          command: |
+            mkdir /tmp/reportApiAnalysis
+      - run:
+          name: Analyze API
+          command: |
+            ./jmp.js api --export-folder /tmp/reportApiAnalysis
+      - run:
+          name: Compare API analysis to expected
+          command: diff --recursive /tmp/reportApiAnalysis api-mapping/snapshot/current-version
+
+  test_tools:
+    executor: node-docker
+    resource_class: small
+    working_directory: ~/activepivot
+    steps:
+      - shallow_checkout
+      - setup_npm
+      - install_javascript_env
+      - run:
+          name: Test CLI
+          command: yarn test-cli
+      - run:
+          name: Lint release scripts
+          working_directory: continuous-integration/common/scripts
+          command: yarn run lint
+      - run:
+          name: Test release scripts
+          working_directory: continuous-integration/common/scripts
+          command: yarn test
+
+  check-packages:
+    executor: base
+    resource_class: small
+    working_directory: ~/activepivot
+    environment:
+      BASE_BRANCH: << pipeline.parameters.base_branch >>
+    steps:
+      - checkout
+      - run:
+          name: Check conflicting modules
+          command: |
+            python3 .circleci/resources/find-cross-packages.py  "$BASE_BRANCH" "$CIRCLE_BRANCH"
+      - run:
+          name: Check badly-named packages
+          command: |
+            python3 .circleci/resources/check-new-packages.py  "$BASE_BRANCH" "$CIRCLE_BRANCH"
+
+
+  build_documentation:
+    executor: node-docker
+    # Medium machine won't work
+    resource_class: large
+    working_directory: ~/activepivot
+    steps:
+      - shallow_checkout
+      - install_javascript_env
+      - run:
+          name: Build documentation
+          command: yarn --cwd website build-all
+      - run:
+          name: Test documentation
+          command: yarn --cwd website test
+      - run:
+          name: Build REST documentation
+          command: yarn --cwd continuous-integration/release/rest-documentation run build
+
+  sonar_analysis:
+    executor: jdk17-docker
+    # A large machine is needed to perform the whole analysis, as it requires a lot of memory
+    resource_class: large
+    working_directory: ~/activepivot
+    environment:
+      MVN_REPO: /home/circleci/.m2/repository
+      MVN_SETTINGS: .circleci/resources/settings.xml
+    steps:
+      - checkout
+      - restore_java_cache
+      - install_cli # the whole CLI is required as Sonar might be launched first and be the one that must populate the cache
+      - compile_project:
+          parallel: -T 1C
+      - run:
+          environment:
+            BASE_BRANCH: << pipeline.parameters.base_branch >>
+          name: Analyse project
+          command: |
+            if [ -n "$CIRCLE_PULL_REQUEST" ]
+            then
+              GITHUB_PULL_REQUEST_ID=${CIRCLE_PULL_REQUEST##*/}
+              MAVEN_OPTS="-Xmx8G" mvn --settings .circleci/resources/settings.xml -Dmaven.repo.local=${HOME}/.m2/repository \
+                -Dsonar.pullrequest.base=$BASE_BRANCH \
+                -Dsonar.pullrequest.branch=$CIRCLE_BRANCH \
+                -Dsonar.pullrequest.key=$GITHUB_PULL_REQUEST_ID \
+                sonar:sonar
+            else
+              MAVEN_OPTS="-Xmx8G" mvn --settings .circleci/resources/settings.xml -Dmaven.repo.local=${HOME}/.m2/repository \
+                -Dsonar.branch.name=${CIRCLE_BRANCH} \
+                sonar:sonar
+            fi
+
+
+  pre_release:
+    executor: jdk17-docker
+    resource_class: medium
+    working_directory: ~/activepivot
+    environment:
+      MVN_REPO: /home/circleci/.m2/repository
+      MVN_SETTINGS: .circleci/resources/settings.xml
+    parameters:
+      deploy:
+        type: boolean
+        default: false
+    steps:
+      - shallow_checkout
+      - restore_java_cache
+      - install_standalone_cli
+      - unless:
+          condition: << parameters.deploy >>
+          steps:
+            # add the rewrite of the annotations here to validate during prs that the changes are not breaking
+            # this is added in this job to run during a pr while not checking style, only compilation
+            - rewrite_internal_into_deprecated
+            - run:
+                name: Check publication of a new version
+                command: |
+                  ./jmp.js publish --preRelease --concurrency 0
+      - when:
+          condition: << parameters.deploy >>
+          steps:
+            - create_pr_version:
+                variable_name: ATOTI_PR_VERSION
+            - run:
+                name: Publish a new version
+                command: |
+                  ./jmp.js publish --version=$ATOTI_PR_VERSION --runtime-only --concurrency 0
+      - run:
+          name: Check sizes of artifacts
+          command: |
+            # Use --concurrency 0 to report the size of all jars for tracking
+            ./jmp.js check --only "Check Atoti Runtime artifacts sizes" --concurrency 0
+
+  continuous_release:
+    executor: jdk17-docker
+    resource_class: medium
+    working_directory: ~/activepivot
+    environment:
+      MVN_REPO: /home/circleci/.m2/repository
+      MVN_SETTINGS: .circleci/resources/settings.xml
+    steps:
+      - shallow_checkout
+      - install_standalone_cli
+      - run:
+          name: Publish of a new version
+          command: |
+            ./jmp.js publish --concurrency 0
+      - save_java_cache_without_activeviam
+
+  upload_documentation:
+    executor: node-docker
+    resource_class: medium+
+    working_directory: ~/activepivot
+    steps:
+      - shallow_checkout
+      # Setup all credentials, to have AWS credentials to publish the doc
+      - setup_cloud_credentials
+      - install_javascript_env
+      - run:
+          name: Upload documentation
+          working_directory: website
+          command: yarn aws-deployment
+
+  atoti_python_api_ci:
+    executor: base
+    resource_class: small
+    working_directory: ~/activepivot
+    parameters:
+      should_run:
+        type: boolean
+        default: false
+    steps:
+      - gracefully_stop_job:
+          rest_of_job_should_run: << parameters.should_run >>
+      - restore_cache:
+          key: atoti-python-api-ci-{{ .Branch }}-
+      - cancel_atoti_python_api_ci
+      - shallow_checkout
+      - create_pr_version:
+          variable_name: ATOTI_PR_VERSION
+      - run:
+          name: Run the Atoti repository's CI
+          environment:
+            BASE_BRANCH: << pipeline.parameters.base_branch >>
+          command: |
+            PYTHON_BRANCH=$(cat atoti/PYTHON-TARGET-BRANCH)
+            [ -z "$PYTHON_BRANCH" ] && PYTHON_BRANCH=main
+            echo "Running against Atoti Python API branch < $PYTHON_BRANCH >"
+
+            PIPELINE_MESSAGE=$(curl --location --request POST \
+              --url https://circleci.com/api/v2/project/github/activeviam/atoti-python-api/pipeline \
+              --header 'Circle-Token: '"$ATOTI_SERVER_TOKEN"'' \
+              --header 'content-type: application/json' \
+              --data '{"branch": "'$PYTHON_BRANCH'","parameters":{"custom_atoti_server_version": "'$ATOTI_PR_VERSION'"}}')
+            echo "Pipeline information:" $PIPELINE_MESSAGE
+            PIPELINE_ID=$(echo "$PIPELINE_MESSAGE" | jq -r '.id')
+
+            echo "export PIPELINE_ID=$PIPELINE_ID" >> $BASH_ENV
+
+            sleep 15
+            ATOTI_PYTHON_WORKFLOW_ID=$(curl "https://circleci.com/api/v2/pipeline/$PIPELINE_ID/workflow?circle-token=$ATOTI_SERVER_TOKEN" | jq -r '.items[].id')
+            rm -f ~/pr-atoti-vars
+            echo "export ATOTI_PYTHON_PREVIOUS_WORKFLOW_ID=$ATOTI_PYTHON_WORKFLOW_ID" >> ~/pr-atoti-vars
+            echo "export ATOTI_PYTHON_WORKFLOW_ID=$ATOTI_PYTHON_WORKFLOW_ID" >> $BASH_ENV
+      - save_cache:
+          key: atoti-python-api-ci-{{ .Branch }}-{{ .BuildNum }}
+          paths:
+            - ~/pr-atoti-vars
+      - run:
+          name: Check if Atoti repository's pipeline is successful or not
+          command: |
+            STATUS=$(curl "https://circleci.com/api/v2/pipeline/$PIPELINE_ID/workflow?circle-token=$ATOTI_SERVER_TOKEN" | jq -r '.items[].status')
+
+            echo "You can check the created pipeline here : https://circleci.com/workflow-run/$ATOTI_PYTHON_WORKFLOW_ID"
+
+            while [ "$STATUS" == "running" ]; do
+              sleep 60
+              echo still running
+              STATUS=$(curl -s "https://circleci.com/api/v2/pipeline/$PIPELINE_ID/workflow?circle-token=$ATOTI_SERVER_TOKEN" | jq -r '.items[].status')
+            done
+
+            echo "finally done, checking final status: $STATUS"
+            if [[ "$STATUS" == "success" ]]; then
+              echo "Triggered pipeline was a success"
+              exit 0
+            else
+              echo "Stopping build, triggered pipeline was not a success"
+              exit 1
+            fi
+
+  deploy_atoti_test_servers:
+    executor: jdk17-docker
+    resource_class: large
+    working_directory: ~/activepivot
+    steps:
+      - checkout
+      - restore_java_cache
+      - install_cli
+      - run:
+          name: Prepare environment
+          command: |
+            mkdir -p ~/.m2
+            cp .circleci/resources/settings.xml ~/.m2
+            # Define the repository first before any maven command
+            export MAVEN_REPOSITORY=$HOME/.m2/repository
+            echo "export MAVEN_REPOSITORY=$MAVEN_REPOSITORY" >> ~/release-env-vars.sh
+      - compile_project:
+          parallel: -T 1C
+      - run:
+          name: Deploy test servers of Atoti Server
+          command: |
+            ./jmp.js publish --test-servers  --concurrency 0
+
+  checkout_current:
+    executor: base
+    resource_class: small
+    steps:
+      - checkout
+      - persist_to_workspace:
+          root: /home/circleci
+          paths:
+            - project
+
+  checkout_release:
+    executor: base
+    resource_class: small
+    steps:
+      - checkout
+      - run:
+          name: Retrieve next version and initial commit
+          command: |
+            # Retrieve latest commit for current release into file start_commit
+            start_commit=$(curl --silent --request GET --url https://circleci.com/api/v2/workflow/<< pipeline.parameters.continuous_release_workflow >> --header "Circle-Token: $CIRCLE_TOKEN" \
+              | jq -r '.pipeline_id' \
+              | xargs -I {} curl --silent --request GET --url 'https://circleci.com/api/v2/pipeline/{}' --header "Circle-Token: $CIRCLE_TOKEN" \
+              | jq -r '.vcs.revision')
+            echo "export START_COMMIT=${start_commit}" >> "$BASH_ENV"
+      - run:
+          name: Checkout the start commit
+          command: git checkout "${START_COMMIT}"
+      - persist_to_workspace:
+          root: /home/circleci
+          paths:
+            - project
+
+  init_release:
+    executor:
+      name: jdk
+      version: << pipeline.parameters.jdk >>
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /home/circleci
+      - run:
+          command: git checkout -b release-<< pipeline.parameters.version >>
+      - date_changelog_at_current_date
+      - run:
+          name: Clean changelog
+          command: |
+            sed -i -E ':a;N;$!ba;s/### [[:alnum:]]+(\n\n)(###|[[:digit:]])/\2/g' docs/release/changelog.md
+            sed -i -E ':a;N;$!ba;s/### [[:alnum:]]+(\n\n)(###|[[:digit:]])/\2/g' docs/release/changelog.md
+            git add docs/release/changelog.md
+            git commit -m '<< pipeline.parameters.jira >> Clean and format the changelog.'
+      - rewrite_internal_into_deprecated
+      - run:
+          name: Commit change InternalApi -> Deprecated
+          command: |
+            git add -u
+            git commit -m '<< pipeline.parameters.jira >> Turn internal API into @Deprecated.'
+      - update_version_in_poms:
+          version: << pipeline.parameters.version >>
+      - update_compiler_version_in_pom:
+          jdk: << pipeline.parameters.jdk >>
+      - update_version_in_release_project:
+          version: << pipeline.parameters.version >>
+      - run:
+          name: Commit new versions
+          command: |
+            git add -u
+            git commit -m '<< pipeline.parameters.jira >> Bump versions to release values.'
+      - persist_to_workspace:
+          root: /home/circleci
+          paths:
+            - project
+
+  install_release:
+    executor:
+      name: jdk
+      version: << pipeline.parameters.jdk >>
+    resource_class: xlarge
+    steps:
+      - attach_workspace:
+          at: /home/circleci
+      - restore_java_cache
+      - run:
+          name: Generate target version artifacts with Javadoc
+          command: mvn clean install -Prelease -Dcheckstyle.skip -Dfmt.skip -DskipTests
+      - run:
+          name: Clean repository (target files)
+          command: git clean -dfx
+      - save_artifacts
+      - save_java_cache_without_activeviam
+      - persist_to_workspace:
+          root: /home/circleci
+          paths:
+            - project
+            - java-workspace/m2
+
+  generate_artifacts:
+    executor:
+      name: jdk
+      version: << pipeline.parameters.jdk >>
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /home/circleci
+      - restore_java_cache
+      - install_artifacts
+      - run:
+          command: |
+            mkdir -p current-release
+      # Create ext sources jar
+      - run:
+          name: Generate ext sources
+          command: |
+            cd pivot/core/ext
+            mvn source:jar
+      - run:
+          command: |
+            mv pivot/core/ext/target/activepivot-ext-<< pipeline.parameters.version >>-sources.jar current-release/activepivot-ext-<< pipeline.parameters.version >>-sources.jar
+      - store_artifacts:
+          path: current-release/activepivot-ext-<< pipeline.parameters.version >>-sources.jar
+
+      # Create sandbox zip
+      - run:
+          name: Create sandbox zip
+          command: |
+            cd sandboxes/
+            git archive --format zip --output activepivot-sandboxes-<< pipeline.parameters.version >>.zip release-<< pipeline.parameters.version >>
+      - run:
+          command: |
+            mv sandboxes/activepivot-sandboxes-<< pipeline.parameters.version >>.zip current-release/sandbox-<< pipeline.parameters.version >>.zip
+      - store_artifacts:
+          path: current-release/sandbox-<< pipeline.parameters.version >>.zip
+      - persist_to_workspace:
+          root: /home/circleci
+          paths:
+            - project/current-release/sandbox-<< pipeline.parameters.version >>.zip
+
+      # Create directquery zip
+      - run:
+          name: Create directquery zip
+          command: |
+            cd apps/directquery
+            git archive --format zip --output directquery-<< pipeline.parameters.version >>.zip release-<< pipeline.parameters.version >>
+      - run:
+          command: |
+            mv apps/directquery/directquery-<< pipeline.parameters.version >>.zip current-release/directquery-springapp-<< pipeline.parameters.version >>.zip
+      - persist_to_workspace:
+          root: /home/circleci
+          paths:
+            - project/current-release/directquery-springapp-<< pipeline.parameters.version >>.zip
+
+      # Javadoc
+      - run:
+          name: Create Javadoc jar
+          command: |
+            cd continuous-integration/release/java
+            mvn javadoc:aggregate-jar -Pjavadoc-generation
+      - run:
+          command: mv continuous-integration/release/java/target/release-project-1.0.0-javadoc.jar current-release/javadoc-<< pipeline.parameters.version >>.jar
+      - store_artifacts:
+          path: current-release/javadoc-<< pipeline.parameters.version >>.jar
+
+      # Create repository
+      - run:
+          command: find ~/.m2/repository -name _remote.repositories -delete
+      - run:
+          command: |
+            cd continuous-integration/release/java
+            mvn assembly:assembly -U -Pjavadoc-generation
+      - run:
+          command: |
+            cd continuous-integration/release/java/target
+            cp release-project-1.0.0-repository.zip maven-repository-<< pipeline.parameters.version >>.zip
+            # Delete sandbox related files
+            zip maven-repository-<< pipeline.parameters.version >>.zip -d com/activeviam/sandbox/\*
+      - run:
+          command: mv continuous-integration/release/java/target/maven-repository-<< pipeline.parameters.version >>.zip current-release
+      - store_artifacts:
+          path: current-release/maven-repository-<< pipeline.parameters.version >>.zip
+      - persist_to_workspace:
+          root: /home/circleci
+          paths:
+            - project/current-release/maven-repository-<< pipeline.parameters.version >>.zip
+
+      # Create parquet repository
+      - run:
+          name: Generate parquet-source-<< pipeline.parameters.version >>.zip
+          command: |
+            cd ~/.m2/repository/
+            find . -regex './com/activeviam/parquet-source/<< pipeline.parameters.version >>/parquet-source-<< pipeline.parameters.version >>\(.jar\|-javadoc.jar\|.pom\)' | xargs -I {} zip parquet-source-<< pipeline.parameters.version >>.zip {}
+      - run:
+          command: mv ~/.m2/repository/parquet-source-<< pipeline.parameters.version >>.zip current-release
+      - store_artifacts:
+          path: current-release/parquet-source-<< pipeline.parameters.version >>.zip
+      - persist_to_workspace:
+          root: /home/circleci
+          paths:
+            - project/current-release/parquet-source-<< pipeline.parameters.version >>.zip
+
+      # Create cloud source repository
+      - run:
+          name: Generate cloud-source-<< pipeline.parameters.version >>.zip
+          command: |
+            cd ~/.m2/repository/
+            find . -regex './com/activeviam/source/cloud-source\(-aws\|-azure\|-common\|-google\|\)/<< pipeline.parameters.version >>/.*\(-javadoc\)?\.\(jar\|pom\)' | xargs -I {} zip cloud-source-<< pipeline.parameters.version >>.zip {}
+      - run:
+          command: mv ~/.m2/repository/cloud-source-<< pipeline.parameters.version >>.zip current-release
+      - store_artifacts:
+          path: current-release/cloud-source-<< pipeline.parameters.version >>.zip
+      - persist_to_workspace:
+          root: /home/circleci
+          paths:
+            - project/current-release/cloud-source-<< pipeline.parameters.version >>.zip
+
+      # Create direct-query repository
+      - run:
+          name: Generate direct-query-<< pipeline.parameters.version >>.zip
+          command: |
+            cd ~/.m2/repository/
+            find . -regex './com/activeviam/database/\(bigquery\|clickhouse\|composite-database\|database-commons\|databricks\|databricks-udafs\|directquery-test-starter\|mssql\|redshift\|snowflake\|sql-database\|synapse\|transact-sql\)/.*<< pipeline.parameters.version >>\(-javadoc\)?\.\(jar\|pom\)' | xargs -I {} zip direct-query-<< pipeline.parameters.version >>.zip {}
+            find . -regex './com/activeviam/activepivot/activepivot-external-database/.*<< pipeline.parameters.version >>\(-javadoc\)?\.\(jar\|pom\)' | xargs -I {} zip direct-query-<< pipeline.parameters.version >>.zip {}
+            find . -regex './com/activeviam/directquery/api-.*<< pipeline.parameters.version >>\(-javadoc\)?\.\(jar\|pom\)' | xargs -I {} zip direct-query-<< pipeline.parameters.version >>.zip {}
+      - run:
+          command: mv ~/.m2/repository/direct-query-<< pipeline.parameters.version >>.zip current-release
+      - store_artifacts:
+          path: current-release/direct-query-<< pipeline.parameters.version >>.zip
+      - persist_to_workspace:
+          root: /home/circleci
+          paths:
+            - project/current-release/direct-query-<< pipeline.parameters.version >>.zip
+
+      # Create shasum of artefacts
+      - run:
+          name: Compute shasum for release artefacts
+          command: |
+            cd current-release
+            shasum -a 256 activepivot-ext-<< pipeline.parameters.version >>-sources.jar \
+              cloud-source-<< pipeline.parameters.version >>.zip \
+              maven-repository-<< pipeline.parameters.version >>.zip \
+              direct-query-<< pipeline.parameters.version >>.zip \
+              parquet-source-<< pipeline.parameters.version >>.zip \
+              sandbox-<< pipeline.parameters.version >>.zip > << pipeline.parameters.version >>.sha256
+      - store_artifacts:
+          path: current-release/<< pipeline.parameters.version >>.sha256
+
+  docker:
+    executor:
+      name: jdk
+      version: << pipeline.parameters.jdk >>
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /home/circleci
+      - restore_java_cache
+      - install_artifacts
+      - run:
+          name: Unzip sandbox
+          command: |
+            mkdir -p current-release/integration-test/unzipped-sandbox
+            unzip current-release/sandbox-<< pipeline.parameters.version >>.zip -d current-release/integration-test/unzipped-sandbox
+      - run:
+          command: |
+            cd current-release/integration-test/unzipped-sandbox
+            mvn clean install -DskipTests -PformatValidation
+      - setup_remote_docker
+      - run:
+          name: Prepare files for Docker image
+          command: |
+            mkdir -p current-release/docker-zone
+            find current-release/integration-test -name "sandbox-*.jar" -not -name "sandbox-*-sources.jar"  -not -name "sandbox-*-code.jar" -type f -exec cp {} current-release/docker-zone \;
+      - docker/check:
+          registry: $ARTIFACTORY_REPO_RELEASE_URL
+      - docker/build:
+          docker-context: current-release/docker-zone
+          dockerfile: continuous-integration/docker-images/sandbox-jdk11/Dockerfile
+          image: sandboxes
+          registry: $ARTIFACTORY_REPO_RELEASE_URL
+          tag: << pipeline.parameters.version >>
+      - run:
+          command: docker save $ARTIFACTORY_REPO_RELEASE_URL/sandboxes:<< pipeline.parameters.version >> -o current-release/docker-image-sandbox-<< pipeline.parameters.version >>.tar
+      - store_artifacts:
+          path: current-release/docker-image-sandbox-<< pipeline.parameters.version >>.tar
+
+  build_rest_documentation:
+    executor: node-docker
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /home/circleci
+      - restore_cache:
+          keys:
+            - yarn-packages-v1-{{ checksum "package.json" }}
+            - yarn-packages-v1-
+      - run:
+          command: |
+            cd continuous-integration/release/rest-documentation
+            yarn install
+            yarn run build
+      - save_cache:
+          key: yarn-packages-v1-{{ checksum "package.json" }}
+          paths:
+            - ~/.cache/yarn
+      - run:
+          command: mv continuous-integration/release/rest-documentation/docs/ current-release/rest-documentation
+      - run:
+          name: Zip documentation
+          command: |
+            cd current-release/rest-documentation
+            zip rest-documentation-<< pipeline.parameters.version >>.zip *
+      - store_artifacts:
+          path: current-release/rest-documentation/rest-documentation-<< pipeline.parameters.version >>.zip
+
+  test_repository:
+    executor:
+      name: jdk
+      version: << pipeline.parameters.jdk >>
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /home/circleci
+      - run:
+          name: Unzip sandbox and repository archives to test repository content
+          command: |
+            mkdir -p current-release/test-repository/{sandbox,repository}
+            unzip current-release/sandbox-<< pipeline.parameters.version >>.zip -d current-release/test-repository/sandbox/
+            unzip current-release/maven-repository-<< pipeline.parameters.version >>.zip -d current-release/test-repository/repository/
+      - run:
+          name: Test sandbox package against provided repository
+          command: mvn -f current-release/test-repository/sandbox/pom.xml -Dmaven.repo.local=current-release/test-repository/repository/ clean package -DskipTests
+      - run:
+          name: Unzip directquery and maven repositories archives, and directquery springapp archive
+          command: |
+            mkdir -p current-release/test-directquery-repository/{springApp,repository}
+            unzip current-release/directquery-springapp-<< pipeline.parameters.version >>.zip -d current-release/test-directquery-repository/springApp/
+            unzip current-release/maven-repository-<< pipeline.parameters.version >>.zip -d current-release/test-directquery-repository/repository/
+            unzip -o current-release/direct-query-<< pipeline.parameters.version >>.zip -d current-release/test-directquery-repository/repository/
+      - run:
+          name: Test directquery package against provided repositories
+          command: mvn -f current-release/test-directquery-repository/springApp/pom.xml -Dmaven.repo.local=current-release/test-directquery-repository/repository/ clean package -DskipTests -Dcheckstyle.skip
+
+  open_source_license_generation:
+    executor:
+      name: jdk
+      version: << pipeline.parameters.jdk >>
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /home/circleci
+      - restore_java_cache
+      - install_artifacts
+      - install_jfrog
+      - run:
+          name: Audit dependencies
+          command: jf audit --mvn --licenses --format=json > output
+      - run:
+          name: Format to tsv
+          command: python3 .circleci/resources/export-licences-to-tsv.py > current-release/licenses-activepivot-<< pipeline.parameters.version >>.tsv
+      - store_artifacts:
+          path: current-release/licenses-activepivot-<< pipeline.parameters.version >>.tsv
+
+  create_mail:
+    executor:
+      name: base
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /home/circleci
+      - install_chevron
+      - run:
+          command: |
+            cd continuous-integration/release/
+            jq -n '. += {fullVersion: "<< pipeline.parameters.version >>",product: "ActivePivot_stable"}' > data.json
+            chevron -d data.json release_email.html.mustache > email.html
+      - store_artifacts:
+          path: continuous-integration/release/email.html
+
+  store_artefact_repository:
+    executor:
+      name: base
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /home/circleci
+      - run:
+          command: |
+            cd ~/java-workspace
+            zip -r m2-artifacts-repository.zip m2
+      - store_artifacts:
+          path: /home/circleci/java-workspace/m2-artifacts-repository.zip
+
+  download_artifacts:
+    executor:
+      name: base
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /home/circleci
+      - download_artifacts_from_workflow
+      - install_artifacts
+      - persist_to_workspace:
+          root: /home/circleci
+          paths:
+            - project/current-release
+            - .m2/repository/com/activeviam
+            - .m2/repository/io/atoti
+
+  create_release_tag:
+    executor:
+      name: jdk
+      version: << pipeline.parameters.jdk >>
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /home/circleci
+      - restore_java_cache
+      - run:
+          name: Tag version << pipeline.parameters.version >>
+          # https://support.circleci.com/hc/en-us/articles/360057590591-How-to-ignore-a-failure-in-a-step-
+          command: |
+            git tag -d << pipeline.parameters.version >> || true
+            git tag << pipeline.parameters.version >>
+      - install_ssh_credentials_github
+      - run:
+          command: |
+            git push origin << pipeline.parameters.version >>
+
+  publish_release_on_artifacts_server:
+    executor:
+      name: jdk
+      version: << pipeline.parameters.jdk >>
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /home/circleci
+      - install_rsync
+      - install_ssh_credentials_artifacts_server
+      - run:
+          name: Publish artifacts on artifacts server
+          command: |
+            dest_folder='/release_repo/share/ActivePivot_stable/<< pipeline.parameters.version >>'
+            ssh "${ARTIFACTS_URL}" "mkdir -p ${dest_folder}"
+            cd current-release
+            rsync activepivot-ext-<< pipeline.parameters.version >>-sources.jar \
+              cloud-source-<< pipeline.parameters.version >>.zip \
+              maven-repository-<< pipeline.parameters.version >>.zip \
+              direct-query-<< pipeline.parameters.version >>.zip \
+              parquet-source-<< pipeline.parameters.version >>.zip \
+              sandbox-<< pipeline.parameters.version >>.zip \
+              "${ARTIFACTS_URL}:${dest_folder}"
+      - run:
+          name: Publish documentation on artifacts server
+          command: |
+            dest_folder='/release_repo/documentation/rest/<< pipeline.parameters.version >>'
+            ssh "${ARTIFACTS_URL}" "mkdir -p ${dest_folder}"
+            rsync current-release/rest-documentation-<< pipeline.parameters.version >>.zip "${ARTIFACTS_URL}:${dest_folder}"
+            ssh "${ARTIFACTS_URL}" "unzip -o ${dest_folder}/rest-documentation-<< pipeline.parameters.version >>.zip -d ${dest_folder}"
+            ssh "${ARTIFACTS_URL}" "rm ${dest_folder}/rest-documentation-<< pipeline.parameters.version >>.zip"
+      - run:
+          name: Publish javadoc on artifacts server
+          command: |
+            dest_folder='/release_repo/documentation/javadoc/activepivot/<< pipeline.parameters.version >>'
+            ssh "${ARTIFACTS_URL}" "mkdir -p ${dest_folder}"
+            rsync current-release/javadoc-<< pipeline.parameters.version >>.jar "${ARTIFACTS_URL}:${dest_folder}"
+            ssh "${ARTIFACTS_URL}" "unzip -o ${dest_folder}/javadoc-<< pipeline.parameters.version >>.jar -d ${dest_folder}"
+            ssh "${ARTIFACTS_URL}" "rm ${dest_folder}/javadoc-<< pipeline.parameters.version >>.jar"
+
+  publish_release_on_artifactory:
+    executor:
+      name: jdk
+      version: << pipeline.parameters.jdk >>
+    resource_class: xlarge
+    steps:
+      - attach_workspace:
+          at: /home/circleci
+      - restore_java_cache
+      - run:
+          name: Publish release
+          command: mvn clean deploy -Prelease -Pactiveviam-repositories-release -DskipTests -Dfmt.skip -Dcheckstyle.skip
+
+  publish_release_shasums:
+    executor:
+      name: base
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /home/circleci
+      - install_az_cli
+      - run:
+          name: Download shasum file << pipeline.parameters.version >> if exists
+          command: az storage blob download --container-name $AZURE_SEAL_RELEASE_CONTAINER_NAME --account-key $AZURE_SEAL_STORAGE_ACCESS_KEY --account-name $AZURE_SEAL_STORAGE_ACCOUNT --name << pipeline.parameters.version >>.sha256 -f current-release/<< pipeline.parameters.version >>.sha256.previous || true
+      - run:
+          name: Sanity check
+          command: |
+            cd current-release
+            if [ -e << pipeline.parameters.version >>.sha256 ]; then
+              # Ensure files are equivalent
+              sort << pipeline.parameters.version >>.sha256.previous > << pipeline.parameters.version >>.sha256.previous.sorted
+              sort << pipeline.parameters.version >>.sha256 > << pipeline.parameters.version >>.sha256.sorted
+              diff << pipeline.parameters.version >>.sha256.previous.sorted << pipeline.parameters.version >>.sha256.sorted
+              if [ $? -eq 0 ]; then
+                >&2 echo "Current seal and released seal are not identical. This can lead to a corrupted version of artefacts. To by-pass, please remove << pipeline.parameters.version >>.sha256 from Azure container before relaunching this step."
+                exit 1
+              fi
+            fi
+
+            # Check if artifacts are still valids (sanity check)
+            shasum -c << pipeline.parameters.version >>.sha256
+      - run:
+          name: Upload checksumFile to blob storage
+          command: az storage blob upload --file current-release/<< pipeline.parameters.version >>.sha256 --container-name $AZURE_SEAL_RELEASE_CONTAINER_NAME --account-key $AZURE_SEAL_STORAGE_ACCESS_KEY --account-name $AZURE_SEAL_STORAGE_ACCOUNT --name << pipeline.parameters.version >>.sha256 --overwrite
+
+  publish_docs_aws:
+    executor: node-docker
+    resource_class: medium+
+    steps:
+      - attach_workspace:
+          at: /home/circleci
+      - setup_cloud_credentials
+      - run:
+          name: Publish documentation on AWS
+          command: |
+            cd website
+            yarn install
+            yarn run aws-deployment
+
+  open_bump_pr:
+    executor:
+      name: jdk
+      version: << pipeline.parameters.jdk >>
+    resource_class: xlarge
+    steps:
+      - attach_workspace:
+          at: /home/circleci
+      - run:
+          name: Retrieve next version and initial commit
+          command: |
+            # Retrieve latest commit for current release into file start_commit
+            start_commit=$(curl --silent --request GET --url https://circleci.com/api/v2/workflow/<< pipeline.parameters.continuous_release_workflow >> --header "Circle-Token: $CIRCLE_TOKEN" \
+              | jq -r '.pipeline_id' \
+              | xargs -I {} curl --silent --request GET --url 'https://circleci.com/api/v2/pipeline/{}' --header "Circle-Token: $CIRCLE_TOKEN" \
+              | jq -r '.vcs.revision')
+            echo "export START_COMMIT=${start_commit}" >> "$BASH_ENV"
+            # Bump version into file version
+            version=$(python .circleci/resources/version_updater.py << pipeline.parameters.version >>)
+            echo "export VERSION=${version}" >> "$BASH_ENV"
+      - run:
+          name: Create bump branch
+          # Bump patch version to n+1
+          command: git checkout -b "release/bump-versions-to-${VERSION}-SNAPSHOT" "${START_COMMIT}"
+      - run:
+          name: Bump version in POM files
+          command: |
+            mvn versions:set -DnewVersion="${VERSION}-SNAPSHOT" -DprocessAllModules
+            mvn versions:commit
+            sed -i "s:<atotiserver.version>.*</atotiserver.version>:<atotiserver.version>${VERSION}-SNAPSHOT</atotiserver.version>:" continuous-integration/release/java/pom.xml
+            git add -u
+            git commit -m '<< pipeline.parameters.jira >> Bump snapshot versions'
+      - date_changelog_at_current_date
+      - run:
+          name: Insert the new version's section in the changelog file
+          command: |
+            # Set version in empty section template
+            sed "s/{{ nextVersion }}/${VERSION}/" .circleci/resources/changelog_section.mustache > new_section.md
+            # Then add it before the current version
+            sed -i '/<< pipeline.parameters.version >>/e cat new_section.md' docs/release/changelog.md
+            rm new_section.md
+            git add docs/release/changelog.md
+            git commit -m '<< pipeline.parameters.jira >> Date CHANGELOG and add empty section'
+      - run:
+          name: Upgrade version in CircleCI config file
+          command: |
+            # Change default value of parameters.version to new release
+            sed -i "s/<< pipeline.parameters.version >> # edited by pipeline/${VERSION} # edited by pipeline/" .circleci/config.yml
+            git add .circleci/config.yml
+            git commit -m '<< pipeline.parameters.jira >> Upgrade version in CircleCI config file'
+      - install_ssh_credentials_github
+      - github-cli/setup:
+          token: GITHUB_TOKEN_90_DAYS
+      - run:
+          name: Push and open PR
+          command: |
+            git push origin -u "release/bump-versions-to-${VERSION}-SNAPSHOT"
+            gh pr create --base << pipeline.parameters.base_branch >> --template 'PULL_REQUEST_TEMPLATE.md' --title "<< pipeline.parameters.jira >> Bump version to ${VERSION}-SNAPSHOT"
+
+# We have 2 workflows with an opposite condition on "pipeline.parameters.run_tests" to only run tests when requested
+# This cannot be refactored further as there is no conditional execution on jobs (there is some on workflows and within jobs)
 workflows:
-  version: 2
-  build_test_deploy:
+  temporary-workflow:
     jobs:
-      - npm_install:
-          context:
-            - org-global
-            - slack-secrets
-          filters:
-            branches:
-              ignore:
-                - main
-                - development
+      - do_nothing_job:
+          context: rnd-server
 
-      - build:
-          requires:
-            - npm_install
-          filters:
-            branches:
-              ignore:
-                - main
-                - development
-
-      - lint:
-          requires:
-            - npm_install
-          filters:
-            branches:
-              ignore:
-                - main
-                - development
-
-      - test:
-          requires:
-            - npm_install
-          filters:
-            branches:
-              only: /.*/
-  production_1:
-    jobs:
-      - npm_install:
-          context:
-            - aws-production
-            - slack-secrets
-  production_4:
-    jobs:
-      - npm_install:
-          context:
-            - aws-production
-            - slack-secrets            
-  production_3:
-    jobs:
-      - npm_install:
-          context:
-            - aws-production
-            - slack-secrets            
-  production_2:
-    jobs:
-      - npm_install:
-          context:
-            - aws-production
-            - slack-secrets            
-
-
-  production:
-    jobs:
-      - npm_install:
-          context:
-            - aws-production
-            - slack-secrets
-          filters: &filter-prod
-            branches:
-              ignore: /.*/
-            tags:
-              only: /^v.*/
-          <<: *slack-fail-post-step
-
-      - lint:
-          requires:
-            - npm_install
-          filters:
-            <<: *filter-prod
-          <<: *slack-fail-post-step
-
-      - test:
-          requires:
-            - npm_install
-          filters:
-            <<: *filter-prod
-          <<: *slack-fail-post-step
-
-      - buildnumber:
-          requires:
-            - test
-            - lint
-          filters:
-            <<: *filter-prod
-          <<: *slack-fail-post-step
-
-      - docker-build:
-          context:
-            - org-global
-            - aws-production
-            - slack-secrets
-          requires:
-            - buildnumber
-          filters:
-            <<: *filter-prod
-          <<: *slack-fail-post-step
-
-      - docker-flyway-build:
-          context:
-            - org-global
-            - aws-production
-            - slack-secrets
-          requires:
-            - buildnumber
-          filters:
-            <<: *filter-prod
-          <<: *slack-fail-post-step
-
-      - deploy-ecs:
-          context:
-            - aws-production
-            - slack-secrets
-          requires:
-            - docker-build
-            - docker-flyway-build
-          filters:
-            <<: *filter-prod
-          <<: *slack-fail-post-step
-
-      #  Deploy Lambda Functions
-      - deploy-lambda-api:
-          context:
-            - aws-production
-            - slack-secrets
-          requires:
-            - docker-build
-            - docker-flyway-build
-            #- lambda-build
-          filters:
-            <<: *filter-prod
-          post-steps:
-            - slack/notify:
-                event: pass
-                template: success_tagged_deploy_1
-            - slack/notify:
-                event: fail
-                template: basic_fail_1
-
-  Web-automation-E2E-suite:
+  check:
     when:
-      and: 
-        - equal: [ true, << pipeline.parameters.executeE2ESuite >> ]
-        - equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+      and:
+        - not:
+            equal: [ "scheduled_pipeline" , << pipeline.trigger_source >> ]
+        - << pipeline.parameters.run_check_workflow >>
     jobs:
-      - npm_install
+      - build_artifacts:
+          validate_checkstyle_and_formatting: << pipeline.parameters.enforced_style >>
+          context: rnd-server
+      #      Adding a middle step with negligible cost, to avoid having tens of arrows between jobs.
+      - do_nothing_job:
+          name: test_start_database_artifact
+          requires:
+            - build_artifacts
+      - test_artifacts:
+          requires:
+            - build_artifacts
+          context:
+            - rnd-server
+            - rnd-directquery
+          name: test_<< matrix.bundle >>
+          java_version: << pipeline.parameters.java_11_version >>
+          should_run: << pipeline.parameters.run_tests >>
+          resource_class: "xlarge"
+          matrix:
+            parameters:
+              bundle:
+                - activepivot
+                - distribution
+                - tech
+            alias: test_artifacts_xlarge
+      - test_artifacts:
+          requires:
+            - build_artifacts
+          context:
+            - rnd-server
+            - rnd-directquery
+          name: test_<< matrix.bundle >>
+          java_version: << pipeline.parameters.java_11_version >>
+          should_run: << pipeline.parameters.run_tests >>
+          resource_class: "large"
+          matrix:
+            parameters:
+              bundle:
+                - server
+                - atoti
+                - atoti-directquery
+            alias: test_artifacts_large
+      - test_artifacts:
+          requires:
+            - build_artifacts
+          context:
+            - rnd-server
+            - rnd-directquery
+          name: test_<< matrix.bundle >>
+          java_version: << pipeline.parameters.java_11_version >>
+          should_run: << pipeline.parameters.run_tests >>
+          resource_class: "medium"
+          matrix:
+            parameters:
+              bundle:
+                - _other_
+                - content-server
+                - legacy
+            alias: test_artifacts_medium
+      - test_artifacts:
+          requires:
+            - build_artifacts
+          context:
+            - rnd-server
+            - rnd-directquery
+          name: test_<< matrix.bundle >>
+          java_version: << pipeline.parameters.java_11_version >>
+          should_run: << pipeline.parameters.run_tests >>
+          resource_class: "small"
+          matrix:
+            parameters:
+              bundle:
+                - application
+                - cloud-sources
+                - sources
+            alias: test_artifacts_small
+      - test_artifacts:
+          requires:
+            - test_start_database_artifact
+          context:
+            - rnd-server
+            - rnd-directquery
+          name: test_<< matrix.bundle >>
+          java_version: << pipeline.parameters.java_11_version >>
+          should_run: << pipeline.parameters.run_tests >>
+          resource_class: "large"
+          matrix:
+            parameters:
+              bundle:
+                - direct-query
+                - dq-bigquery  # BigQuery is slower than other DBs, so needs more threads
+                # MsSql needs enough memory for all the dockers
+                - dq-mssql # https://www.testcontainers.org/supported_docker_environment/continuous_integration/circle_ci/
+            alias: test_dq_artifacts_large
+      # Run small bundles with smaller timeout.
+      - test_artifacts:
+          requires:
+            - test_start_database_artifact
+          context:
+            - rnd-server
+            - rnd-directquery
+          name: test_<< matrix.bundle >>
+          java_version: << pipeline.parameters.java_11_version >>
+          should_run: << pipeline.parameters.run_tests >>
+          resource_class: "medium"
+          timeout: "5m" # These tests should last 2m30, so we time out after 5m to avoid 20m failures
+          matrix:
+            parameters:
+              bundle:
+                - dq-pivot-clickhouse
+                - dq-pivot-snowflake
+            alias: test_dq_artifacts_fast
+      - test_artifacts:
+          requires:
+            - test_start_database_artifact
+          context:
+            - rnd-server
+            - rnd-directquery
+          name: test_<< matrix.bundle >>
+          java_version: << pipeline.parameters.java_11_version >>
+          should_run: << pipeline.parameters.run_tests >>
+          resource_class: "medium"
+          matrix:
+            parameters:
+              bundle:
+                - database
+                - dq-clickhouse # https://www.testcontainers.org/supported_docker_environment/continuous_integration/circle_ci/
+                - dq-databricks
+                - dq-dremio
+                - dq-jdbc
+                - dq-redshift
+                - dq-snowflake
+                - dq-synapse
+            alias: test_dq_artifacts_medium
+      #      Adding a middle step with negligible cost, to avoid having tens of arrows between jobs.
+      - do_nothing_job:
+          name: test_end_database_artifact
+          requires:
+            - test_dq_artifacts_medium
+            - test_dq_artifacts_fast
+            - test_dq_artifacts_large
+      #      Adding a middle step with negligible cost, to avoid having tens of arrows between jobs.
+      - do_nothing_job:
+          name: aggregator
+          requires:
+            - test_artifacts_small
+            - test_artifacts_medium
+            - test_artifacts_large
+            - test_artifacts_xlarge
+            - test_end_database_artifact
+      - check_tests:
+          context: rnd-server
+          name: check_artifacts
+          should_run: << pipeline.parameters.run_tests >>
+          java_version: << pipeline.parameters.java_11_version >>
+          requires:
+            - aggregator
+      - check_api:
+          context: rnd-server
+          requires:
+            - aggregator
+      - build_documentation:
+          context: rnd-server
+          requires:
+            - aggregator
+      - test_tools:
+          context: rnd-server
+          requires:
+            - aggregator
+      - check-packages:
+          context: rnd-server
+          requires:
+            - aggregator
 
-      # - lint:
-      #     requires:
-      #       - npm_install
-
-
-      # - test:
-      #     requires:
-      #       - npm_install
-
-      # - buildnumber:
-      #     requires:
-      #       - test
-      #       - lint
-
-
-      # # Actual Docker container
-      # - docker-build:
-      #     context:
-      #       - org-global
-      #       - aws-staging
-      #       - slack-secrets
-      #     requires:
-      #       - buildnumber
-
-
-      # # Flyway
-      # - docker-flyway-build:
-      #     context:
-      #       - org-global
-      #       - aws-staging
-      #       - slack-secrets
-      #     requires:
-      #       - buildnumber
-      #     filters:
-
-
-      # #  Deploy ECS Docker
-      # - deploy-ecs:
-      #     context:
-      #       - aws-staging
-      #       - slack-secrets
-      #     requires:
-      #       - docker-build
-      #       - docker-flyway-build
-
-
-      # #  Deploy Lambda Functions
-      # - deploy-lambda-api:
-      #     context:
-      #       - aws-staging
-      #       - slack-secrets
-      #     requires:
-      #       - docker-build
-      #       - docker-flyway-build
-      #       #- lambda-build
-
-      #     post-steps:
-      #       - slack/notify:
-      #           event: pass
-      #           template: basic_success_1
-      #       - slack/notify:
-      #           event: fail
-      #           template: basic_fail_1
-
-  development:
+  continuous_integration:
+    when:
+      and:
+        - not:
+            equal: [ "scheduled_pipeline" , << pipeline.trigger_source >> ]
+        - << pipeline.parameters.run_check_workflow >>
     jobs:
-      - npm_install:
-          context:
-            - org-global
-            - aws-development
-            - slack-secrets
-
-
-      - lint:
+      - pre_release:
+          context: rnd-server
+          deploy: << pipeline.parameters.run_atoti_python_api_ci >>
+      - atoti_python_api_ci:
+          context: rnd-server
+          name: run_atoti_python_api_ci
+          should_run: << pipeline.parameters.run_atoti_python_api_ci >>
           requires:
-            - npm_install
+            - pre_release
 
-
-      - test:
-          requires:
-            - npm_install
-
-      - buildnumber:
-          requires:
-            - test
-            - lint
-
-      # Actual Docker container
-      - docker-build:
-          context:
-            - org-global
-            - aws-development
-            - slack-secrets
-          requires:
-            - buildnumber
-
-
-      # Flyway
-      - docker-flyway-build:
-          context:
-            - org-global
-            - aws-development
-            - slack-secrets
-          requires:
-            - buildnumber
-
-
-      #  Deploy ECS Docker
-      - deploy-ecs:
-          context:
-            - aws-development
-            - slack-secrets
-          requires:
-            - docker-build
-            - docker-flyway-build
-
-
-      #  Deploy Lambda Functions
-      - deploy-lambda-api:
-          context:
-            - aws-development
-            - slack-secrets
-          requires:
-            - docker-build
-            - docker-flyway-build
-
+  nightly_test_run:
+    when:
+      and:
+        - equal: [ "scheduled_pipeline" , << pipeline.trigger_source >> ]
+        - equal: [ << pipeline.parameters.base_branch >> , << pipeline.git.branch >> ]
+        - equal: [ "6.0 nightly test run" , << pipeline.schedule.name >> ]
+    jobs:
+      - build_artifacts:
+          context: rnd-server
           post-steps:
-            - slack/notify:
-                event: pass
-                template: basic_success_1
-            - slack/notify:
-                event: fail
-                template: basic_fail_1
+            - send-nightly-test-failure-on-slack
+      - test_artifacts:
+          requires:
+            - build_artifacts
+          context:
+            - rnd-server
+            - rnd-directquery
+          name: test_<< matrix.bundle >>
+          java_version: << pipeline.parameters.java_17_version >>
+          mode: full
+          matrix:
+            parameters:
+              bundle:
+                - _other_
+                - activepivot
+                - application
+                - atoti
+                - atoti-directquery
+                - cloud-sources
+                - content-server
+                - database
+                - direct-query
+                - distribution
+                - dq-bigquery
+                - dq-clickhouse
+                - dq-databricks
+                - dq-dremio
+                - dq-jdbc
+                - dq-mssql
+                - dq-redshift
+                - dq-snowflake
+                - dq-synapse
+                - dq-pivot-clickhouse
+                - dq-pivot-snowflake
+                - legacy
+                - server
+                - sources
+                - tech
+          post-steps:
+            - send-nightly-test-failure-on-slack
+      - pre_release:
+          context: rnd-server
+          deploy: true
+          requires:
+            - build_artifacts
+          post-steps:
+            - send-nightly-test-failure-on-slack
+      - atoti_python_api_ci:
+          context: rnd-server
+          name: run_atoti_python_api_ci
+          should_run: true
+          requires:
+            - pre_release
+          post-steps:
+            - send-nightly-test-failure-on-slack
+      - check_tests:
+          context: rnd-server
+          name: check_artifacts
+          java_version: << pipeline.parameters.java_17_version >>
+          requires:
+            - test_artifacts
+          post-steps:
+            - send-nightly-test-failure-on-slack
+      - build_documentation:
+          context: rnd-server
+          requires:
+            - test_artifacts
+          post-steps:
+            - send-nightly-test-failure-on-slack
+
+  sonar:
+    #  Run sonar on any pipeline that requires it, as part of the Pull Request workflow, but also
+    #  once a day on the base branch.
+    when:
+      or:
+        - and:
+            - not:
+                equal: [ << pipeline.parameters.base_branch >> , << pipeline.git.branch >> ]
+            - not:
+                equal: [ "scheduled_pipeline" , << pipeline.trigger_source >> ]
+            - << pipeline.parameters.run_sonar >>
+        - and:
+            - equal: [ "scheduled_pipeline" , << pipeline.trigger_source >> ]
+            - equal: [ << pipeline.parameters.base_branch >> , << pipeline.git.branch >> ]
+            - equal: [ "6.0 nightly test run" , << pipeline.schedule.name >> ]
+    jobs:
+      - sonar_analysis:
+          context: rnd-server
+          post-steps:
+            - send-continuous-release-failure-on-slack
+
+  continuous_release:
+    when:
+      and:
+        - equal: [ "webhook" , << pipeline.trigger_source >> ]
+        - equal: [ << pipeline.parameters.base_branch >> , << pipeline.git.branch >> ]
+    jobs:
+      - continuous_release:
+          context: rnd-server
+          post-steps:
+            - send-continuous-release-failure-on-slack
+      - upload_documentation:
+          context: rnd-server
+          post-steps:
+            - send-continuous-release-failure-on-slack
+
+  run_benchmark:
+    when:
+      or:
+        - and:
+            - not:
+                equal: [ << pipeline.parameters.base_branch >> , << pipeline.git.branch >> ]
+            - not:
+                equal: [ "scheduled_pipeline" , << pipeline.trigger_source >> ]
+            - << pipeline.parameters.run_benchmark_workflow >>
+        - and:
+            - equal: [ "scheduled_pipeline" , << pipeline.trigger_source >> ]
+            - equal: [ << pipeline.parameters.base_branch >> , << pipeline.git.branch >> ]
+            - equal: [ "6.0 benchmark run" , << pipeline.schedule.name >> ]
+    jobs:
+      - build_artifacts:
+          context: rnd-server
+          post-steps:
+            - send-benchmark-execution-failure-on-slack
+      - run_benchmark:
+          context: rnd-server
+          requires:
+            - build_artifacts
+          post-steps:
+            - send-benchmark-execution-failure-on-slack
+      - upload_to_aws:
+          context: rnd-server
+          requires:
+            - run_benchmark
+          post-steps:
+            - send-benchmark-execution-failure-on-slack
+      - generate_and_push_benchmark_report:
+          context: rnd-server
+          requires:
+            - upload_to_aws
+          post-steps:
+            - send-benchmark-execution-failure-on-slack
+
+  deploy-atoti-test-servers:
+    # not adding any message because this is trigger manually and can be easily monitored
+    when:
+      and:
+        - equal: [ << pipeline.parameters.base_branch >> , << pipeline.git.branch >> ]
+    jobs:
+      - hold-test-servers-deploy:
+          context: rnd-server
+          type: approval
+      - deploy_atoti_test_servers:
+          context: rnd-server
+          requires: [ hold-test-servers-deploy ]
+
+  continuous_release_preparation:
+    when:
+      and:
+        - equal: [ "webhook" , << pipeline.trigger_source >> ]
+        - equal: [ << pipeline.parameters.base_branch >> , << pipeline.git.branch >> ]
+    jobs:
+      - checkout_current
+      - init_release:
+          context: rnd-server
+          requires:
+            - checkout_current
+          post-steps:
+            - send-release-preparation-failure-on-slack
+      - install_release:
+          context: rnd-server
+          requires:
+            - init_release
+          post-steps:
+            - send-release-preparation-failure-on-slack
+      - generate_artifacts:
+          context: rnd-server
+          requires:
+            - install_release
+          post-steps:
+            - send-release-preparation-failure-on-slack
+      - docker:
+          context: rnd-server
+          requires:
+            - generate_artifacts
+          post-steps:
+            - send-release-preparation-failure-on-slack
+      - build_rest_documentation:
+          requires:
+            - generate_artifacts
+          post-steps:
+            - send-release-preparation-failure-on-slack
+      - test_repository:
+          requires:
+            - generate_artifacts
+          post-steps:
+            - send-release-preparation-failure-on-slack
+      - open_source_license_generation:
+          context: rnd-server
+          requires:
+            - generate_artifacts
+          post-steps:
+            - send-release-preparation-failure-on-slack
+      - create_mail:
+          requires:
+            - install_release
+          post-steps:
+            - send-release-preparation-failure-on-slack
+      - store_artefact_repository:
+          requires:
+            - install_release
+          post-steps:
+            - send-release-preparation-failure-on-slack
+
+  release:
+    # not adding any message because this is trigger manually and can be easily monitored
+    when:
+      and:
+        - equal: [ "api" , << pipeline.trigger_source >> ]
+        - equal: [ << pipeline.parameters.base_branch >> , << pipeline.git.branch >> ]
+    jobs:
+      - checkout_release:
+          context: rnd-server
+          pre-steps:
+            - run:
+                name: Test if Jira ticket and previous continuous release workflow id are provided
+                command: |
+                  if [ ! -z '<< pipeline.parameters.jira >>' ]
+                  then
+                    echo 'Pipeline parameter <jira> is required but not defined'
+                    exit 1
+                  fi
+                  if [ ! -z '<< pipeline.parameters.continuous_release_workflow >>' ]
+                  then
+                    echo 'Pipeline parameter <continuous_release_workflow> is required but not defined'
+                    exit 1
+                  fi
+                  [ ! -z '<< pipeline.parameters.jira >>' -a ! -z '<< pipeline.parameters.continuous_release_workflow >>' ]
+      - init_release:
+          context: rnd-server
+          requires:
+            - checkout_release
+      - download_artifacts:
+          context: rnd-server
+          requires:
+            - init_release
+      - create_release_tag:
+          context: rnd-server
+          requires:
+            - download_artifacts
+      - publish_release_on_artifacts_server:
+          context: rnd-server
+          requires:
+            - download_artifacts
+      - publish_release_on_artifactory:
+          context: rnd-server
+          requires:
+            - download_artifacts
+      - publish_release_shasums:
+          context: rnd-server
+          requires:
+            - download_artifacts
+      - publish_docs_aws:
+          context: rnd-server
+          requires:
+            - download_artifacts
+      - open_bump_pr:
+          context: rnd-server
+          requires:
+            - download_artifacts
+      - create_mail:
+          requires:
+            - download_artifacts
