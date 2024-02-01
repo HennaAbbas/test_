@@ -631,7 +631,7 @@ executors:
     parameters:
       version:
         description: Major version for openjdk image tag
-        type: string
+        type: integer
         default: << pipeline.parameters.jdk >>
     docker:
       - image: cimg/openjdk:<< parameters.version >>.0-node
