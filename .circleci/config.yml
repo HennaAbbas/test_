@@ -11,10 +11,7 @@ jobs:
 
     steps:
       - checkout
-      - persist_to_workspace:
-          root: .
-          paths:
-          - .
+      - run: sleep 5000
   test:
     machine:
       docker_layer_caching: false
@@ -22,12 +19,17 @@ jobs:
 
     steps:
       - checkout
-      - attatch_workspace:
-          root: .
-          paths:
-          - .
-        when: on_fail
-      # - run:
+      - run: sleep 5000      
+
+
+  test-1:
+    machine:
+      docker_layer_caching: false
+      image: ubuntu-2204:current
+
+    steps:
+      - checkout
+      - run: sleep 5000    
       #     name: Upload CodeCov.io Data
       #     command: bash <(curl -s https://codecov.io/bash) -F unittests
       #     when: on_fail # Uploads code coverage results, pass or fail
@@ -37,4 +39,5 @@ workflows:
   sqlmonitor:
     jobs:
       - stress-frontend-e2e-test
-      - test 
+      - test
+      - test-1
