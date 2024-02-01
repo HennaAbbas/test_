@@ -10,7 +10,6 @@ jobs:
       image: ubuntu-2204:current
 
     steps:
-      - checkout
       - run: sleep 500000000
   test:
     machine:
@@ -18,7 +17,6 @@ jobs:
       image: ubuntu-2204:current
 
     steps:
-      - checkout
       - run: sleep 5000000000000      
 
 
