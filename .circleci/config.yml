@@ -16,7 +16,7 @@ parameters:
     type: string
     default: "6.0"
   jdk:
-    type: string
+    type: integer
     default: "11"
   jira:
     type: string
