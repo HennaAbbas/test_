@@ -473,7 +473,7 @@ commands:
       - run:
           name: Update target version in POM
           environment:
-            _VERSION: << parameters.version >>
+            _VERSION: << pipeline.parameters.jdk >>
           command: |
             mvn versions:set "-DnewVersion=$_VERSION" -DprocessAllModules
             mvn versions:commit
@@ -502,7 +502,7 @@ commands:
       - run:
           name: Sets the released version in the side release project
           environment:
-            _VERSION: << parameters.version >>
+            _VERSION: << pipeline.parameters.jdk >>
           command: |
             sed -i "s:<atotiserver.version>.*</atotiserver.version>:<atotiserver.version>${_VERSION}</atotiserver.version>:" continuous-integration/release/java/pom.xml
 
@@ -628,11 +628,11 @@ executors:
       - image: cimg/base:current
 
   jdk:
-    parameters:
-      version:
-        description: Major version for openjdk image tag
-        type: integer
-        default: << pipeline.parameters.jdk >>
+    # parameters:
+    #   version:
+    #     description: Major version for openjdk image tag
+    #     type: integer
+    #     default: << pipeline.parameters.jdk >>
     docker:
       - image: cimg/openjdk:<< pipeline.parameters.jdk >>.0-node
     environment:
@@ -1238,7 +1238,7 @@ jobs:
       - attach_workspace:
           at: /home/circleci
       - run:
-          command: git checkout -b release-<< pipeline.parameters.version >>
+          command: git checkout -b release-<< pipeline.pipeline.parameters.jdk >>
       - date_changelog_at_current_date
       - run:
           name: Clean changelog
@@ -1254,11 +1254,11 @@ jobs:
             git add -u
             git commit -m '<< pipeline.parameters.jira >> Turn internal API into @Deprecated.'
       - update_version_in_poms:
-          version: << pipeline.parameters.version >>
+          version: << pipeline.pipeline.parameters.jdk >>
       - update_compiler_version_in_pom:
           jdk: << pipeline.parameters.jdk >>
       - update_version_in_release_project:
-          version: << pipeline.parameters.version >>
+          version: << pipeline.pipeline.parameters.jdk >>
       - run:
           name: Commit new versions
           command: |
@@ -1313,39 +1313,39 @@ jobs:
             mvn source:jar
       - run:
           command: |
-            mv pivot/core/ext/target/activepivot-ext-<< pipeline.parameters.version >>-sources.jar current-release/activepivot-ext-<< pipeline.parameters.version >>-sources.jar
+            mv pivot/core/ext/target/activepivot-ext-<< pipeline.pipeline.parameters.jdk >>-sources.jar current-release/activepivot-ext-<< pipeline.pipeline.parameters.jdk >>-sources.jar
       - store_artifacts:
-          path: current-release/activepivot-ext-<< pipeline.parameters.version >>-sources.jar
+          path: current-release/activepivot-ext-<< pipeline.pipeline.parameters.jdk >>-sources.jar
 
       # Create sandbox zip
       - run:
           name: Create sandbox zip
           command: |
             cd sandboxes/
-            git archive --format zip --output activepivot-sandboxes-<< pipeline.parameters.version >>.zip release-<< pipeline.parameters.version >>
+            git archive --format zip --output activepivot-sandboxes-<< pipeline.pipeline.parameters.jdk >>.zip release-<< pipeline.pipeline.parameters.jdk >>
       - run:
           command: |
-            mv sandboxes/activepivot-sandboxes-<< pipeline.parameters.version >>.zip current-release/sandbox-<< pipeline.parameters.version >>.zip
+            mv sandboxes/activepivot-sandboxes-<< pipeline.pipeline.parameters.jdk >>.zip current-release/sandbox-<< pipeline.pipeline.parameters.jdk >>.zip
       - store_artifacts:
-          path: current-release/sandbox-<< pipeline.parameters.version >>.zip
+          path: current-release/sandbox-<< pipeline.pipeline.parameters.jdk >>.zip
       - persist_to_workspace:
           root: /home/circleci
           paths:
-            - project/current-release/sandbox-<< pipeline.parameters.version >>.zip
+            - project/current-release/sandbox-<< pipeline.pipeline.parameters.jdk >>.zip
 
       # Create directquery zip
       - run:
           name: Create directquery zip
           command: |
             cd apps/directquery
-            git archive --format zip --output directquery-<< pipeline.parameters.version >>.zip release-<< pipeline.parameters.version >>
+            git archive --format zip --output directquery-<< pipeline.pipeline.parameters.jdk >>.zip release-<< pipeline.pipeline.parameters.jdk >>
       - run:
           command: |
-            mv apps/directquery/directquery-<< pipeline.parameters.version >>.zip current-release/directquery-springapp-<< pipeline.parameters.version >>.zip
+            mv apps/directquery/directquery-<< pipeline.pipeline.parameters.jdk >>.zip current-release/directquery-springapp-<< pipeline.pipeline.parameters.jdk >>.zip
       - persist_to_workspace:
           root: /home/circleci
           paths:
-            - project/current-release/directquery-springapp-<< pipeline.parameters.version >>.zip
+            - project/current-release/directquery-springapp-<< pipeline.pipeline.parameters.jdk >>.zip
 
       # Javadoc
       - run:
@@ -1354,9 +1354,9 @@ jobs:
             cd continuous-integration/release/java
             mvn javadoc:aggregate-jar -Pjavadoc-generation
       - run:
-          command: mv continuous-integration/release/java/target/release-project-1.0.0-javadoc.jar current-release/javadoc-<< pipeline.parameters.version >>.jar
+          command: mv continuous-integration/release/java/target/release-project-1.0.0-javadoc.jar current-release/javadoc-<< pipeline.pipeline.parameters.jdk >>.jar
       - store_artifacts:
-          path: current-release/javadoc-<< pipeline.parameters.version >>.jar
+          path: current-release/javadoc-<< pipeline.pipeline.parameters.jdk >>.jar
 
       # Create repository
       - run:
@@ -1368,78 +1368,78 @@ jobs:
       - run:
           command: |
             cd continuous-integration/release/java/target
-            cp release-project-1.0.0-repository.zip maven-repository-<< pipeline.parameters.version >>.zip
+            cp release-project-1.0.0-repository.zip maven-repository-<< pipeline.pipeline.parameters.jdk >>.zip
             # Delete sandbox related files
-            zip maven-repository-<< pipeline.parameters.version >>.zip -d com/activeviam/sandbox/\*
+            zip maven-repository-<< pipeline.pipeline.parameters.jdk >>.zip -d com/activeviam/sandbox/\*
       - run:
-          command: mv continuous-integration/release/java/target/maven-repository-<< pipeline.parameters.version >>.zip current-release
+          command: mv continuous-integration/release/java/target/maven-repository-<< pipeline.pipeline.parameters.jdk >>.zip current-release
       - store_artifacts:
-          path: current-release/maven-repository-<< pipeline.parameters.version >>.zip
+          path: current-release/maven-repository-<< pipeline.pipeline.parameters.jdk >>.zip
       - persist_to_workspace:
           root: /home/circleci
           paths:
-            - project/current-release/maven-repository-<< pipeline.parameters.version >>.zip
+            - project/current-release/maven-repository-<< pipeline.pipeline.parameters.jdk >>.zip
 
       # Create parquet repository
       - run:
-          name: Generate parquet-source-<< pipeline.parameters.version >>.zip
+          name: Generate parquet-source-<< pipeline.pipeline.parameters.jdk >>.zip
           command: |
             cd ~/.m2/repository/
-            find . -regex './com/activeviam/parquet-source/<< pipeline.parameters.version >>/parquet-source-<< pipeline.parameters.version >>\(.jar\|-javadoc.jar\|.pom\)' | xargs -I {} zip parquet-source-<< pipeline.parameters.version >>.zip {}
+            find . -regex './com/activeviam/parquet-source/<< pipeline.pipeline.parameters.jdk >>/parquet-source-<< pipeline.pipeline.parameters.jdk >>\(.jar\|-javadoc.jar\|.pom\)' | xargs -I {} zip parquet-source-<< pipeline.pipeline.parameters.jdk >>.zip {}
       - run:
-          command: mv ~/.m2/repository/parquet-source-<< pipeline.parameters.version >>.zip current-release
+          command: mv ~/.m2/repository/parquet-source-<< pipeline.pipeline.parameters.jdk >>.zip current-release
       - store_artifacts:
-          path: current-release/parquet-source-<< pipeline.parameters.version >>.zip
+          path: current-release/parquet-source-<< pipeline.pipeline.parameters.jdk >>.zip
       - persist_to_workspace:
           root: /home/circleci
           paths:
-            - project/current-release/parquet-source-<< pipeline.parameters.version >>.zip
+            - project/current-release/parquet-source-<< pipeline.pipeline.parameters.jdk >>.zip
 
       # Create cloud source repository
       - run:
-          name: Generate cloud-source-<< pipeline.parameters.version >>.zip
+          name: Generate cloud-source-<< pipeline.pipeline.parameters.jdk >>.zip
           command: |
             cd ~/.m2/repository/
-            find . -regex './com/activeviam/source/cloud-source\(-aws\|-azure\|-common\|-google\|\)/<< pipeline.parameters.version >>/.*\(-javadoc\)?\.\(jar\|pom\)' | xargs -I {} zip cloud-source-<< pipeline.parameters.version >>.zip {}
+            find . -regex './com/activeviam/source/cloud-source\(-aws\|-azure\|-common\|-google\|\)/<< pipeline.pipeline.parameters.jdk >>/.*\(-javadoc\)?\.\(jar\|pom\)' | xargs -I {} zip cloud-source-<< pipeline.pipeline.parameters.jdk >>.zip {}
       - run:
-          command: mv ~/.m2/repository/cloud-source-<< pipeline.parameters.version >>.zip current-release
+          command: mv ~/.m2/repository/cloud-source-<< pipeline.pipeline.parameters.jdk >>.zip current-release
       - store_artifacts:
-          path: current-release/cloud-source-<< pipeline.parameters.version >>.zip
+          path: current-release/cloud-source-<< pipeline.pipeline.parameters.jdk >>.zip
       - persist_to_workspace:
           root: /home/circleci
           paths:
-            - project/current-release/cloud-source-<< pipeline.parameters.version >>.zip
+            - project/current-release/cloud-source-<< pipeline.pipeline.parameters.jdk >>.zip
 
       # Create direct-query repository
       - run:
-          name: Generate direct-query-<< pipeline.parameters.version >>.zip
+          name: Generate direct-query-<< pipeline.pipeline.parameters.jdk >>.zip
           command: |
             cd ~/.m2/repository/
-            find . -regex './com/activeviam/database/\(bigquery\|clickhouse\|composite-database\|database-commons\|databricks\|databricks-udafs\|directquery-test-starter\|mssql\|redshift\|snowflake\|sql-database\|synapse\|transact-sql\)/.*<< pipeline.parameters.version >>\(-javadoc\)?\.\(jar\|pom\)' | xargs -I {} zip direct-query-<< pipeline.parameters.version >>.zip {}
-            find . -regex './com/activeviam/activepivot/activepivot-external-database/.*<< pipeline.parameters.version >>\(-javadoc\)?\.\(jar\|pom\)' | xargs -I {} zip direct-query-<< pipeline.parameters.version >>.zip {}
-            find . -regex './com/activeviam/directquery/api-.*<< pipeline.parameters.version >>\(-javadoc\)?\.\(jar\|pom\)' | xargs -I {} zip direct-query-<< pipeline.parameters.version >>.zip {}
+            find . -regex './com/activeviam/database/\(bigquery\|clickhouse\|composite-database\|database-commons\|databricks\|databricks-udafs\|directquery-test-starter\|mssql\|redshift\|snowflake\|sql-database\|synapse\|transact-sql\)/.*<< pipeline.pipeline.parameters.jdk >>\(-javadoc\)?\.\(jar\|pom\)' | xargs -I {} zip direct-query-<< pipeline.pipeline.parameters.jdk >>.zip {}
+            find . -regex './com/activeviam/activepivot/activepivot-external-database/.*<< pipeline.pipeline.parameters.jdk >>\(-javadoc\)?\.\(jar\|pom\)' | xargs -I {} zip direct-query-<< pipeline.pipeline.parameters.jdk >>.zip {}
+            find . -regex './com/activeviam/directquery/api-.*<< pipeline.pipeline.parameters.jdk >>\(-javadoc\)?\.\(jar\|pom\)' | xargs -I {} zip direct-query-<< pipeline.pipeline.parameters.jdk >>.zip {}
       - run:
-          command: mv ~/.m2/repository/direct-query-<< pipeline.parameters.version >>.zip current-release
+          command: mv ~/.m2/repository/direct-query-<< pipeline.pipeline.parameters.jdk >>.zip current-release
       - store_artifacts:
-          path: current-release/direct-query-<< pipeline.parameters.version >>.zip
+          path: current-release/direct-query-<< pipeline.pipeline.parameters.jdk >>.zip
       - persist_to_workspace:
           root: /home/circleci
           paths:
-            - project/current-release/direct-query-<< pipeline.parameters.version >>.zip
+            - project/current-release/direct-query-<< pipeline.pipeline.parameters.jdk >>.zip
 
       # Create shasum of artefacts
       - run:
           name: Compute shasum for release artefacts
           command: |
             cd current-release
-            shasum -a 256 activepivot-ext-<< pipeline.parameters.version >>-sources.jar \
-              cloud-source-<< pipeline.parameters.version >>.zip \
-              maven-repository-<< pipeline.parameters.version >>.zip \
-              direct-query-<< pipeline.parameters.version >>.zip \
-              parquet-source-<< pipeline.parameters.version >>.zip \
-              sandbox-<< pipeline.parameters.version >>.zip > << pipeline.parameters.version >>.sha256
+            shasum -a 256 activepivot-ext-<< pipeline.pipeline.parameters.jdk >>-sources.jar \
+              cloud-source-<< pipeline.pipeline.parameters.jdk >>.zip \
+              maven-repository-<< pipeline.pipeline.parameters.jdk >>.zip \
+              direct-query-<< pipeline.pipeline.parameters.jdk >>.zip \
+              parquet-source-<< pipeline.pipeline.parameters.jdk >>.zip \
+              sandbox-<< pipeline.pipeline.parameters.jdk >>.zip > << pipeline.pipeline.parameters.jdk >>.sha256
       - store_artifacts:
-          path: current-release/<< pipeline.parameters.version >>.sha256
+          path: current-release/<< pipeline.pipeline.parameters.jdk >>.sha256
 
   docker:
     executor:
@@ -1455,7 +1455,7 @@ jobs:
           name: Unzip sandbox
           command: |
             mkdir -p current-release/integration-test/unzipped-sandbox
-            unzip current-release/sandbox-<< pipeline.parameters.version >>.zip -d current-release/integration-test/unzipped-sandbox
+            unzip current-release/sandbox-<< pipeline.pipeline.parameters.jdk >>.zip -d current-release/integration-test/unzipped-sandbox
       - run:
           command: |
             cd current-release/integration-test/unzipped-sandbox
@@ -1473,11 +1473,11 @@ jobs:
           dockerfile: continuous-integration/docker-images/sandbox-jdk11/Dockerfile
           image: sandboxes
           registry: $ARTIFACTORY_REPO_RELEASE_URL
-          tag: << pipeline.parameters.version >>
+          tag: << pipeline.pipeline.parameters.jdk >>
       - run:
-          command: docker save $ARTIFACTORY_REPO_RELEASE_URL/sandboxes:<< pipeline.parameters.version >> -o current-release/docker-image-sandbox-<< pipeline.parameters.version >>.tar
+          command: docker save $ARTIFACTORY_REPO_RELEASE_URL/sandboxes:<< pipeline.pipeline.parameters.jdk >> -o current-release/docker-image-sandbox-<< pipeline.pipeline.parameters.jdk >>.tar
       - store_artifacts:
-          path: current-release/docker-image-sandbox-<< pipeline.parameters.version >>.tar
+          path: current-release/docker-image-sandbox-<< pipeline.pipeline.parameters.jdk >>.tar
 
   build_rest_documentation:
     executor: node-docker
@@ -1504,9 +1504,9 @@ jobs:
           name: Zip documentation
           command: |
             cd current-release/rest-documentation
-            zip rest-documentation-<< pipeline.parameters.version >>.zip *
+            zip rest-documentation-<< pipeline.pipeline.parameters.jdk >>.zip *
       - store_artifacts:
-          path: current-release/rest-documentation/rest-documentation-<< pipeline.parameters.version >>.zip
+          path: current-release/rest-documentation/rest-documentation-<< pipeline.pipeline.parameters.jdk >>.zip
 
   test_repository:
     executor:
@@ -1520,8 +1520,8 @@ jobs:
           name: Unzip sandbox and repository archives to test repository content
           command: |
             mkdir -p current-release/test-repository/{sandbox,repository}
-            unzip current-release/sandbox-<< pipeline.parameters.version >>.zip -d current-release/test-repository/sandbox/
-            unzip current-release/maven-repository-<< pipeline.parameters.version >>.zip -d current-release/test-repository/repository/
+            unzip current-release/sandbox-<< pipeline.pipeline.parameters.jdk >>.zip -d current-release/test-repository/sandbox/
+            unzip current-release/maven-repository-<< pipeline.pipeline.parameters.jdk >>.zip -d current-release/test-repository/repository/
       - run:
           name: Test sandbox package against provided repository
           command: mvn -f current-release/test-repository/sandbox/pom.xml -Dmaven.repo.local=current-release/test-repository/repository/ clean package -DskipTests
@@ -1529,9 +1529,9 @@ jobs:
           name: Unzip directquery and maven repositories archives, and directquery springapp archive
           command: |
             mkdir -p current-release/test-directquery-repository/{springApp,repository}
-            unzip current-release/directquery-springapp-<< pipeline.parameters.version >>.zip -d current-release/test-directquery-repository/springApp/
-            unzip current-release/maven-repository-<< pipeline.parameters.version >>.zip -d current-release/test-directquery-repository/repository/
-            unzip -o current-release/direct-query-<< pipeline.parameters.version >>.zip -d current-release/test-directquery-repository/repository/
+            unzip current-release/directquery-springapp-<< pipeline.pipeline.parameters.jdk >>.zip -d current-release/test-directquery-repository/springApp/
+            unzip current-release/maven-repository-<< pipeline.pipeline.parameters.jdk >>.zip -d current-release/test-directquery-repository/repository/
+            unzip -o current-release/direct-query-<< pipeline.pipeline.parameters.jdk >>.zip -d current-release/test-directquery-repository/repository/
       - run:
           name: Test directquery package against provided repositories
           command: mvn -f current-release/test-directquery-repository/springApp/pom.xml -Dmaven.repo.local=current-release/test-directquery-repository/repository/ clean package -DskipTests -Dcheckstyle.skip
@@ -1552,9 +1552,9 @@ jobs:
           command: jf audit --mvn --licenses --format=json > output
       - run:
           name: Format to tsv
-          command: python3 .circleci/resources/export-licences-to-tsv.py > current-release/licenses-activepivot-<< pipeline.parameters.version >>.tsv
+          command: python3 .circleci/resources/export-licences-to-tsv.py > current-release/licenses-activepivot-<< pipeline.pipeline.parameters.jdk >>.tsv
       - store_artifacts:
-          path: current-release/licenses-activepivot-<< pipeline.parameters.version >>.tsv
+          path: current-release/licenses-activepivot-<< pipeline.pipeline.parameters.jdk >>.tsv
 
   create_mail:
     executor:
@@ -1567,7 +1567,7 @@ jobs:
       - run:
           command: |
             cd continuous-integration/release/
-            jq -n '. += {fullVersion: "<< pipeline.parameters.version >>",product: "ActivePivot_stable"}' > data.json
+            jq -n '. += {fullVersion: "<< pipeline.pipeline.parameters.jdk >>",product: "ActivePivot_stable"}' > data.json
             chevron -d data.json release_email.html.mustache > email.html
       - store_artifacts:
           path: continuous-integration/release/email.html
@@ -1612,15 +1612,15 @@ jobs:
           at: /home/circleci
       - restore_java_cache
       - run:
-          name: Tag version << pipeline.parameters.version >>
+          name: Tag version << pipeline.pipeline.parameters.jdk >>
           # https://support.circleci.com/hc/en-us/articles/360057590591-How-to-ignore-a-failure-in-a-step-
           command: |
-            git tag -d << pipeline.parameters.version >> || true
-            git tag << pipeline.parameters.version >>
+            git tag -d << pipeline.pipeline.parameters.jdk >> || true
+            git tag << pipeline.pipeline.parameters.jdk >>
       - install_ssh_credentials_github
       - run:
           command: |
-            git push origin << pipeline.parameters.version >>
+            git push origin << pipeline.pipeline.parameters.jdk >>
 
   publish_release_on_artifacts_server:
     executor:
@@ -1635,32 +1635,32 @@ jobs:
       - run:
           name: Publish artifacts on artifacts server
           command: |
-            dest_folder='/release_repo/share/ActivePivot_stable/<< pipeline.parameters.version >>'
+            dest_folder='/release_repo/share/ActivePivot_stable/<< pipeline.pipeline.parameters.jdk >>'
             ssh "${ARTIFACTS_URL}" "mkdir -p ${dest_folder}"
             cd current-release
-            rsync activepivot-ext-<< pipeline.parameters.version >>-sources.jar \
-              cloud-source-<< pipeline.parameters.version >>.zip \
-              maven-repository-<< pipeline.parameters.version >>.zip \
-              direct-query-<< pipeline.parameters.version >>.zip \
-              parquet-source-<< pipeline.parameters.version >>.zip \
-              sandbox-<< pipeline.parameters.version >>.zip \
+            rsync activepivot-ext-<< pipeline.pipeline.parameters.jdk >>-sources.jar \
+              cloud-source-<< pipeline.pipeline.parameters.jdk >>.zip \
+              maven-repository-<< pipeline.pipeline.parameters.jdk >>.zip \
+              direct-query-<< pipeline.pipeline.parameters.jdk >>.zip \
+              parquet-source-<< pipeline.pipeline.parameters.jdk >>.zip \
+              sandbox-<< pipeline.pipeline.parameters.jdk >>.zip \
               "${ARTIFACTS_URL}:${dest_folder}"
       - run:
           name: Publish documentation on artifacts server
           command: |
-            dest_folder='/release_repo/documentation/rest/<< pipeline.parameters.version >>'
+            dest_folder='/release_repo/documentation/rest/<< pipeline.pipeline.parameters.jdk >>'
             ssh "${ARTIFACTS_URL}" "mkdir -p ${dest_folder}"
-            rsync current-release/rest-documentation-<< pipeline.parameters.version >>.zip "${ARTIFACTS_URL}:${dest_folder}"
-            ssh "${ARTIFACTS_URL}" "unzip -o ${dest_folder}/rest-documentation-<< pipeline.parameters.version >>.zip -d ${dest_folder}"
-            ssh "${ARTIFACTS_URL}" "rm ${dest_folder}/rest-documentation-<< pipeline.parameters.version >>.zip"
+            rsync current-release/rest-documentation-<< pipeline.pipeline.parameters.jdk >>.zip "${ARTIFACTS_URL}:${dest_folder}"
+            ssh "${ARTIFACTS_URL}" "unzip -o ${dest_folder}/rest-documentation-<< pipeline.pipeline.parameters.jdk >>.zip -d ${dest_folder}"
+            ssh "${ARTIFACTS_URL}" "rm ${dest_folder}/rest-documentation-<< pipeline.pipeline.parameters.jdk >>.zip"
       - run:
           name: Publish javadoc on artifacts server
           command: |
-            dest_folder='/release_repo/documentation/javadoc/activepivot/<< pipeline.parameters.version >>'
+            dest_folder='/release_repo/documentation/javadoc/activepivot/<< pipeline.pipeline.parameters.jdk >>'
             ssh "${ARTIFACTS_URL}" "mkdir -p ${dest_folder}"
-            rsync current-release/javadoc-<< pipeline.parameters.version >>.jar "${ARTIFACTS_URL}:${dest_folder}"
-            ssh "${ARTIFACTS_URL}" "unzip -o ${dest_folder}/javadoc-<< pipeline.parameters.version >>.jar -d ${dest_folder}"
-            ssh "${ARTIFACTS_URL}" "rm ${dest_folder}/javadoc-<< pipeline.parameters.version >>.jar"
+            rsync current-release/javadoc-<< pipeline.pipeline.parameters.jdk >>.jar "${ARTIFACTS_URL}:${dest_folder}"
+            ssh "${ARTIFACTS_URL}" "unzip -o ${dest_folder}/javadoc-<< pipeline.pipeline.parameters.jdk >>.jar -d ${dest_folder}"
+            ssh "${ARTIFACTS_URL}" "rm ${dest_folder}/javadoc-<< pipeline.pipeline.parameters.jdk >>.jar"
 
   publish_release_on_artifactory:
     executor:
@@ -1684,28 +1684,28 @@ jobs:
           at: /home/circleci
       - install_az_cli
       - run:
-          name: Download shasum file << pipeline.parameters.version >> if exists
-          command: az storage blob download --container-name $AZURE_SEAL_RELEASE_CONTAINER_NAME --account-key $AZURE_SEAL_STORAGE_ACCESS_KEY --account-name $AZURE_SEAL_STORAGE_ACCOUNT --name << pipeline.parameters.version >>.sha256 -f current-release/<< pipeline.parameters.version >>.sha256.previous || true
+          name: Download shasum file << pipeline.pipeline.parameters.jdk >> if exists
+          command: az storage blob download --container-name $AZURE_SEAL_RELEASE_CONTAINER_NAME --account-key $AZURE_SEAL_STORAGE_ACCESS_KEY --account-name $AZURE_SEAL_STORAGE_ACCOUNT --name << pipeline.pipeline.parameters.jdk >>.sha256 -f current-release/<< pipeline.pipeline.parameters.jdk >>.sha256.previous || true
       - run:
           name: Sanity check
           command: |
             cd current-release
-            if [ -e << pipeline.parameters.version >>.sha256 ]; then
+            if [ -e << pipeline.pipeline.parameters.jdk >>.sha256 ]; then
               # Ensure files are equivalent
-              sort << pipeline.parameters.version >>.sha256.previous > << pipeline.parameters.version >>.sha256.previous.sorted
-              sort << pipeline.parameters.version >>.sha256 > << pipeline.parameters.version >>.sha256.sorted
-              diff << pipeline.parameters.version >>.sha256.previous.sorted << pipeline.parameters.version >>.sha256.sorted
+              sort << pipeline.pipeline.parameters.jdk >>.sha256.previous > << pipeline.pipeline.parameters.jdk >>.sha256.previous.sorted
+              sort << pipeline.pipeline.parameters.jdk >>.sha256 > << pipeline.pipeline.parameters.jdk >>.sha256.sorted
+              diff << pipeline.pipeline.parameters.jdk >>.sha256.previous.sorted << pipeline.pipeline.parameters.jdk >>.sha256.sorted
               if [ $? -eq 0 ]; then
-                >&2 echo "Current seal and released seal are not identical. This can lead to a corrupted version of artefacts. To by-pass, please remove << pipeline.parameters.version >>.sha256 from Azure container before relaunching this step."
+                >&2 echo "Current seal and released seal are not identical. This can lead to a corrupted version of artefacts. To by-pass, please remove << pipeline.pipeline.parameters.jdk >>.sha256 from Azure container before relaunching this step."
                 exit 1
               fi
             fi
 
             # Check if artifacts are still valids (sanity check)
-            shasum -c << pipeline.parameters.version >>.sha256
+            shasum -c << pipeline.pipeline.parameters.jdk >>.sha256
       - run:
           name: Upload checksumFile to blob storage
-          command: az storage blob upload --file current-release/<< pipeline.parameters.version >>.sha256 --container-name $AZURE_SEAL_RELEASE_CONTAINER_NAME --account-key $AZURE_SEAL_STORAGE_ACCESS_KEY --account-name $AZURE_SEAL_STORAGE_ACCOUNT --name << pipeline.parameters.version >>.sha256 --overwrite
+          command: az storage blob upload --file current-release/<< pipeline.pipeline.parameters.jdk >>.sha256 --container-name $AZURE_SEAL_RELEASE_CONTAINER_NAME --account-key $AZURE_SEAL_STORAGE_ACCESS_KEY --account-name $AZURE_SEAL_STORAGE_ACCOUNT --name << pipeline.pipeline.parameters.jdk >>.sha256 --overwrite
 
   publish_docs_aws:
     executor: node-docker
@@ -1739,7 +1739,7 @@ jobs:
               | jq -r '.vcs.revision')
             echo "export START_COMMIT=${start_commit}" >> "$BASH_ENV"
             # Bump version into file version
-            version=$(python .circleci/resources/version_updater.py << pipeline.parameters.version >>)
+            version=$(python .circleci/resources/version_updater.py << pipeline.pipeline.parameters.jdk >>)
             echo "export VERSION=${version}" >> "$BASH_ENV"
       - run:
           name: Create bump branch
@@ -1760,15 +1760,15 @@ jobs:
             # Set version in empty section template
             sed "s/{{ nextVersion }}/${VERSION}/" .circleci/resources/changelog_section.mustache > new_section.md
             # Then add it before the current version
-            sed -i '/<< pipeline.parameters.version >>/e cat new_section.md' docs/release/changelog.md
+            sed -i '/<< pipeline.pipeline.parameters.jdk >>/e cat new_section.md' docs/release/changelog.md
             rm new_section.md
             git add docs/release/changelog.md
             git commit -m '<< pipeline.parameters.jira >> Date CHANGELOG and add empty section'
       - run:
           name: Upgrade version in CircleCI config file
           command: |
-            # Change default value of parameters.version to new release
-            sed -i "s/<< pipeline.parameters.version >> # edited by pipeline/${VERSION} # edited by pipeline/" .circleci/config.yml
+            # Change default value of pipeline.parameters.jdk to new release
+            sed -i "s/<< pipeline.pipeline.parameters.jdk >> # edited by pipeline/${VERSION} # edited by pipeline/" .circleci/config.yml
             git add .circleci/config.yml
             git commit -m '<< pipeline.parameters.jira >> Upgrade version in CircleCI config file'
       - install_ssh_credentials_github
