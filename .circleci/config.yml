@@ -628,11 +628,11 @@ executors:
       - image: cimg/base:current
 
   jdk:
-    # parameters:
-    #   version:
-    #     description: Major version for openjdk image tag
-    #     type: integer
-    #     default: << pipeline.parameters.jdk >>
+    parameters:
+      version:
+        description: Major version for openjdk image tag
+        type: integer
+        default: << pipeline.parameters.jdk >>
     docker:
       - image: cimg/openjdk:<< pipeline.parameters.jdk >>.0-node
     environment:
