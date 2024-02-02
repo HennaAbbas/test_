@@ -41,9 +41,22 @@ jobs:
       image: ubuntu-2204:current
 
     steps:
-      - run:
-          command: |
-            sleep 500000
+    - run:
+        command: |
+          trigger_condition="$(cat trigger_condition)"
+          job_to_check="android"
+          echo "trigger_condition: $trigger_condition, job_to_check: $job_to_check"
+          if { [ ! -z "$trigger_condition" ] && [ "$job_to_check" == "web-bundle_OFF" ]; } \
+              || [ "$trigger_condition" == "$job_to_check" ] \
+              || [ "$trigger_condition" == "all" ]; then
+            echo "continue"
+            circleci-agent step halt
+          else
+            echo "cancelling current job"
+            CANCEL_URL="https://circleci.com/api/v2/project/gh/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/job/${CIRCLE_BUILD_NUM}/cancel"
+            echo "CANCEL_URL: $CANCEL_URL"
+            curl -s -X POST -H "Circle-Token: ${CIRCLE_AUTOMATION_TOKEN}" -H "Content-Type: application/json" "$CANCEL_URL"
+          fi
                
 
 
