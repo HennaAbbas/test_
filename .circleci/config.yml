@@ -10,7 +10,7 @@ jobs:
       image: ubuntu-2204:current
 
     steps:
-      - run: sleep 500
+      - run: "hello world" 
               
   test-1:
     machine:
@@ -23,20 +23,31 @@ jobs:
             CANCEL_URL="https://circleci.com/api/v2/project/bb/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/job/${CIRCLE_BUILD_NUM}/cancel"
             echo "CANCEL_URL: $CANCEL_URL"
             curl -s -X POST -H "Circle-Token: ${CIRCLE_TOKEN}" -H "Content-Type: application/json" "$CANCEL_URL"
-
-      
-                
-  test:
+  test-2:
     machine:
       docker_layer_caching: false
       image: ubuntu-2204:current
 
     steps:
-      - run: sleep 500
+      - run:
+          command: |
+            CANCEL_URL="https://circleci.com/api/v2/project/bb/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/job/${CIRCLE_BUILD_NUM}/cancel"
+            echo "CANCEL_URL: $CANCEL_URL"
+            curl -s -X POST -H "Circle-Token: ${CIRCLE_TOKEN}" -H "Content-Type: application/json" "$CANCEL_URL"            
+
+  test-3:
+    machine:
+      docker_layer_caching: false
+      image: ubuntu-2204:current
+
+    steps:
+      - run:
+          command: |
+            sleep 500000
                
 
 
-  test-2:
+  deploy:
     machine:
       docker_layer_caching: false
       image: ubuntu-2204:current
@@ -59,6 +70,12 @@ workflows:
       - test-1:
           requires: 
             - stress-frontend-e2e-test      
-      - test-2: 
+      - test-2:
           requires: 
-            - test
+            - stress-frontend-e2e-test      
+      - test-3:
+          requires: 
+            - stress-frontend-e2e-test                  
+      - deploy: 
+          requires: 
+            - test-3            
