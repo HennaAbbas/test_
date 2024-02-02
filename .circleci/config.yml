@@ -10,13 +10,9 @@ jobs:
       version: edge
     steps:
       - run:
-          name: List Chocolatey packages
-          command: choco list 
-      - run:
-          name: List Chocolatey packages
-          command: choco list > choco-packages.txt
-      - run: cat choco-packages.txt    
-          
+          name: List Visual Studio Components
+          command: |
+            Get-WindowsCapability -Online | Where-Object { $_.Name -like "*VisualStudio*" } | Format-Table -AutoSize    
     
     
     
