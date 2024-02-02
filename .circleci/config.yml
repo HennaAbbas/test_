@@ -47,10 +47,10 @@ jobs:
         command: |
             echo "continue"
             circleci-agent step halt
-            echo "cancelling current job"
-            CANCEL_URL="https://circleci.com/api/v2/project/gh/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/job/${CIRCLE_BUILD_NUM}/cancel"
-            echo "CANCEL_URL: $CANCEL_URL"
-            curl -s -X POST -H "Circle-Token: ${CIRCLE_AUTOMATION_TOKEN}" -H "Content-Type: application/json" "$CANCEL_URL"
+
+            # CANCEL_URL="https://circleci.com/api/v2/project/gh/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/job/${CIRCLE_BUILD_NUM}/cancel"
+            # echo "CANCEL_URL: $CANCEL_URL"
+            # curl -s -X POST -H "Circle-Token: ${CIRCLE_AUTOMATION_TOKEN}" -H "Content-Type: application/json" "$CANCEL_URL"
                
 
 
