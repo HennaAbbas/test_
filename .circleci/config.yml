@@ -9,7 +9,6 @@ jobs:
       name: win/server-2019
       version: edge
     steps:
-      - checkout
       - run:
           name: Query installed components
           command: |
