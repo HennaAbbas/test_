@@ -9,10 +9,11 @@ jobs:
       name: win/server-2019
       version: edge
     steps:
-      - run:
-          name: List Visual Studio Components
-          command: |
-            Get-WindowsCapability -Online | Where-Object { $_.Name -like "*VisualStudio*" } | Format-Table -AutoSize    
+      - run: |
+          # PowerShell commands to find Visual Studio Community Edition components
+          Get-WmiObject -Class Win32_Product | Where-Object {
+            $_.Name -like "Microsoft Visual Studio*Community*"
+          } | Select-Object Name, Version
     
     
     
