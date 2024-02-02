@@ -1,15 +1,20 @@
 version: 2.1
 
-jobs:
-  build: # name of your job
-    resource_class: 'windows.medium'
-    machine:
-      image: 'windows-server-2022-gui:current'
-      shell: bash
-    steps:
-      # Commands are run in a Windows virtual machine environment
-        - run: find *.config
+orbs:
+  win: circleci/windows@5.0
 
+jobs:
+  build:
+    executor: 
+      name: win/server-2019
+      version: edge
+    steps:
+      - checkout
+      - run:
+          name: Query installed components
+          command: |
+            choco install -y vswhere  # Installs vswhere tool
+            vswhere.exe -property components -products *      
     
     
     
