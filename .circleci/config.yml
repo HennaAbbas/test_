@@ -1,4 +1,4 @@
-version: 2.1
+oversion: 2.1
 
 orbs:
   node: circleci/node@4.5.0
@@ -10,7 +10,7 @@ jobs:
       image: ubuntu-2204:current
 
     steps:
-      - run: "hello world" 
+      - run: echo "hello world" 
               
   test-1:
     machine:
