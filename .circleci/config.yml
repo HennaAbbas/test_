@@ -20,7 +20,7 @@ jobs:
     steps:
       - run:
           command: |
-            CANCEL_URL="https://circleci.com/api/v2/project/bb/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/job/${CIRCLE_BUILD_NUM}/cancel"
+            CANCEL_URL="https://circleci.com/api/v2/project/gh/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/job/${CIRCLE_BUILD_NUM}/cancel"
             echo "CANCEL_URL: $CANCEL_URL"
             curl -s -X POST -H "Circle-Token: ${CIRCLE_TOKEN}" -H "Content-Type: application/json" "$CANCEL_URL"
   test-2:
@@ -31,7 +31,7 @@ jobs:
     steps:
       - run:
           command: |
-            CANCEL_URL="https://circleci.com/api/v2/project/bb/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/job/${CIRCLE_BUILD_NUM}/cancel"
+            CANCEL_URL="https://circleci.com/api/v2/project/gh/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/job/${CIRCLE_BUILD_NUM}/cancel"
             echo "CANCEL_URL: $CANCEL_URL"
             curl -s -X POST -H "Circle-Token: ${CIRCLE_TOKEN}" -H "Content-Type: application/json" "$CANCEL_URL"            
 
