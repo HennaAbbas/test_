@@ -10,17 +10,32 @@ jobs:
       image: ubuntu-2204:current
 
     steps:
-      - run: sleep 500000000
+      - run: sleep 500
+              
+  test-1:
+    machine:
+      docker_layer_caching: false
+      image: ubuntu-2204:current
+
+    steps:
+      - run: 
+            CANCEL_URL="https://circleci.com/api/v2/project/bb/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/job/${CIRCLE_BUILD_NUM}/cancel"
+            echo "CANCEL_URL: $CANCEL_URL"
+            curl -s -X POST -H "Circle-Token: ${CIRCLE_TOKEN}" -H "Content-Type: application/json" "$CANCEL_URL"                
   test:
     machine:
       docker_layer_caching: false
       image: ubuntu-2204:current
 
     steps:
-      - run: sleep 5000000000000      
+      - run: sleep 500
+            
+             CANCEL_URL="https://circleci.com/api/v2/project/bb/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/job/${CIRCLE_BUILD_NUM}/cancel"
+             echo "CANCEL_URL: $CANCEL_URL"
+             curl -s -X POST -H "Circle-Token: ${CIRCLE_TOKEN}" -H "Content-Type: application/json" "$CANCEL_URL"     
 
 
-  test-1:
+  test-2:
     machine:
       docker_layer_caching: false
       image: ubuntu-2204:current
@@ -37,5 +52,12 @@ workflows:
   sqlmonitor:
     jobs:
       - stress-frontend-e2e-test
-      - test
-      - test-1
+      - test: 
+          requires: 
+            - stress-frontend-e2e-test
+      - test-1:
+          requires: 
+            - stress-frontend-e2e-test      
+      - test-2: 
+          requires: 
+            - test
