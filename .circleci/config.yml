@@ -10,10 +10,13 @@ jobs:
       version: edge
     steps:
       - run:
-          name: Query installed components
-          command: |
-            choco install -y vswhere  # Installs vswhere tool
-            vswhere.exe -property components -products *      
+          name: List Chocolatey packages
+          command: choco list --local-only
+      - run:
+          name: List Chocolatey packages
+          command: choco list --local-only > 
+      - run: cat choco-packages.txt    
+          
     
     
     
