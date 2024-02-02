@@ -64,9 +64,6 @@ workflows:
   sqlmonitor:
     jobs:
       - stress-frontend-e2e-test
-      - test: 
-          requires: 
-            - stress-frontend-e2e-test
       - test-1:
           requires: 
             - stress-frontend-e2e-test      
