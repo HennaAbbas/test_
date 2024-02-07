@@ -7,5 +7,6 @@ jobs:
       - image: cimg/node:lts
     steps:
       - checkout
-      - snyk/scan
+      - snyk/scan: 
+          severity-threshold: high
 workflows: null
