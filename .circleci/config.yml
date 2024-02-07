@@ -9,7 +9,7 @@ jobs:
       - run: $svcFile="something" 
       - run: $env:svcFile
       - run: echo $svcFile
-      - run: setx APP_VERSION=$svcFile
+      - run: setx APP_VERSION="test"
       - run: $env:APP_VERSION
 workflows:
   my-workflow:
