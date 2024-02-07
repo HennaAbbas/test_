@@ -1,0 +1,17 @@
+version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "This is main branch"
+      - run: echo "This is actually NOT DEVELOP! ****"
+
+workflows:
+  workflow:
+    jobs:
+      - build:
+          filters:
+            tags:
+              only: /.*/
