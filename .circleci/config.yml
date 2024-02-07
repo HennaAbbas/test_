@@ -1,28 +1,12 @@
-version: 2.1
-
+version: '2.1'
 orbs:
-  continuation: circleci/continuation@1.0.0
-  build-tools: circleci/build-tools@3.0.0
-
-setup: true
-
+  snyk: snyk/snyk@x.y.z
 jobs:
   build:
     docker:
-      - image: cimg/base:stable
+      - image: cimg/node:lts
     steps:
-     - checkout
-     - run: cat .circleci/continue_config.yml
-     - build-tools/merge-with-parent:
-         parent: "develop"
-     - run: cat .circleci/continue_config.yml
-     - continuation/continue:
-          configuration_path: .circleci/continue_config.yml
-
-workflows:
-  workflow1:
-    jobs:
-      - build:
-          filters:
-            tags:
-              only: /.*/ #
+      - checkout
+      - run: npm ci
+      - snyk/scan
+workflows: null
