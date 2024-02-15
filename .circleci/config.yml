@@ -1,28 +1,36 @@
-version: 2.1
-
+version: '2.1'
 orbs:
-  continuation: circleci/continuation@1.0.0
-  build-tools: circleci/build-tools@3.0.0
-
-setup: true
-
+  gh: circleci/github-cli@2.0
+  win: circleci/windows@5.0  
 jobs:
-  build:
-    docker:
-      - image: cimg/base:stable
+  create-a-deployment:
+    executor:
+      name: win/default
     steps:
-     - checkout
-     - run: cat .circleci/continue_config.yml
-     - build-tools/merge-with-parent:
-         parent: "develop"
-     - run: cat .circleci/continue_config.yml
-     - continuation/continue:
-          configuration_path: .circleci/continue_config.yml
+      - gh/install
+      - run:
+          command: >
+            gh api /repos/:owner/:repo/deployments --preview ant-man --input - \
 
+            --jq '"export GH_DEPLOYMENT_STATUS_URL=\(.statuses_url)"' >>
+            $BASH_ENV \<<JSON || true
+
+            {
+
+            "ref": "${CIRCLE_TAG:-$CIRCLE_SHA1}",
+
+            "environment": "${AWS_ENVIRONMENT,,}",
+
+            "auto_merge": false,
+
+            "required_contexts": []
+
+            }
+
+            JSON
+          name: Create Deployment
 workflows:
-  workflow1:
+  use-my-orb:
     jobs:
-      - build:
-          filters:
-            tags:
-              only: /.*/ #
+      - create-a-deployment
+
