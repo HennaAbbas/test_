@@ -1,8 +1,9 @@
 version: 2.1
 jobs:
   build:
+    parallelism: 50
     docker:
-      - image: cimg/ruby:3.1.3
+      - image: cimg/mysql:8.0
     steps:
       - checkout
       - run: echo "hello world!"
