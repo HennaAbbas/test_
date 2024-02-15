@@ -1,23 +1,38 @@
-version: 2.1
-
+version: '2.1'
 orbs:
-  node: circleci/node@5.2.0
-
+  gh: circleci/github-cli@2.0
+  windows: circleci/windows@5.0.0
 jobs:
-  validate:
-    docker:
-      - image: cimg/node:20.11
-    resource_class: medium
+  create-a-deployment:
+    executor:
+      name: win/default
     steps:
+      - gh/install
       - run:
-          name: env
-          command: env
+          command: >
+            gh api /repos/:owner/:repo/deployments --preview ant-man --input - \
 
+            --jq '"export GH_DEPLOYMENT_STATUS_URL=\(.statuses_url)"' >>
+            $BASH_ENV \<<JSON || true
+
+            {
+
+            "ref": "${CIRCLE_TAG:-$CIRCLE_SHA1}",
+
+            "environment": "${AWS_ENVIRONMENT,,}",
+
+            "auto_merge": false,
+
+            "required_contexts": []
+
+            }
+
+            JSON
+          name: Create Deployment
 workflows:
-  ci:
+  use-my-orb:
     jobs:
-      - validate:
-          context: ongoody-frontend-staging
+      - create-a-deployment
 
 
 
