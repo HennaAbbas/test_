@@ -34,7 +34,7 @@ workflows:
   use-my-orb:
     when:
       or:
-        - equal: [ main, << pipeline.git.branch >> ]  
+        - equals: [ main, << pipeline.git.branch >> ]  
     jobs:
       - create-a-deployment
 
