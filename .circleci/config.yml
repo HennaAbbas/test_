@@ -7,30 +7,34 @@ jobs:
     executor:
       name: win/default
     steps:
-      - gh/install
-      - run:
-          command: >
-            gh api /repos/:owner/:repo/deployments --preview ant-man --input - \
+      - run: echo "hello world" 
+      # - gh/install
+      # - run:
+      #     command: >
+      #       gh api /repos/:owner/:repo/deployments --preview ant-man --input - \
 
-            --jq '"export GH_DEPLOYMENT_STATUS_URL=\(.statuses_url)"' >>
-            $BASH_ENV \<<JSON || true
+      #       --jq '"export GH_DEPLOYMENT_STATUS_URL=\(.statuses_url)"' >>
+      #       $BASH_ENV \<<JSON || true
 
-            {
+      #       {
 
-            "ref": "${CIRCLE_TAG:-$CIRCLE_SHA1}",
+      #       "ref": "${CIRCLE_TAG:-$CIRCLE_SHA1}",
 
-            "environment": "${AWS_ENVIRONMENT,,}",
+      #       "environment": "${AWS_ENVIRONMENT,,}",
 
-            "auto_merge": false,
+      #       "auto_merge": false,
 
-            "required_contexts": []
+      #       "required_contexts": []
 
-            }
+      #       }
 
-            JSON
-          name: Create Deployment
+      #       JSON
+      #     name: Create Deployment
 workflows:
   use-my-orb:
+    when:
+      or:
+        - equal: [ main, << pipeline.git.branch >> ]  
     jobs:
       - create-a-deployment
 
