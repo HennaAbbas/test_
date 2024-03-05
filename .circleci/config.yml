@@ -8,6 +8,8 @@ jobs:
       name: win/default
     steps:
       - run: echo "hello world" 
+      - setup_remote_docker:
+          version: default  
       # - gh/install
       # - run:
       #     command: >
