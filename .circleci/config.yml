@@ -5,11 +5,15 @@ orbs:
 jobs:
   create-a-deployment:
     docker:
-      - image: cimg/python:3.8.12
+      - image: cimg/node:18.7.0
+
     steps:
-      - run: echo "hello world" 
+      - checkout
+      - run: docker --version
+      - run: node --version
       - setup_remote_docker:
-          version: default  
+          version: 20.10.14
+          docker_layer_caching: true
       # - gh/install
       # - run:
       #     command: >
