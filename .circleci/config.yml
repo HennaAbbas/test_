@@ -25,7 +25,7 @@ jobs:
       - run:
           name: Create and Boot Current iOS Simulator
           command: |
-            echo $(xcrun simctl create "Current_iOS_TestPhone" "iPhone SE (3rd generation)")
+            echo $(xcrun simctl create "Previous_iOS_TestPhone" "iPhone SE (3rd generation)" iOS16.4)
             echo $(ls -la ~/Library/Developer/CoreSimulator/Devices)
             xcrun simctl boot Current_iOS_TestPhone
       - run:
@@ -60,7 +60,7 @@ jobs:
             xcrun simctl spawn Current_iOS_TestPhone defaults write com.apple.keyboard.ContinuousPath KeyboardContinuousPathEnabled -bool NO
             
             xcrun simctl shutdown all
-      - run : cat  ~/Library/Developer/CoreSimulator/Devices/
+
       - persist_to_workspace:
           name: Save Devices to Workspace
           root: ~/Library/Developer/
