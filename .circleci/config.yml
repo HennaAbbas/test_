@@ -3,44 +3,41 @@ orbs:
   gh: circleci/github-cli@2.0
   win: circleci/windows@5.0  
 jobs:
-  create-a-deployment:
-    docker:
-      - image: cimg/node:18.7.0
+  build:
+    macos:
+      xcode: 15.3.0
+    resource_class: macos.m1.medium.gen1
+    shell: /bin/bash --login -eo pipefail
 
     steps:
       - checkout
-      - run: docker --version
-      - run: node --version
-      - setup_remote_docker:
-          version: 20.10.14
-          docker_layer_caching: true
-      # - gh/install
-      # - run:
-      #     command: >
-      #       gh api /repos/:owner/:repo/deployments --preview ant-man --input - \
+      - run: echo "hello world" 
+      - run: mkdir -p workspace
+      - run: echo "Hello, world!" > workspace/echo-output      
+      - persist_to_workspace:
+          # Must be an absolute path, or relative path from working_directory. This is a directory in the execution
+          # environment which is taken to be the root directory of the workspace.
+          root: workspace
+          # Must be relative path from root
+          paths:
+            - echo-output
+  test:
+    macos:
+      xcode: 15.3.0
+    resource_class: macos.m1.medium.gen1
+    shell: /bin/bash --login -eo pipefail
 
-      #       --jq '"export GH_DEPLOYMENT_STATUS_URL=\(.statuses_url)"' >>
-      #       $BASH_ENV \<<JSON || true
+    steps:
+      - checkout
+      - run: echo "hello world" 
+      - attach_workspace:
+          at: ~/Library/Developer      
 
-      #       {
-
-      #       "ref": "${CIRCLE_TAG:-$CIRCLE_SHA1}",
-
-      #       "environment": "${AWS_ENVIRONMENT,,}",
-
-      #       "auto_merge": false,
-
-      #       "required_contexts": []
-
-      #       }
-
-      #       JSON
-      #     name: Create Deployment
 workflows:
-  use-my-orb:
-    when:
-      or:
-        - equals: [ main, << pipeline.git.branch >> ]  
+  my_workflow:
     jobs:
-      - create-a-deployment
+      - build
+      - test: 
+          requires: 
+            - build
 
