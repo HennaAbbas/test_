@@ -60,6 +60,7 @@ jobs:
             xcrun simctl spawn Current_iOS_TestPhone defaults write com.apple.keyboard.ContinuousPath KeyboardContinuousPathEnabled -bool NO
             
             xcrun simctl shutdown all
+      - run : cat  ~/Library/Developer/CoreSimulator/Devices/
       - persist_to_workspace:
           name: Save Devices to Workspace
           root: ~/Library/Developer/
