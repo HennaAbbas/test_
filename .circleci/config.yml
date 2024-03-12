@@ -12,15 +12,59 @@ jobs:
     steps:
 
       - run: echo "hello world" 
-      - run: mkdir -p workspace
-      - run: echo "Hello, world!" > workspace/echo-output      
+      - run:
+          name: Delete All Simulators
+          command: |
+            xcrun simctl delete all
+      - run:
+          name: Create and Boot Old iOS Simulator
+          command: |
+            echo $(xcrun simctl create "Previous_iOS_TestPhone" "iPhone SE (3rd generation)" iOS16.4)
+            echo $(ls -la ~/Library/Developer/CoreSimulator/Devices)
+            xcrun simctl boot Previous_iOS_TestPhone
+      - run:
+          name: Create and Boot Current iOS Simulator
+          command: |
+            echo $(xcrun simctl create "Current_iOS_TestPhone" "iPhone SE (3rd generation)")
+            echo $(ls -la ~/Library/Developer/CoreSimulator/Devices)
+            xcrun simctl boot Current_iOS_TestPhone
+      - run:
+          name: Disable Keyboard Features
+          command: |
+            xcrun simctl bootstatus Previous_iOS_TestPhone #waits for simulator to boot
+            xcrun simctl spawn Previous_iOS_TestPhone defaults write com.apple.keyboard.preferences KeyboardAllowPaddle -bool NO
+            xcrun simctl spawn Previous_iOS_TestPhone defaults write com.apple.keyboard.preferences KeyboardAutocapitalization -bool NO
+            xcrun simctl spawn Previous_iOS_TestPhone defaults write com.apple.keyboard.preferences KeyboardAutocorrection -bool NO
+            xcrun simctl spawn Previous_iOS_TestPhone defaults write com.apple.keyboard.preferences KeyboardCapsLock -bool NO
+            xcrun simctl spawn Previous_iOS_TestPhone defaults write com.apple.keyboard.preferences KeyboardCheckSpelling -bool NO
+            xcrun simctl spawn Previous_iOS_TestPhone defaults write com.apple.keyboard.preferences KeyboardPeriodShortcut -bool NO
+            xcrun simctl spawn Previous_iOS_TestPhone defaults write com.apple.keyboard.preferences KeyboardPrediction -bool NO
+            xcrun simctl spawn Previous_iOS_TestPhone defaults write com.apple.keyboard.preferences KeyboardShowPredictionBar -bool NO
+            xcrun simctl spawn Previous_iOS_TestPhone defaults write com.apple.keyboard.preferences ShowMemoji -bool NO
+            xcrun simctl spawn Previous_iOS_TestPhone defaults write com.apple.keyboard.preferences SmartDashesEnabled -bool NO
+            xcrun simctl spawn Previous_iOS_TestPhone defaults write com.apple.keyboard.preferences SmartQuotesEnabled -bool NO
+            xcrun simctl spawn Previous_iOS_TestPhone defaults write com.apple.keyboard.ContinuousPath KeyboardContinuousPathEnabled -bool NO
+            
+            xcrun simctl bootstatus Current_iOS_TestPhone #waits for simulator to boot
+            xcrun simctl spawn Current_iOS_TestPhone defaults write com.apple.keyboard.preferences KeyboardAllowPaddle -bool NO
+            xcrun simctl spawn Current_iOS_TestPhone defaults write com.apple.keyboard.preferences KeyboardAutocapitalization -bool NO
+            xcrun simctl spawn Current_iOS_TestPhone defaults write com.apple.keyboard.preferences KeyboardAutocorrection -bool NO
+            xcrun simctl spawn Current_iOS_TestPhone defaults write com.apple.keyboard.preferences KeyboardCapsLock -bool NO
+            xcrun simctl spawn Current_iOS_TestPhone defaults write com.apple.keyboard.preferences KeyboardCheckSpelling -bool NO
+            xcrun simctl spawn Current_iOS_TestPhone defaults write com.apple.keyboard.preferences KeyboardPeriodShortcut -bool NO
+            xcrun simctl spawn Current_iOS_TestPhone defaults write com.apple.keyboard.preferences KeyboardPrediction -bool NO
+            xcrun simctl spawn Current_iOS_TestPhone defaults write com.apple.keyboard.preferences KeyboardShowPredictionBar -bool NO
+            xcrun simctl spawn Current_iOS_TestPhone defaults write com.apple.keyboard.preferences ShowMemoji -bool NO
+            xcrun simctl spawn Current_iOS_TestPhone defaults write com.apple.keyboard.preferences SmartDashesEnabled -bool NO
+            xcrun simctl spawn Current_iOS_TestPhone defaults write com.apple.keyboard.preferences SmartQuotesEnabled -bool NO
+            xcrun simctl spawn Current_iOS_TestPhone defaults write com.apple.keyboard.ContinuousPath KeyboardContinuousPathEnabled -bool NO
+            
+            xcrun simctl shutdown all
       - persist_to_workspace:
-          # Must be an absolute path, or relative path from working_directory. This is a directory in the execution
-          # environment which is taken to be the root directory of the workspace.
-          root: workspace
-          # Must be relative path from root
+          name: Save Devices to Workspace
+          root: ~/Library/Developer/
           paths:
-            - echo-output
+            - CoreSimulator/Devices/
   test:
     macos:
       xcode: 15.3.0
@@ -30,7 +74,7 @@ jobs:
     steps:
       - run: echo "hello world" 
       - attach_workspace:
-          at: ~/Library/Developer      
+          at: ~/Library/Developer/
 
 workflows:
   my_workflow:
