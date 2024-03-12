@@ -25,7 +25,7 @@ jobs:
       - run:
           name: Create and Boot Current iOS Simulator
           command: |
-            echo $(xcrun simctl create "Current_iOS_TestPhone" "iPhone SE (3rd generation)" iOS16.4)
+            echo $(xcrun simctl create "Current_iOS_TestPhone" "iPhone SE (3rd generation)" iOS17.2)
             echo $(ls -la ~/Library/Developer/CoreSimulator/Devices)
             xcrun simctl boot Current_iOS_TestPhone
       - run:
