@@ -1,88 +1,50 @@
-version: '2.1'
+version: 2.1
 orbs:
-  gh: circleci/github-cli@2.0
-  win: circleci/windows@5.0  
+  python: circleci/python@1.5.0
+  heroku: circleci/heroku@1.2.6
 jobs:
-  build:
-    macos:
-      xcode: 15.3.0
-    resource_class: macos.m1.large.gen1
-    shell: /bin/bash --login -eo pipefail
-
+  build_and_test:
+  # this can be any name you choose
+    parallelism: 50
+    docker:
+      - image: cimg/python:3.10.1
+        environment:
+          DATABASE_URL: postgresql://root@localhost/circle_test?sslmode=disable
+      - image: circleci/postgres:9.6.2
+        environment:
+          POSTGRES_USER: root
+          POSTGRES_DB: circle_test
+      - image: cimg/mysql:8.0    
     steps:
-
-      - run: echo "hello world" 
+      - checkout
+      - python/install-packages:
+          pkg-manager: pipenv
       - run:
-          name: Delete All Simulators
-          command: |
-            xcrun simctl delete all
-      - run:
-          name: Create and Boot Old iOS Simulator
-          command: |
-            echo $(xcrun simctl create "Previous_iOS_TestPhone" "iPhone SE (3rd generation)" iOS16.4)
-            echo $(ls -la ~/Library/Developer/CoreSimulator/Devices)
-            xcrun simctl boot Previous_iOS_TestPhone
-      - run:
-          name: Create and Boot Current iOS Simulator
-          command: |
-            echo $(xcrun simctl create "Current_iOS_TestPhone" "iPhone SE (3rd generation)" iOS17.2)
-            echo $(ls -la ~/Library/Developer/CoreSimulator/Devices)
-            xcrun simctl boot Current_iOS_TestPhone
-      - run:
-          name: Disable Keyboard Features
-          command: |
-            xcrun simctl bootstatus Previous_iOS_TestPhone #waits for simulator to boot
-            xcrun simctl spawn Previous_iOS_TestPhone defaults write com.apple.keyboard.preferences KeyboardAllowPaddle -bool NO
-            xcrun simctl spawn Previous_iOS_TestPhone defaults write com.apple.keyboard.preferences KeyboardAutocapitalization -bool NO
-            xcrun simctl spawn Previous_iOS_TestPhone defaults write com.apple.keyboard.preferences KeyboardAutocorrection -bool NO
-            xcrun simctl spawn Previous_iOS_TestPhone defaults write com.apple.keyboard.preferences KeyboardCapsLock -bool NO
-            xcrun simctl spawn Previous_iOS_TestPhone defaults write com.apple.keyboard.preferences KeyboardCheckSpelling -bool NO
-            xcrun simctl spawn Previous_iOS_TestPhone defaults write com.apple.keyboard.preferences KeyboardPeriodShortcut -bool NO
-            xcrun simctl spawn Previous_iOS_TestPhone defaults write com.apple.keyboard.preferences KeyboardPrediction -bool NO
-            xcrun simctl spawn Previous_iOS_TestPhone defaults write com.apple.keyboard.preferences KeyboardShowPredictionBar -bool NO
-            xcrun simctl spawn Previous_iOS_TestPhone defaults write com.apple.keyboard.preferences ShowMemoji -bool NO
-            xcrun simctl spawn Previous_iOS_TestPhone defaults write com.apple.keyboard.preferences SmartDashesEnabled -bool NO
-            xcrun simctl spawn Previous_iOS_TestPhone defaults write com.apple.keyboard.preferences SmartQuotesEnabled -bool NO
-            xcrun simctl spawn Previous_iOS_TestPhone defaults write com.apple.keyboard.ContinuousPath KeyboardContinuousPathEnabled -bool NO
-            
-            xcrun simctl bootstatus Current_iOS_TestPhone #waits for simulator to boot
-            xcrun simctl spawn Current_iOS_TestPhone defaults write com.apple.keyboard.preferences KeyboardAllowPaddle -bool NO
-            xcrun simctl spawn Current_iOS_TestPhone defaults write com.apple.keyboard.preferences KeyboardAutocapitalization -bool NO
-            xcrun simctl spawn Current_iOS_TestPhone defaults write com.apple.keyboard.preferences KeyboardAutocorrection -bool NO
-            xcrun simctl spawn Current_iOS_TestPhone defaults write com.apple.keyboard.preferences KeyboardCapsLock -bool NO
-            xcrun simctl spawn Current_iOS_TestPhone defaults write com.apple.keyboard.preferences KeyboardCheckSpelling -bool NO
-            xcrun simctl spawn Current_iOS_TestPhone defaults write com.apple.keyboard.preferences KeyboardPeriodShortcut -bool NO
-            xcrun simctl spawn Current_iOS_TestPhone defaults write com.apple.keyboard.preferences KeyboardPrediction -bool NO
-            xcrun simctl spawn Current_iOS_TestPhone defaults write com.apple.keyboard.preferences KeyboardShowPredictionBar -bool NO
-            xcrun simctl spawn Current_iOS_TestPhone defaults write com.apple.keyboard.preferences ShowMemoji -bool NO
-            xcrun simctl spawn Current_iOS_TestPhone defaults write com.apple.keyboard.preferences SmartDashesEnabled -bool NO
-            xcrun simctl spawn Current_iOS_TestPhone defaults write com.apple.keyboard.preferences SmartQuotesEnabled -bool NO
-            xcrun simctl spawn Current_iOS_TestPhone defaults write com.apple.keyboard.ContinuousPath KeyboardContinuousPathEnabled -bool NO
-            
-            xcrun simctl shutdown all
-
+          name: Run tests
+          command: pipenv run python manage.py test # alternatively run `python -m pytest` if you are running vanilla pytest
+      - store_test_results:
+          path: results.xml
+      - store_artifacts:
+          path: test-results
+          destination: tr1
       - persist_to_workspace:
-          name: Save Devices to Workspace
-          root: ~/Library/Developer/
+          root: ~/project
           paths:
-            - CoreSimulator/Devices/
-  test:
-    macos:
-      xcode: 15.3.0
-    resource_class: macos.m1.large.gen1
-    shell: /bin/bash --login -eo pipefail
-
+            - .
+ 
+  deploy: # this can be any name you choose
+    docker:
+      - image: cimg/python:3.10.1
     steps:
-      - run: echo "hello world" 
       - attach_workspace:
-          at: ~/Library/Developer/
+          at: ~/project
+      - heroku/deploy-via-git: 
+          force: true # force push when pushing to the heroku remote, see: https://devcenter.heroku.com/articles/git
 
 workflows:
-  my_workflow:
+  on_commit:
     jobs:
-      - build: 
-          name: cimg/postgres:16@sha256
-      - test: 
-          requires: 
-            - build
-#test
+      - build_and_test
+
+      #test
+   
