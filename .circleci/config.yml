@@ -11,6 +11,7 @@ jobs:
     - checkout
     - run: npm install conventional-changelog-conventionalcommits
     - run: npm install commitlint@latest
+    - run: echo "export default { extends: ['@commitlint/config-conventional'] };" > commitlint.config.js
 
 # Add commit message linting to commit-msg hook
         
