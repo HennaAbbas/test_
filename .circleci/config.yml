@@ -6,6 +6,7 @@ workflows:
     jobs:
 
       - commitlint/lint: 
+          node-version: 18.17.0
           pre-steps: 
                 - run: npm --version
                 - run : sudo npm install -g npm@10.5.0
