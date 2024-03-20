@@ -21,6 +21,6 @@ workflows:
     # List of jobs that will run
     jobs:
       - say_hello: 
-          name: job_name/puppies
+          name: first_half/not_first_half
       - say_goodbye
 
