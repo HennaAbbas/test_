@@ -1,33 +1,26 @@
-version: 2
+# CircleCI configuration file
+version: 2.1
 
-#test
 jobs:
-
-  lint_commit_message:
-    working_directory: ~/project
+  # Job one with a unique name
+  say_hello:
     docker:
-    - image: cimg/node:current
+     - image: cimg/base:2022.05
     steps:
-    - checkout
-    - run: npm install conventional-changelog-conventionalcommits
-    - run: npm install commitlint@latest
-    - run: echo "export default { extends: ['@commitlint/config-conventional'] };" > commitlint.config.js
-
-# Add commit message linting to commit-msg hook
-        
-
-    - run:
-        name: Define environment variable with latest commit's message
-        command: |
-          echo 'export COMMIT_MESSAGE=$(git log -1 --pretty=format:"%s")' >> $BASH_ENV
-          source $BASH_ENV
-    - run:
-        name: Lint commit message
-        command: echo "$COMMIT_MESSAGE" | npx commitlint
+      - run: echo "Say hello to YAML!"
+  # Job two with a unique name
+  say_goodbye:
+    docker:
+     - image: cimg/base:2022.05
+    steps:
+      - run: echo "Say goodbye to YAML!"
 
 workflows:
-  version: 2
-  commit:
+  # Name of workflow
+  hello_and_goodbye:
+    # List of jobs that will run
     jobs:
-    - lint_commit_message
+      - say_hello: 
+          name: job_name/puppies
+      - say_goodbye
 
