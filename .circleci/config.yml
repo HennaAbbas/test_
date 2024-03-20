@@ -6,7 +6,7 @@ jobs:
   lint_commit_message:
     working_directory: ~/project
     docker:
-    - image: cimg/node:16.5.0
+    - image: cimg/node:current
     steps:
     - checkout
     - run: npm install conventional-changelog-conventionalcommits
