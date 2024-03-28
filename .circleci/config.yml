@@ -1,26 +1,300 @@
-# CircleCI configuration file
 version: 2.1
 
-jobs:
-  # Job one with a unique name
-  say_hello:
-    docker:
-     - image: cimg/base:2022.05
-    steps:
-      - run: echo "Say hello to YAML!"
-  # Job two with a unique name
-  say_goodbye:
-    docker:
-     - image: cimg/base:2022.05
-    steps:
-      - run: echo "Say goodbye to YAML!"
-
 workflows:
-  # Name of workflow
-  hello_and_goodbye:
-    # List of jobs that will run
+  sqlmonitor:
     jobs:
-      - say_hello: 
-          name: first_half/not_first_half
-      - say_goodbye
+      - webpack-website
+      - lint-website
+      - test-website
+      - build-dotnet:
+          context:
+            - Nuget
+      - package-sql-monitor:
+          requires:
+            - build-dotnet
+            - webpack-website
+      - test-dotnet-unit:
+          context:
+            - Nuget
+      - test-integration-bm:
+          context:
+            - Nuget
+          matrix:
+            parameters:
+              test-category: [ uncategorized, schema-upgrade ]
+      - test-integration-postgres:
+          name: Postgres integration tests (<<matrix.postgres-image>>)
+          context:
+            - Nuget
+          matrix:
+            parameters:
+              postgres-image:
+                - postgres:16.0@sha256:b125148bc76e8e8eee5eb3ad6020a3a14110a14e8192f1c645128afebe2e2f84
+                - postgres:15.4@sha256:f6581f722a050048ce6b56c82cdf64982ecea4233812f7d2b6ab1f220b21f798
+                - postgres:14.9@sha256:c5c0f76d71af56e195256fc28d5ee2d4cb7b01de32ad12a4264ff94285ea6114
+                - postgres:13.10@sha256:a81a8f60745e4e4e07f937a0ea1b659663d9e86aaeca907abaa57d22779a017d
+                - postgres:12.16@sha256:4fd489b8cbbe89bedfc1bb4798265de700bb119830696c40484030b2c7b0f493
+                - postgres:11.21@sha256:2e3f1d4b11e2b0e0139eabbf47171149983cfbdf44e5127e3fa95a877b8ece8c
+                - postgres:10.22@sha256:6b0ea752349e77d4f3624e228596f12d235399deb83f3ef9d5ddd095c99ea00a
+      - test-integration-website:
+          context:
+            - Nuget
+      - deploy-to-test:
+          filters:
+            branches:
+              only: main
+          context:
+            - OctopusDeploy
+          requires:
+            - package-sql-monitor
+jobs:
+  webpack-website:
+    docker:
+      - image: cimg/node:21.1@sha256:371d4fd082e62b57d8bcd2294624880e35e25bebe07ed5ece0a28b09d0d9e0bb
+    resource_class: xlarge
+    working_directory: /mnt/ramdisk
+    steps:
+      - checkout
+      - run:
+          name: Build webpack
+          command: |
+            cd Source
+            ./.build/docker/webpack-website.sh
+      - persist_to_workspace:
+          root: Source
+          paths:
+            - UI/Website/wwwroot
+  lint-website:
+    docker:
+      - image: cimg/node:21.1@sha256:371d4fd082e62b57d8bcd2294624880e35e25bebe07ed5ece0a28b09d0d9e0bb
+    resource_class: medium
+    steps:
+      - checkout
+      - run:
+          name: Lint website
+          command: |
+            cd Source
+            ./.build/docker/lint-website.sh
+  test-website:
+    docker:
+      - image: cimg/node:21.1@sha256:371d4fd082e62b57d8bcd2294624880e35e25bebe07ed5ece0a28b09d0d9e0bb
+    resource_class: large
+    steps:
+      - checkout
+      - run:
+          name: Test website
+          command: |
+            cd Source
+            ./.build/docker/test-website.sh
+          environment:
+            JEST_JUNIT_OUTPUT_DIR: ../../../reports/
+            JEST_JUNIT_ADD_FILE_ATTRIBUTE: "true"
+      - store_test_results:
+          path: ./reports
+  build-dotnet:
+    docker:
+      - image: mcr.microsoft.com/dotnet/sdk:7.0.403@sha256:7776f4a8f9f4a809374c44f1214d49b22975cdf47a9ef44acf87fec8b0216e95
+    resource_class: medium
+    environment:
+      PIPELINE_NUMBER: << pipeline.number >>
+    steps:
+      - download-openssh
+      - checkout
+      - configure_nuget
+      - run:
+          name: set version number
+          command: |
+            cd Source
+            ./.build/docker/set-version-number.sh
+      - run:
+          name: Build dotnet
+          command: |
+            cd Source
+            ./.build/docker/build-dotnet.sh
+      - run :
+          name: publish dotnet
+          command: |
+              cd Source
+              ./.build/docker/publish-dotnet.sh
+      - persist_to_workspace:
+          root: Source
+          paths:
+            - Publish
+  package-sql-monitor:
+    docker:
+      - image: cimg/base:2023.10
+    resource_class: small
+    environment:
+      PIPELINE_NUMBER: << pipeline.number >>
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          name: Package Base Monitor
+          command: |
+            source Publish/bash.env
+            echo ${VERSION_NUMBER}
+            ./Source/.build/docker/package-basemonitor.sh
+      - run:
+          name: Package Website
+          command: |
+            source Publish/bash.env
+            ./Source/.build/docker/package-website.sh
+      - persist_to_workspace:
+          root: packages
+          paths:
+            - .
+      - store_artifacts:
+          path: packages/SQLMonitor.BaseMonitor.Linux.tar.gz
+          destination: SQLMonitor.BaseMonitor.Linux.tar.gz
+      - store_artifacts:
+          path: packages/SQLMonitor.Website.Linux.tar.gz
+          destination: SQLMonitor.Website.Linux.tar.gz
+  test-dotnet-unit:
+    docker:
+      - image: mcr.microsoft.com/dotnet/sdk:7.0.403@sha256:7776f4a8f9f4a809374c44f1214d49b22975cdf47a9ef44acf87fec8b0216e95
+    resource_class: medium+
+    steps:
+      - download-openssh
+      - checkout
+      - configure_nuget
+      - run:
+          name: Run unit tests
+          command: |
+            cd Source
+            ./.build/docker/unit-tests.sh
+      - store_dotnet_test_results:
+          path: ./tests
+  test-integration-bm:
+    docker:
+      - image: mcr.microsoft.com/dotnet/sdk:7.0.403@sha256:7776f4a8f9f4a809374c44f1214d49b22975cdf47a9ef44acf87fec8b0216e95
+      - image: mcr.microsoft.com/mssql/server:2022-CU8-ubuntu-20.04@sha256:d00c97dedf4f5c785bbbd5894f490d50124ff409d7751fbba2d53eb7de9965da
+        environment:
+          ACCEPT_EULA: Y
+          MSSQL_SA_PASSWORD: Password1!
+          MSSQL_COLLATION: Latin1_General_CS_AS
+    parameters:
+      test-category:
+        type: string
+    resource_class: large
+    steps:
+      - download-openssh
+      - checkout
+      - configure_nuget
+      - run:
+          name: Run integration tests
+          command: |
+            cd Source
+            ./.build/docker/integration-tests-base-monitor.sh <<parameters.test-category>>
+          environment:
+            SQLMONITOR_IntegrationConnectionString: "Data source=localhost;User ID=sa;password=Password1!"
+      - store_dotnet_test_results:
+          path: ./tests
+  test-integration-postgres:
+    docker:
+      - image: mcr.microsoft.com/dotnet/sdk:7.0.403@sha256:7776f4a8f9f4a809374c44f1214d49b22975cdf47a9ef44acf87fec8b0216e95
+      - image: cimg/<<parameters.postgres-image>>
+        environment:
+          POSTGRES_PASSWORD: password
+        command: |
+          postgres -c shared_preload_libraries='pg_stat_statements,auto_explain' -c log_destination='csvlog' -c logging_collector=on -c track_io_timing=on
+    parameters:
+      postgres-image:
+        type: string
+    resource_class: large
+    steps:
+      - download-openssh
+      - checkout
+      - configure_nuget
+      - run:
+          name: Install postgresql client
+          command: apt install -y postgresql-client
+      - run:
+          name: Set up postgres for monitoring
+          command: |
+            psql -h localhost -U postgres -f Source/.build/docker/postgres/setup.sql
+            psql -h localhost -U postgres -d sqlmonitor -f Source/.build/docker/postgres/setup_database.sql
+          environment:
+            PGPASSWORD: password
+      - run:
+          name: Run integration tests
+          command: |
+            cd Source
+            ./.build/docker/integration-tests-postgres.sh
+          environment:
+            POSTGRES_TEST_SERVER_NAME: localhost
+            POSTGRES_TEST_SERVER_USER: sqlmonitor
+            POSTGRES_TEST_SERVER_PASSWORD: password
+      - store_dotnet_test_results:
+          path: ./tests
+  test-integration-website:
+    docker:
+      - image: mcr.microsoft.com/dotnet/sdk:7.0.403@sha256:7776f4a8f9f4a809374c44f1214d49b22975cdf47a9ef44acf87fec8b0216e95
+    resource_class: medium+
+    steps:
+      - download-openssh
+      - checkout
+      - configure_nuget
+      - run:
+          name: Run integration tests
+          command: |
+            cd Source
+            ./.build/docker/integration-tests-website.sh
+      - store_dotnet_test_results:
+          path: ./tests
+  deploy-to-test:
+    docker:
+      - image: octopusdeploy/octo:9.1.7@sha256:0ca92b9e81e6b3ec29fcca0b89765f35065db1e30e6898dee03e6ddc0ca92054
+    resource_class: small
+    environment:
+      PIPELINE_NUMBER: << pipeline.number >>
+    steps:
+      - attach_workspace:
+          at: .
+      - run:
+          name: Publish packages to Octopus Deploy
+          command: |
+            source Publish/bash.env
+            octo push --package SQLMonitor.Website.Linux.${VERSION_NUMBER}.tar.gz --overwrite-mode=IgnoreIfExists  --server "${OCTOPUS_URL}" --apiKey "${OCTOPUS_FEED_API_KEY}"
+            octo push --package SQLMonitor.BaseMonitor.Linux.${VERSION_NUMBER}.tar.gz --overwrite-mode=IgnoreIfExists --server "${OCTOPUS_URL}" --apiKey "${OCTOPUS_FEED_API_KEY}"
+      - run:
+          name: Trigger a release in Octopus Deploy
+          command: |
+            source Publish/bash.env
+            octo create-release --project "SQL Monitor - Linux"  --version ${VERSION_NUMBER} --server "${OCTOPUS_URL}" --apiKey "${OCTOPUS_API_KEY}"  --ignoreExisting
+            octo deploy-release --project "SQL Monitor - Linux" --releaseNumber ${VERSION_NUMBER} --deployto "Test" --progress --server "${OCTOPUS_URL}" --apiKey "${OCTOPUS_API_KEY}"
 
+commands:
+  configure_nuget:
+    steps:
+      - run:
+          name: Configure Nuget
+          command: |
+            dotnet nuget update source red-gate-vsts-main-v3 \
+            --source "https://red-gate.pkgs.visualstudio.com/_packaging/Main/nuget/v3/index.json" \
+            --username "$NUGET_USER" --password "$NUGET_TOKEN" --store-password-in-clear-text --configfile Source/NuGet.Config
+  download-openssh:
+    steps:
+      - run:
+          name: Download OpenSSH
+          command: |
+            apt-get update -y
+            apt-get upgrade -y
+            apt-get install openssh-client -y
+  store_dotnet_test_results:
+    parameters:
+      path:
+        description: Path to test result directory
+        type: string
+    steps:
+      - run:
+          name: Convert Dotnet test results
+          when: always
+          command: |
+            dotnet tool install --local trx2junit --version 2.0.0
+            dotnet tool run trx2junit "<< parameters.path >>"/*.trx --output << parameters.path >>/converted
+      - store_test_results:
+          path: << parameters.path >>/converted
+      - store_artifacts:
+          path: << parameters.path >>/converted
