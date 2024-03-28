@@ -23,7 +23,7 @@ workflows:
             parameters:
               test-category: [ uncategorized, schema-upgrade ]
       - test-integration-postgres:
-          name: Postgres integration tests (<<matrix.postgres-image>>)
+          name: <<matrix.postgres-image>>
           context:
             - Nuget
           matrix:
