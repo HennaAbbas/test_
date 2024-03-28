@@ -29,13 +29,13 @@ workflows:
           matrix:
             parameters:
               postgres-image:
-                - postgres:16.0@sha256:b125148bc76e8e8eee5eb3ad6020a3a14110a14e8192f1c645128afebe2e2f84
-                - postgres:15.4@sha256:f6581f722a050048ce6b56c82cdf64982ecea4233812f7d2b6ab1f220b21f798
-                - postgres:14.9@sha256:c5c0f76d71af56e195256fc28d5ee2d4cb7b01de32ad12a4264ff94285ea6114
-                - postgres:13.10@sha256:a81a8f60745e4e4e07f937a0ea1b659663d9e86aaeca907abaa57d22779a017d
-                - postgres:12.16@sha256:4fd489b8cbbe89bedfc1bb4798265de700bb119830696c40484030b2c7b0f493
-                - postgres:11.21@sha256:2e3f1d4b11e2b0e0139eabbf47171149983cfbdf44e5127e3fa95a877b8ece8c
-                - postgres:10.22@sha256:6b0ea752349e77d4f3624e228596f12d235399deb83f3ef9d5ddd095c99ea00a
+                - 16.0@sha256:b125148bc76e8e8eee5eb3ad6020a3a14110a14e8192f1c645128afebe2e2f84
+                - 15.4@sha256:f6581f722a050048ce6b56c82cdf64982ecea4233812f7d2b6ab1f220b21f798
+                - 14.9@sha256:c5c0f76d71af56e195256fc28d5ee2d4cb7b01de32ad12a4264ff94285ea6114
+                - 13.10@sha256:a81a8f60745e4e4e07f937a0ea1b659663d9e86aaeca907abaa57d22779a017d
+                - 12.16@sha256:4fd489b8cbbe89bedfc1bb4798265de700bb119830696c40484030b2c7b0f493
+                - 11.21@sha256:2e3f1d4b11e2b0e0139eabbf47171149983cfbdf44e5127e3fa95a877b8ece8c
+                - 10.22@sha256:6b0ea752349e77d4f3624e228596f12d235399deb83f3ef9d5ddd095c99ea00a
       - test-integration-website:
           context:
             - Nuget
@@ -194,7 +194,7 @@ jobs:
   test-integration-postgres:
     docker:
       - image: mcr.microsoft.com/dotnet/sdk:7.0.403@sha256:7776f4a8f9f4a809374c44f1214d49b22975cdf47a9ef44acf87fec8b0216e95
-      - image: cimg/<<parameters.postgres-image>>
+      - image: cimg/postgres:<<parameters.postgres-image>>
         environment:
           POSTGRES_PASSWORD: password
         command: |
