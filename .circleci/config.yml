@@ -7,7 +7,7 @@ jobs:
     working_directory: ~/workdir
     resource_class: small
     steps:
-    - setup_remote_docker
+    - run : echo "hello world"
 
 workflows:
   my-workflow:
