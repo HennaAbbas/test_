@@ -5,9 +5,9 @@ jobs:
     docker:
     - image: cimg/python:3.12.2
     working_directory: ~/workdir
-    resource_class: small
+
     steps:
-    - run : echo "hello world"
+    - setup_remote_docker
 
 workflows:
   my-workflow:
