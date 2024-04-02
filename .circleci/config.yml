@@ -1,13 +1,16 @@
 version: '2.1'
-orbs:
-  commitlint: conventional-changelog/commitlint@1.0
+
+jobs: 
+  build:
+    docker:
+    - image: cimg/python:3.12.2
+    working_directory: ~/workdir
+    resource_class: small
+    steps:
+    - setup_remote_docker
+
 workflows:
   my-workflow:
     jobs:
 #test
-      - commitlint/lint: 
-          node-version: 18.17.0
-          target-branch: martintest
-          pre-steps: 
-                - run: npm --version
-                - run : sudo npm install -g npm@10.5.0
+      - build
