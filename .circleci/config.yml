@@ -1,26 +1,11 @@
 version: 2.1
-
-executors:
-  windows:
-    machine:
-      image: windows-server-2022-gui:current
-      resource_class: windows.medium
-      shell: bash
-
 jobs:
-  Test Checkout:
-    executor: windows
+  test:
+    docker:
+      - image: cimg/python:3.8
     steps:
-      - run:
-          name: Checkout
-          command: |
-            echo "$CIRCLE_BRANCH" "$CIRCLE_REPOSITORY_URL"
-
-      - add_ssh_keys:
-          fingerprints:
-            - "fc:51:f0:22:33:86:76:39:c2:c9:87:e3:9f:96:22:3c"
-
+      - run: Python --version
 workflows:
   all:
     jobs:
-      - Test Checkout
+      - test
