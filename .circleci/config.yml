@@ -2,7 +2,7 @@ version: 2.1
 jobs:
   test:
     docker:
-      - image: cimg/python:3.8.19
+      - image: cimg/python:3.12.2
     steps:
       - run: python –version
 workflows:
