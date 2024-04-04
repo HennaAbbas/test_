@@ -4,7 +4,7 @@ jobs:
     docker:
       - image: cimg/python:3.8
     steps:
-      - run: Python --version
+      - run: python –version
 workflows:
   all:
     jobs:
