@@ -1,15 +1,9 @@
 version: 2.1
-
-workflows:
-  sqlmonitor:
-    jobs:
-      - build
 jobs:
   build:
     docker:
-      - image: cimg/node:21.1@sha256:371d4fd082e62b57d8bcd2294624880e35e25bebe07ed5ece0a28b09d0d9e0bb
-    resource_class: xlarge
-    working_directory: /mnt/ramdisk
+      - image: cimg/base:current
+    resource_class: henna/testrunner
     steps:
       - checkout
       - run:
@@ -29,3 +23,7 @@ jobs:
       - add_ssh_keys:
           fingerprints:
           - SHA256:ZroLKx/hKR3HDTYynlED2JOLNc4+ybd7T/i2kxPi6lQ
+workflows:
+  build-workflow:
+    jobs:
+      - build
