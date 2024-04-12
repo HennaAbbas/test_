@@ -12,6 +12,20 @@ jobs:
     working_directory: /mnt/ramdisk
     steps:
       - checkout
+      - run:
+          name: Virtuo - Install kustomize
+          command: |
+            curl -O -L https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv3.6.1/kustomize_v3.6.1_linux_amd64.tar.gz \
+             && tar xvzf kustomize_v3.6.1_linux_amd64.tar.gz \
+             && sudo mv kustomize /usr/local/bin/kustomize
+      - run:
+          name: Inject Github SSH Fingerprint
+          command: |-
+            mkdir -p ~/.ssh
+                          echo 'github.com ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCj7ndNxQowgcQnjshcLrqPEiiphnt+VTTvDP6mHBL9j1aNUkY4Ue1gvwnGLVlOhGeYrnZaMgRK6+PKCUXaDbC7qtbW8gIkhL7aGCsOr/C56SJMy/BCZfxd1nWzAOxSDPgVsmerOBYfNqltV9/hWCqBywINIR+5dIg6JTJ72pcEpEjcYgXkE2YEFXV1JHnsKgbLWNlhScqb2UmyRkQyytRLtL+38TGxkxCflmO+5Z8CSSNY7GidjMIZ7Q4zMjA2n1nGrlTDkzwDCsw+wqFPGQA179cnfGWOWRVruj16z6XyvxvjJwbz0wQZ75XK5tKSb7FNyeIEs4TT4jk+S4dhPeAUC5y+bDYirYgM4GC7uEnztnZyaVWQ7B381AK4Qdrwt51ZqExKbQpTUNn+EjqoTwvqNj4kqx5QUCI0ThS/YkOxJCXmPUWZbhjpCg56i+2aB6CmK2JGhn57K5mj0MNdBXA4/WnwH6XoPWJzK5Nyu2zB3nAZp+S5hpQs+p1vN1/wsjk=' >> ~/.ssh/known_hosts
+      - run:
+          name: 'Virtuo - Remove existing ssh keys # to ensure the next one will be the only one to be used'
+          command: ssh-add -D      
       - add_ssh_keys:
           fingerprints:
           - SHA256:ZroLKx/hKR3HDTYynlED2JOLNc4+ybd7T/i2kxPi6lQ
