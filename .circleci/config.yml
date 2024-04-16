@@ -15,9 +15,9 @@ jobs:
     # Service container image available at `host: localhost`
 
       - image: cimg/postgres:14.0
-        environment:
-          POSTGRES_USER: testuser
-          POSTGRES_DB: circle-test_test
+        # environment:
+        #   POSTGRES_USER: testuser
+        #   POSTGRES_DB: circle-test_test
 
     steps:
       - checkout
