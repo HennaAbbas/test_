@@ -1,6 +1,5 @@
 version: 2.1
-orbs:
-  macos: circleci/macos@2.4.1
+
   
 jobs:
   build:
@@ -8,8 +7,8 @@ jobs:
       branch:
         type: string
         default: $CIRCLE_BRANCH 
-    macos:
-      xcode: 15.0.0
+    docker:
+      image: cimg/node:current
     
     steps:
       - run: echo <<parameters.branch>>
@@ -23,8 +22,8 @@ jobs:
           background: true
       - macos/enable-vnc
   test:
-    macos:
-      xcode: 15.0.0
+    docker:
+      image: cimg/node:current
 
 
     steps:
