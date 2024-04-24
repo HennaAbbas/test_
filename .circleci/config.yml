@@ -1,5 +1,4 @@
 version: 2.1
-
   
 jobs:
   build:
@@ -20,7 +19,7 @@ jobs:
               echo "this in running  in the background"
             done
           background: true
-      - macos/enable-vnc
+
   test:
     docker:
       - image: cimg/node:17.2.0
