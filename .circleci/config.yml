@@ -10,7 +10,6 @@ jobs:
         default: $CIRCLE_BRANCH 
     macos:
       xcode: 15.0.0
-    resource_class: macos.x86.medium.gen2
     
     steps:
       - run: echo <<parameters.branch>>
@@ -26,7 +25,7 @@ jobs:
   test:
     macos:
       xcode: 15.0.0
-    resource_class: macos.x86.medium.gen2
+
 
     steps:
       - run: xcodebuild -version      
