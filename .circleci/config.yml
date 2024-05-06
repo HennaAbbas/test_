@@ -33,10 +33,10 @@ jobs:
 workflows:
   say-hello-workflow:
     jobs:
-      - test
+      - test:
           filters:
             tags:
-              only: /^pre-.*/      
+              only: /^pre-.*/   
       - build
 
 
