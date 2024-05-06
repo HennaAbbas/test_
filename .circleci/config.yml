@@ -34,6 +34,9 @@ workflows:
   say-hello-workflow:
     jobs:
       - test
+          filters:
+            tags:
+              only: /^pre-.*/      
       - build
 
 
