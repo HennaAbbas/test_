@@ -12,7 +12,7 @@ jobs:
     steps:
       - setup_remote_docker
       - run: cat /proc/sys/fs/inotify/max_user_watches
-      - run: sysctl fs.inotify.max_user_watches=60668
+      - run: sudo sysctl fs.inotify.max_user_watches=60668
       - run: cat /proc/sys/fs/inotify/max_user_watches      
 
       
