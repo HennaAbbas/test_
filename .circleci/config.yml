@@ -10,8 +10,7 @@ jobs:
       - image: cimg/node:17.2.0
     
     steps:
-      - setup_remote_docker: 
-          version: previous
+      - setup_remote_docker
       - run: cat /proc/sys/fs/inotify/max_user_watches
 
 
