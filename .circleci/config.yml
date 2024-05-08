@@ -12,15 +12,8 @@ jobs:
     steps:
       - setup_remote_docker: 
           version: previous
-      - run: echo <<parameters.branch>>
-      - run: xrm
-      - run:
-          command: |
-            while true; do
-              sleep 600
-              echo "this in running  in the background"
-            done
-          background: true
+      - run: cat /proc/sys/fs/inotify/max_user_watches
+
 
   test:
     docker:
