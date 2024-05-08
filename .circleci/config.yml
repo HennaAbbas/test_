@@ -10,6 +10,8 @@ jobs:
       - image: cimg/node:17.2.0
     
     steps:
+      - setup_remote_docker: 
+          version: previous
       - run: echo <<parameters.branch>>
       - run: xrm
       - run:
