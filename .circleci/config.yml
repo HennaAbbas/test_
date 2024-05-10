@@ -28,6 +28,14 @@ jobs:
       - setup_remote_docker: 
           version: previous
       - run: cat /proc/sys/fs/inotify/max_user_watches 
+  ios-build-and-test:
+    macos:
+      xcode: 15.3.0
+    resource_class: macos.m1.medium.gen1
+    steps:
+    - run:
+        name: Upgarade xz
+        command: brew update && brew upgrade xz      
 
 
 
@@ -39,5 +47,6 @@ workflows:
             tags:
               only: /^pre-.*/   
       - build
+      - ios-build-and-test
 
 
