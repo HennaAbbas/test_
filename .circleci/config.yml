@@ -35,7 +35,7 @@ jobs:
     steps:
     - run:
         name: Upgarade xz
-        command: brew update && brew upgrade xz      
+        command: brew update && brew upgrade    
 
 
 
