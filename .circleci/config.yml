@@ -10,7 +10,8 @@ jobs:
       - image: cimg/node@sha256:180f8e47d941e4b2b6eb5244b7f90d67aa63d9b62443aea02052b4b26107a896
     
     steps:
-      - setup_remote_docker
+      - setup_remote_docker: 
+          version: 24.0.9
       - run: cat /proc/sys/fs/inotify/max_user_watches
       - run: |
              ssh remote-docker \ sudo sysctl -w fs.inotify.max_user_watches=60668
