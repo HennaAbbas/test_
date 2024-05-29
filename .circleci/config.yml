@@ -1,53 +1,31 @@
+# Inside config.yml
 version: 2.1
-  
 jobs:
-  build:
+  myjob:
     parameters:
-      branch:
-        type: string
-        default: $CIRCLE_BRANCH 
+      preinstall-foo:
+        type: boolean
+        default: false
     docker:
-      - image: cimg/node@sha256:180f8e47d941e4b2b6eb5244b7f90d67aa63d9b62443aea02052b4b26107a896
-    
+      - image: cimg/base:2023.11
     steps:
-      - setup_remote_docker: 
-          version: default
-      - run: cat /proc/sys/fs/inotify/max_user_watches
-      - run: |
-             ssh remote-docker \ sudo sysctl -w fs.inotify.max_user_watches=60668
-      - run: sudo sysctl fs.inotify.max_user_watches=60668
-      - run: cat /proc/sys/fs/inotify/max_user_watches      
-
-      
-#test
-
-  test:
-    docker:
-      - image: cimg/node@sha256:180f8e47d941e4b2b6eb5244b7f90d67aa63d9b62443aea02052b4b26107a896
-    
-    steps:
-      - setup_remote_docker: 
-          version: previous
-      - run: cat /proc/sys/fs/inotify/max_user_watches 
-  ios-build-and-test:
-    macos:
-      xcode: 15.3.0
-    resource_class: macos.m1.medium.gen1
-    steps:
-    - run:
-        name: Upgarade xz
-        command: brew update && brew upgrade    
-
-
-
+      - run: echo "preinstall is << parameters.preinstall-foo >>"
+      - when:
+          condition: << parameters.preinstall-foo >>
+          steps:
+            - run: echo "preinstall"
+      - unless:
+          condition: << parameters.preinstall-foo >>
+          steps:
+            - run: echo "don't preinstall"
 workflows:
-  say-hello-workflow:
+  workflow:
     jobs:
-      - test:
-          filters:
-            tags:
-              only: /^pre-.*/   
-      - build
-      - ios-build-and-test
+      - myjob:
+          preinstall-foo: false
+      - myjob:
+          preinstall-foo: true
+      - myjob # The empty string is falsy
+
 
 
