@@ -24,7 +24,7 @@ workflows:
       - myjob:
           preinstall-foo: false
       - myjob:
-          preinstall-foo: yes
+          preinstall-foo: y
       - myjob # The empty string is falsy
 
 
