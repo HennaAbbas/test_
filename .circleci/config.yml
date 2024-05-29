@@ -22,7 +22,7 @@ workflows:
   workflow:
     jobs:
       - myjob:
-          preinstall-foo: false
+          preinstall-foo: n
       - myjob:
           preinstall-foo: on
       - myjob # The empty string is falsy
