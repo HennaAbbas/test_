@@ -28,7 +28,8 @@ jobs:
 workflows:
   workflow:
     jobs:
-      - test-delete-me
+      - test-delete-me: 
+          context: my-context
       - myjob:
           preinstall-foo: no
       - myjob:
