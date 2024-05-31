@@ -22,7 +22,7 @@ jobs:
     docker:
       - image: 209556801791.dkr.ecr.us-east-1.amazonaws.com/librato/ruby-ci:2.2.6
         aws_auth:
-          oidc_role_arn: arn:aws:iam::209556801791:role/circleci-oidc-ecr-ro
+          oidc_role_arn: arn:aws:iam::209556801791:role/circleci-oidc-ecr
     steps:
       - checkout            
 workflows:
