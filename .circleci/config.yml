@@ -25,7 +25,6 @@ workflows:
     jobs:
       - myjob 
       - test
-      #test
 
 
 
