@@ -14,7 +14,7 @@ jobs:
     docker:
       - image: cimg/base:2023.11
     steps:
-      - run: echo "preinstall is << parameters.preinstall-foo >>"
+      - run: echo "hello world"
 
           
 workflows:
