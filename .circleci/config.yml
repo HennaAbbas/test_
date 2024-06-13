@@ -1,40 +1,27 @@
 # Inside config.yml
 version: 2.1
+orbs:
+  cli: circleci/circleci-cli@0.1.9
+
 jobs:
+  test:
+    executor: cli/default
+    steps:
+      - run: echo "this job is using the orb's default executor"
+      - cli/install
+      - run: echo "the CLI is now installed"
   myjob:
-    parameters:
-      preinstall-foo:
-        type: boolean
-        default: false
     docker:
       - image: cimg/base:2023.11
     steps:
       - run: echo "preinstall is << parameters.preinstall-foo >>"
-      - when:
-          condition: << parameters.preinstall-foo >>
-          steps:
-            - run: echo "preinstall"
-      - unless:
-          condition: << parameters.preinstall-foo >>
-          steps:
-            - run: echo "don't preinstall"
-  test-delete-me:
-    docker:
-      - image: 209556801790.dkr.ecr.us-east-1.amazonaws.com/librato/ruby-cci:2.2.6
-        aws_auth:
-          oidc_role_arn: arn:aws:iam::209556801790:role/circleci-oidc-ecr
-    steps:
-      - checkout            
+
+          
 workflows:
   workflow:
     jobs:
-      - test-delete-me: 
-          context: my-context
-      - myjob:
-          preinstall-foo: no
-      - myjob:
-          preinstall-foo: on
       - myjob # The empty string is falsy
+      - test
 
 
 
