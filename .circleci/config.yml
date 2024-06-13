@@ -9,8 +9,7 @@ jobs:
     steps:
       - run: echo "this job is using the orb's default executor"
       - cli/install
-      - cli/setup: 
-          token: fake_token
+      - cli/setup
       - run: circleci cli test
       - run: echo "the CLI is now installed"
   myjob:
