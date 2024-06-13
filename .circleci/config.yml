@@ -22,7 +22,7 @@ jobs:
 workflows:
   workflow:
     jobs:
-      - myjob # The empty string is falsy
+      - myjob 
       - test
 
 
