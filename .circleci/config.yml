@@ -10,7 +10,7 @@ jobs:
       - run: echo "this job is using the orb's default executor"
       - cli/install
       - cli/setup
-      - run: circleci cli test
+      - run: circleci policy test
       - run: echo "the CLI is now installed"
   myjob:
     docker:
