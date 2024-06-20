@@ -31,7 +31,7 @@ workflows:
     jobs:
       - myjob: 
           type: approval
-      - apple/authenticate:
+      - myjob:
           context: validation-project-context          
       - test: 
           requires: 
