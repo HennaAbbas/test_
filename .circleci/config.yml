@@ -24,6 +24,11 @@ jobs:
       - image: cimg/base:2023.11
     steps:
       - run: echo "hello world"      
+  build:
+    docker:
+      - image: cimg/base:2023.11
+    steps:
+      - run: echo "hello world"         
 
           
 workflows:
@@ -31,7 +36,7 @@ workflows:
     jobs:
       - myjob: 
           type: approval
-      - myjob:
+      - build:
           context: validation-project-context          
       - test: 
           requires: 
