@@ -19,13 +19,28 @@ jobs:
       - image: cimg/base:2023.11
     steps:
       - run: echo "hello world"
+  build-and-test-job:
+    docker:
+      - image: cimg/base:2023.11
+    steps:
+      - run: echo "hello world"      
 
           
 workflows:
   workflow:
     jobs:
-      - myjob 
-      - test
+      - myjob: 
+          type: approval
+      - apple/authenticate:
+          context: validation-project-context          
+      - test: 
+          requires: 
+            - myjob
+      - build-and-test-job:
+          requires:
+            - myjob
+            - test         
+   
 
 
 
