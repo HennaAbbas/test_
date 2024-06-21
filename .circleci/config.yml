@@ -1,51 +1,42 @@
-# Inside config.yml
 version: 2.1
-orbs:
-  cli: circleci/circleci-cli@0.1.9
-  #test
 
+executors: # Define an executor
+  my-executor:
+    docker:
+      - image: cimg/base:2024.01
+# Define the jobs we want to run for this project
 jobs:
-  test:
-    executor: cli/default
-    steps:
-      - run: echo "this job is using the orb's default executor"
-      - cli/install
-      - cli/setup
-      - run: cat /home/circleci/.circleci/cli.yml
-      - run: circleci policy test
-      - run: echo "the CLI is now installed"
-  myjob:
-    docker:
-      - image: cimg/base:2023.11
-    steps:
-      - run: echo "hello world"
-  build-and-test-job:
-    docker:
-      - image: cimg/base:2023.11
-    steps:
-      - run: echo "hello world"      
   build:
-    docker:
-      - image: cimg/base:2023.11
+    executor: my-executor
     steps:
-      - run: echo "hello world"         
+      - checkout
+      - run: echo "build"
+  test:
+    executor: my-executor
+    steps:
+      - wqr
+  deploy:
+    executor: my-executor
+    steps:
+      - checkout
+      - run: echo "deploy"
 
-          
+# Orchestrate our job run sequence
 workflows:
-  workflow:
+  build_and_test:
     jobs:
-      - myjob: 
-          type: approval
-      - build:
-          context: validation-project-context          
-      - test: 
-          requires: 
-            - myjob
-      - build-and-test-job:
+      - build
+      - test:
           requires:
-            - myjob
-            - test         
-   
+            - build
+      - hold:
+          type: approval
+          requires:
+            - build
+      - deploy:
+          requires:
+            - hold
+
 
 
 
