@@ -3,7 +3,7 @@ version: 2.1
 executors: # Define an executor
   my-executor:
     docker:
-      - image: cimg/base:2024.01
+      - image: cimg/rust:1.76.0
 # Define the jobs we want to run for this project
 jobs:
   build:
@@ -25,10 +25,10 @@ jobs:
 workflows:
   build_and_test:
     jobs:
-      - build: 
-          filters:
-            tags:
-              only: /.*/
+      - build
+          # filters:
+          #   tags:
+          #     only: /.*/
             # branches: 
             #   ignore: /.*/
       
