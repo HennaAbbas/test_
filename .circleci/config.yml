@@ -11,6 +11,7 @@ jobs:
     steps:
       - checkout
       - run: echo "build"
+      - run: lsb_release -a
   test:
     executor: my-executor
     steps:
