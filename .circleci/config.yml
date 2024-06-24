@@ -3,7 +3,7 @@ version: 2.1
 executors: # Define an executor
   my-executor:
     docker:
-      - image: cimg/rust:1.76.0
+      - image: cimg/node:18.20.1
 # Define the jobs we want to run for this project
 jobs:
   build:
