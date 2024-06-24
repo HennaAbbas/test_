@@ -25,7 +25,13 @@ jobs:
 workflows:
   build_and_test:
     jobs:
-      - build
+      - build: 
+          filters:
+            tags:
+              only: /.*/
+            branches: 
+              only: ignore: /.*/
+      
       - test:
           requires:
             - build
