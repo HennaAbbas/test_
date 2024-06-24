@@ -29,8 +29,8 @@ workflows:
           filters:
             tags:
               only: /.*/
-            branches: 
-              only: ignore: /.*/
+            # branches: 
+            #   only: ignore: /.*/
       
       - test:
           requires:
