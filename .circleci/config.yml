@@ -1,48 +1,20 @@
 version: 2.1
 
-executors: # Define an executor
-  my-executor:
-    docker:
-      - image: cimg/node:18.20.1
+
 # Define the jobs we want to run for this project
 jobs:
-  build:
-    executor: my-executor
+  nodejs-test:
+    macos:
+      xcode: 13.4.1
     steps:
-      - checkout
-      - run: echo "build"
-      - run: lsb_release -a
-  test:
-    executor: my-executor
-    steps:
-      - run: wqr
-  deploy:
-    executor: my-executor
-    steps:
-      - checkout
-      - run: echo "deploy"
+    - checkout
+    - run: yarn install
 
 # Orchestrate our job run sequence
 workflows:
   build_and_test:
     jobs:
       - build
-          # filters:
-          #   tags:
-          #     only: /.*/
-            # branches: 
-            #   ignore: /.*/
-      
-      - test:
-          requires:
-            - build
-      - hold:
-          type: approval
-          requires:
-            - build
-      - deploy:
-          requires:
-            - hold
 
 
 
