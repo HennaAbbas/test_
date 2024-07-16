@@ -12,9 +12,7 @@ jobs:
       - node/install:
           install-yarn: true
           node-version: &node-version "16.18.0"
-      - run:
-          name: Install NodeJS frontend
-          command: make install-js
+      - run: yarn install
 
 # Orchestrate our job run sequence
 workflows:
