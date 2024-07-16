@@ -8,7 +8,9 @@ jobs:
       xcode: 13.4.1
     steps:
     - checkout
-    - run: yarn install
+    - run: nvm install 14 && nvm use 14
+    - run: npm i -force
+    - run: npm install
 
 # Orchestrate our job run sequence
 workflows:
