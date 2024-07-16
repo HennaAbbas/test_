@@ -1,5 +1,6 @@
 version: 2.1
-
+orbs:
+  node: circleci/node@5.0.2
 
 # Define the jobs we want to run for this project
 jobs:
@@ -7,10 +8,13 @@ jobs:
     macos:
       xcode: 14.0.1
     steps:
-    - checkout
-    - run: nvm install 14 && nvm use 14
-    - run: npm i -force
-    - run: npm install
+      - checkout
+      - node/install:
+          install-yarn: true
+          node-version: &node-version "16.18.0"
+      - run:
+          name: Install NodeJS frontend
+          command: make install-js
 
 # Orchestrate our job run sequence
 workflows:
