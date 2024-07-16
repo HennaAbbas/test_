@@ -5,7 +5,7 @@ version: 2.1
 jobs:
   nodejs-test:
     macos:
-      xcode: 13.4.1
+      xcode: 14.0.1
     steps:
     - checkout
     - run: nvm install 14 && nvm use 14
