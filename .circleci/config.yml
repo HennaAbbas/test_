@@ -1,24 +1,20 @@
 version: 2.1
-orbs:
-  node: circleci/node@5.0.2
+
 
 # Define the jobs we want to run for this project
 jobs:
-  nodejs-test:
-    macos:
-      xcode: 14.0.1
+  build:
+    docker:
+      - image: cimg/python:3.12.5
     steps:
       - checkout
-      - node/install:
-          install-yarn: true
-          node-version: &node-version "16.18.0"
-      - run: yarn install
+      - run: python3 script.py
 
 # Orchestrate our job run sequence
 workflows:
   build_and_test:
     jobs:
-      - nodejs-test
+      - build
 
 
 
