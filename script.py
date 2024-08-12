@@ -3,7 +3,7 @@ import time
 # Set the number of log lines you want to generate
 num_log_lines = 1000
 
-for i in range(50000):
+for i in range(50000000000):
     # Log format with a timestamp and log message
     log_message = f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Log message {i}"
     
