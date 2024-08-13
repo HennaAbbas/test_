@@ -27,13 +27,11 @@ workflows:
       - test: 
           filters:
             branches:
-              only: test1      
+              only: master     
 
       - deploy: 
           requires:
             - build
             - test
-          filters:
-            branches:
-              only: test1              
+            
 
