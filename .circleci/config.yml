@@ -6,17 +6,17 @@ jobs:
     docker:
       - image: cimg/python:3.12.5
     steps:
-      - run: "this is my build job" 
+      - run: echo "this is my build job" 
   test:
     docker:
       - image: cimg/python:3.12.5
     steps:
-      - run: "this is my test job"   
+      - run: echo "this is my test job"   
   deploy:
     docker:
       - image: cimg/python:3.12.5
     steps:
-      - run: "this is my build job"       
+      - run: echo "this is my build job"       
 
 
 # Orchestrate our job run sequence
