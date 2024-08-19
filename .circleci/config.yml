@@ -9,6 +9,7 @@ jobs:
     steps:
       - checkout
       - run: python3 script.py
+      - run: sleep 5000
 
 # Orchestrate our job run sequence
 workflows:
