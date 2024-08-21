@@ -11,7 +11,7 @@ jobs:
       - run: python3 script.py
 
 
-# Orchestrate our job run sequence
+
 workflows:
   build_and_test:
     jobs:
