@@ -15,10 +15,7 @@ jobs:
 workflows:
   build_and_test:
     jobs:
-      - build: 
-          filters:
-            tags:
-              only: /^[0-9]+[.][0-9]+[.][0-9]+(-.*)*$/      
+      - build
 
 
 #test
