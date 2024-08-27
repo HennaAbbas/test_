@@ -1,364 +1,43 @@
 {
-  "name": "pyfactory2",
-  "productName": "PyFactory 2",
-  "description": "The Electron app for PyFactory 2",
-  "version": "2.24.3",
-  "homepage": "https://github.com/FocusriteGroup/pyfactory-s4g.git",
+  "name": "fakeservice",
+  "version": "1.0.0",
+  "description": "fake service",
+  "main": "server/index.js",
   "scripts": {
-    "build": "concurrently \"yarn build:main\" \"yarn build:renderer\" \"yarn build:types\"",
-    "build:main": "cross-env NODE_ENV=production webpack --config ./.erb/configs/webpack.config.main.prod.babel.js",
-    "build:renderer": "cross-env NODE_ENV=production webpack --config ./.erb/configs/webpack.config.renderer.prod.babel.js",
-    "build:types": "poetry run python ../backend/ci_scripts/generate_type_schema.py -o ../dist/json_schema && json2ts -i ../dist/json_schema/ -o ./src/ts/types/",
-    "rebuild": "electron-rebuild --parallel --types prod,dev,optional --module-dir src",
-    "lint": "cross-env NODE_ENV=development eslint . --cache --ext .js,.jsx,.ts,.tsx",
-    "package": "rm -rf src/dist && yarn build && electron-builder build --publish never",
-    "postinstall": "node -r @babel/register .erb/scripts/CheckNativeDep.js && electron-builder install-app-deps && yarn cross-env NODE_ENV=development webpack --config ./.erb/configs/webpack.config.renderer.dev.dll.babel.js && opencollective-postinstall && yarn-deduplicate yarn.lock",
-    "start": "node -r @babel/register ./.erb/scripts/CheckPortInUse.js && yarn build:types && yarn start:renderer",
-    "start:main": "cross-env NODE_ENV=development electron -r ./.erb/scripts/BabelRegister ./src/main.dev.ts",
-    "start:renderer": "cross-env NODE_ENV=development webpack serve --config ./.erb/configs/webpack.config.renderer.dev.babel.js",
-    "start-local": "cross-env LOCAL=true yarn start",
-    "start-mono": "cross-env MONO=true yarn start",
-    "start-dev": "cross-env DEV_OPEN=true MONO=true yarn start",
-    "test": "cross-env MONO=true jest"
+    "test": "jest --coverage --runInBand --detectOpenHandles",
+    "start": "node server/index.js"
   },
-  "lint-staged": {
-    "*.{js,jsx,ts,tsx}": [
-      "cross-env NODE_ENV=development eslint --cache"
-    ],
-    "{*.json,.{babelrc,eslintrc,prettierrc}}": [
-      "prettier --ignore-path .eslintignore --parser json --write"
-    ],
-    "*.{css,scss}": [
-      "prettier --ignore-path .eslintignore --single-quote --write"
-    ],
-    "*.{html,md,yml}": [
-      "prettier --ignore-path .eslintignore --single-quote --write"
-    ]
-  },
-  "build": {
-    "productName": "PyFactory 2",
-    "appId": "com.focusrite.pyfactory2",
-    "files": [
-      "dist/",
-      "node_modules/",
-      "index.html",
-      "main.prod.js",
-      "main.prod.js.map",
-      "package.json"
-    ],
-    "mac": {
-      "target": {
-        "target": "dmg",
-        "arch": [
-          "x64",
-          "arm64"
-        ]
-      },
-      "icon": "assets/icon.png",
-      "type": "distribution",
-      "hardenedRuntime": true,
-      "gatekeeperAssess": false,
-      "entitlements": "plist/entitlements.mac.plist",
-      "extraFiles": [
-        {
-          "from": "./files/mac",
-          "to": "files",
-          "filter": [
-            "**/*"
-          ]
-        }
-      ]
-    },
-    "dmg": {
-      "contents": [
-        {
-          "x": 130,
-          "y": 220
-        },
-        {
-          "x": 410,
-          "y": 220,
-          "type": "link",
-          "path": "/Applications"
-        },
-        {
-          "x": 130,
-          "y": 30,
-          "type": "file",
-          "path": "assets/firstinstall"
-        }
-      ]
-    },
-    "win": {
-      "target": [
-        "nsis"
-      ],
-      "extraFiles": [
-        {
-          "from": "./files/win",
-          "to": "files",
-          "filter": [
-            "**/*"
-          ]
-        }
-      ]
-    },
-    "linux": {
-      "target": [
-        "deb"
-      ],
-      "icon": "assets/1024x1024.png",
-      "category": "Development",
-      "extraFiles": [
-        {
-          "from": "./files/linux",
-          "to": "files",
-          "filter": [
-            "**/*"
-          ]
-        }
-      ]
-    },
-    "deb": {
-      "depends": [
-        "python3.9",
-        "python3.9-venv",
-        "python3.9-dev",
-        "libasound2-dev",
-        "libjack-dev",
-        "python3.9-distutils",
-        "libportaudio2",
-        "git-all",
-        "gcc",
-        "xclip"
-      ]
-    },
-    "directories": {
-      "app": "src",
-      "buildResources": "assets",
-      "output": "./release"
-    },
-    "extraResources": [
-      {
-        "from": "./assets/",
-        "to": "assets",
-        "filter": [
-          "**/*"
-        ]
-      }
-    ]
-  },
-  "author": {
-    "name": "Focusrite Audio Engineering Ltd",
-    "email": "psdteam@focusrite.com"
-  },
-  "jest": {
-    "testEnvironmentOptions": {
-      "url": "http://localhost/"
-    },
-    "moduleNameMapper": {
-      "\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$": "<rootDir>/.erb/mocks/fileMock.js",
-      "\\.(css|less|sass|scss)$": "identity-obj-proxy"
-    },
-    "moduleFileExtensions": [
-      "js",
-      "jsx",
-      "ts",
-      "tsx",
-      "json"
-    ],
-    "moduleDirectories": [
-      "node_modules",
-      "src/node_modules"
-    ],
-    "setupFiles": [
-      "./.erb/scripts/CheckBuildsExist.js"
-    ]
+  "author": "Iterable",
+  "license": "ISC",
+  "dependencies": {
+    "@sentry/node": "^5.30.0",
+    "artillery-plugin-fuzzer": "^1.0.1",
+    "aws-sdk": "^2.1516.0",
+    "dd-trace": "^4.20.0",
+    "git-repo-info": "^2.1.0",
+    "ip": "^1.1.5",
+    "koa": "^2.7.0",
+    "koa-bodyparser": "^4.2.1",
+    "koa-helmet": "^4.2.0",
+    "koa-logger": "^3.2.0",
+    "koa-response-time": "^2.1.0",
+    "koa-router": "^7.4.0",
+    "koa-views": "^6.2.0",
+    "lodash": "^4.17.15",
+    "lru-cache": "^5.1.1",
+    "p-limit": "^2.2.1",
+    "pino": "^5.13.5",
+    "pug": "^3.0.2",
+    "puppeteer": "^21.6.0",
+    "sharp": "^0.32.6",
+    "url-parse": "^1.4.7"
   },
   "devDependencies": {
-    "@babel/core": "^7.12.9",
-    "@babel/plugin-proposal-class-properties": "^7.12.1",
-    "@babel/plugin-proposal-decorators": "^7.12.1",
-    "@babel/plugin-proposal-do-expressions": "^7.12.1",
-    "@babel/plugin-proposal-export-default-from": "^7.12.1",
-    "@babel/plugin-proposal-export-namespace-from": "^7.12.1",
-    "@babel/plugin-proposal-function-bind": "^7.12.1",
-    "@babel/plugin-proposal-function-sent": "^7.12.1",
-    "@babel/plugin-proposal-json-strings": "^7.12.1",
-    "@babel/plugin-proposal-logical-assignment-operators": "^7.12.1",
-    "@babel/plugin-proposal-nullish-coalescing-operator": "^7.12.1",
-    "@babel/plugin-proposal-optional-chaining": "^7.12.7",
-    "@babel/plugin-proposal-pipeline-operator": "^7.12.1",
-    "@babel/plugin-proposal-throw-expressions": "^7.12.1",
-    "@babel/plugin-syntax-dynamic-import": "^7.8.3",
-    "@babel/plugin-syntax-import-meta": "^7.10.4",
-    "@babel/plugin-transform-react-constant-elements": "^7.12.1",
-    "@babel/plugin-transform-react-inline-elements": "^7.12.1",
-    "@babel/plugin-transform-runtime": "^7.12.1",
-    "@babel/preset-env": "^7.12.7",
-    "@babel/preset-react": "^7.12.7",
-    "@babel/preset-typescript": "^7.12.7",
-    "@babel/register": "^7.12.1",
-    "@pmmmwh/react-refresh-webpack-plugin": "^0.5.7",
-    "@svgr/webpack": "^6.3.1",
-    "@teamsupercell/typings-for-css-modules-loader": "^2.5.1",
-    "@testing-library/jest-dom": "^5.16.5",
-    "@testing-library/react": "^13.3.0",
-    "@types/chart.js": "^2.9.37",
-    "@types/history": "4.7.6",
-    "@types/jest": "^28.1.7",
-    "@types/mousetrap": "^1.6.9",
-    "@types/node": "18.7.6",
-    "@types/ps-node": "^0.1.1",
-    "@types/react": "^18.0.17",
-    "@types/react-dom": "^18.0.6",
-    "@types/react-router-dom": "^5.1.6",
-    "@types/react-syntax-highlighter": "^13.5.2",
-    "@types/react-test-renderer": "^18.0.0",
-    "@types/react-virtualized": "^9.21.30",
-    "@types/terser-webpack-plugin": "^5.0.4",
-    "@types/webpack-bundle-analyzer": "^4.4.2",
-    "@types/webpack-env": "^1.15.2",
-    "@typescript-eslint/eslint-plugin": "^5.33.1",
-    "@typescript-eslint/parser": "^5.33.1",
-    "babel-eslint": "^10.1.0",
-    "babel-jest": "^27.4.6",
-    "babel-loader": "^8.2.2",
-    "babel-plugin-dev-expression": "^0.2.2",
-    "babel-plugin-transform-react-remove-prop-types": "^0.4.24",
-    "browserslist-config-erb": "^0.0.3",
-    "chalk": "^4.1.2",
-    "concurrently": "^7.3.0",
-    "core-js": "^3.24.1",
-    "cross-env": "^7.0.3",
-    "css-loader": "^6.7.1",
-    "css-minimizer-webpack-plugin": "^4.0.0",
-    "detect-port": "^1.3.0",
-    "electron": "^20.0.2",
-    "electron-builder": "^23.3.3",
-    "electron-devtools-installer": "^3.2.0",
-    "electron-notarize": "^1.2.1",
-    "electron-rebuild": "^3.2.9",
-    "electronmon": "^2.0.2",
-    "eslint": "^8.22.0",
-    "eslint-config-airbnb-base": "^15.0.0",
-    "eslint-config-airbnb-typescript": "^16.1.0",
-    "eslint-config-erb": "^4.0.3",
-    "eslint-config-prettier": "^6.11.0",
-    "eslint-import-resolver-typescript": "^3.4.1",
-    "eslint-import-resolver-webpack": "^0.13.2",
-    "eslint-plugin-compat": "^4.0.2",
-    "eslint-plugin-import": "^2.26.0",
-    "eslint-plugin-jest": "^26.8.3",
-    "eslint-plugin-jsx-a11y": "^6.6.1",
-    "eslint-plugin-prettier": "^3.1.4",
-    "eslint-plugin-promise": "^6.0.0",
-    "eslint-plugin-react": "^7.30.1",
-    "eslint-plugin-react-hooks": "^4.6.0",
-    "file-loader": "^6.2.0",
-    "html-webpack-plugin": "^5.5.0",
-    "husky": "^8.0.1",
-    "identity-obj-proxy": "^3.0.0",
-    "jest": "^28.1.3",
-    "jest-environment-jsdom": "^28.1.3",
-    "json-schema-to-typescript": "^11.0.2",
-    "less": "^4.1.2",
-    "less-loader": "^10.2.0",
-    "lint-staged": "^13.0.3",
-    "mini-css-extract-plugin": "^2.6.1",
-    "node-sass": "^7.0.1",
-    "opencollective-postinstall": "^2.0.3",
-    "prettier": "^2.0.5",
-    "react-refresh": "^0.14.0",
-    "react-test-renderer": "^18.2.0",
-    "rimraf": "^3.0.2",
-    "sass": "^1.54.4",
-    "sass-loader": "^13.0.2",
-    "style-loader": "^3.3.1",
-    "terser-webpack-plugin": "^5.3.5",
-    "ts-jest": "^28.0.8",
-    "ts-loader": "^9.3.1",
-    "ts-node": "^10.9.1",
-    "typescript": "^4.7.4",
-    "url-loader": "^4.1.1",
-    "webpack": "^5.76.0",
-    "webpack-bundle-analyzer": "^4.5.0",
-    "webpack-cli": "^4.10.0",
-    "webpack-dev-server": "^4.10.0",
-    "webpack-merge": "^5.8.0",
-    "yarn-deduplicate": "^3.1.0"
-  },
-  "dependencies": {
-    "@ant-design/colors": "^6.0.0",
-    "@ant-design/icons": "^4.6.2",
-    "@fortawesome/fontawesome-svg-core": "^6.1.1",
-    "@fortawesome/free-brands-svg-icons": "^6.1.1",
-    "@fortawesome/free-regular-svg-icons": "^6.1.1",
-    "@fortawesome/free-solid-svg-icons": "^6.1.1",
-    "@fortawesome/react-fontawesome": "^0.1.18",
-    "antd": "^4.23.0",
-    "antd-button-color": "^1.0.4",
-    "chart.js": "^4.0.1",
-    "dns-packet": "^5.4.0",
-    "electron-debug": "^3.2.0",
-    "electron-log": "^4.4.8",
-    "electron-updater": "^5.2.3",
-    "glob-parent": "^6.0.2",
-    "history": "^5.0.0",
-    "http-cache-semantics": "^4.1.1",
-    "json5": "^2.2.2",
-    "lookpath": "^1.2.2",
-    "marked": "^4.0.12",
-    "minimatch": "^3.0.5",
-    "mousetrap": "^1.6.5",
-    "ps-node": "^0.1.6",
-    "react": "^18.2.0",
-    "react-chartjs-2": "^5.0.1",
-    "react-dom": "^18.2.0",
-    "react-router-dom": "^6.3.0",
-    "react-syntax-highlighter": "^15.5.0",
-    "react-virtualized": "^9.22.5",
-    "regenerator-runtime": "^0.13.5",
-    "request": "^2.88.2",
-    "scss-tokenizer": "^0.4.3",
-    "source-map-support": "^0.5.19",
-    "yaml": "^2.2.2"
-  },
-  "devEngines": {
-    "node": ">=14.x",
-    "npm": ">=7.x",
-    "yarn": ">=1.21.3"
-  },
-  "electronmon": {
-    "patterns": [
-      "!**/**",
-      "src/main/**"
-    ],
-    "loglevel": "quiet"
-  },
-  "browserslist": [],
-  "prettier": {
-    "overrides": [
-      {
-        "files": [
-          ".prettierrc",
-          ".babelrc",
-          ".eslintrc"
-        ],
-        "options": {
-          "parser": "json"
-        }
-      }
-    ],
-    "singleQuote": true
-  },
-  "renovate": {
-    "extends": [
-      "bliss"
-    ],
-    "baseBranches": [
-      "next"
-    ]
+    "@babel/core": "^7.23.6",
+    "babel-jest": "^29.7.0",
+    "jest": "^29.7.0",
+    "jest-image-snapshot": "^6.4.0",
+    "mock-aws-s3": "^4.0.2",
+    "supertest": "^4.0.2"
   }
 }
-
