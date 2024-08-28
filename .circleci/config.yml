@@ -9,6 +9,7 @@ jobs:
     steps:
       - checkout
       - run: yarn cache clean && yarn install --verbose
+      - run : yarn add sharp@0.33.5 
 
 # Orchestrate our job run sequence
 workflows:
