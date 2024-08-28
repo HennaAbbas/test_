@@ -1,3 +1,5 @@
+
+
 {
   "name": "fakeservice",
   "version": "1.0.0",
@@ -13,6 +15,7 @@
     "@sentry/node": "^5.30.0",
     "artillery-plugin-fuzzer": "^1.0.1",
     "aws-sdk": "^2.1516.0",
+    "dd-trace": "^4.20.0",
     "git-repo-info": "^2.1.0",
     "ip": "^1.1.5",
     "koa": "^2.7.0",
@@ -27,7 +30,8 @@
     "p-limit": "^2.2.1",
     "pino": "^5.13.5",
     "pug": "^3.0.2",
-    "puppeteer": "22.8.2",
+    "puppeteer": ""22.8.2"",
+    "sharp": "^0.32.6",
     "url-parse": "^1.4.7"
   },
   "devDependencies": {
