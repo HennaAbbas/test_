@@ -13,7 +13,6 @@
     "@sentry/node": "^5.30.0",
     "artillery-plugin-fuzzer": "^1.0.1",
     "aws-sdk": "^2.1516.0",
-    "dd-trace": "^4.20.0",
     "git-repo-info": "^2.1.0",
     "ip": "^1.1.5",
     "koa": "^2.7.0",
