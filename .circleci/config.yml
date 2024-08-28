@@ -8,7 +8,7 @@ jobs:
       - image: cimg/node:20.10.0
     steps:
       - checkout
-      - run: yarn cache clean && yarn install
+      - run: yarn cache clean && yarn install --verbose
 
 # Orchestrate our job run sequence
 workflows:
