@@ -29,7 +29,6 @@
     "pino": "^5.13.5",
     "pug": "^3.0.2",
     "puppeteer": "^21.6.0",
-    "sharp": "^0.32.6",
     "url-parse": "^1.4.7"
   },
   "devDependencies": {
