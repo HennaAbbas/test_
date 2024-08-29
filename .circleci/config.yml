@@ -9,6 +9,7 @@ jobs:
     resource_class: xlarge  
     steps:
       - checkout
+      - run : Echo $test_var
       - run: yarn cache clean && yarn install --verbose
       - run : yarn add sharp@0.33.5 
 
