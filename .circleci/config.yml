@@ -1,23 +1,84 @@
 version: 2.1
 
-
-# Define the jobs we want to run for this project
 jobs:
-  build:
+  job1:
     docker:
-      - image: cimg/node:20.10.0
-    resource_class: xlarge  
+      - image: cimg/base:stable
     steps:
       - checkout
-      - run : echo $test_var
-      - run: yarn cache clean && yarn install --verbose
-      - run : yarn add sharp@0.33.5 
+      - run:
+          name: hello
+          command: echo "holla"
 
-# Orchestrate our job run sequence
+  job2:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      - run:
+          name: hello
+          command: echo "holla"
+
+  job3:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      - run:
+          name: sleep
+          command: sleep 1000
+  job4:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      - run:
+          name: hello
+          command: echo "holla"
+  job5:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      - run:
+          name: hello
+          command: echo "hola"
+  job6:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      - run:
+          name: hello
+          command: echo "holla"
+  job7:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      - run:
+          name: hello
+          command: exit 1
+          
 workflows:
-  build_and_test:
+  version: 2
+  my_workflow:
     jobs:
-      - build
+      - job1
+      - job2
+      - job3:
+          requires:
+            - job1
+            - job2
+      - job4:
+          requires:
+            - job3
+      - job5:
+          requires:
+            - job3
+      - job6:
+         requires:
+            - job4 
+            - job7
+      - job7
 
-
-#test
