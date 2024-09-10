@@ -27,7 +27,7 @@ jobs:
       - checkout
       - run:
           name: sleep
-          command: sleep 1000
+          command: sleep 10
   job4:
     docker:
       - image: cimg/base:stable
@@ -65,9 +65,27 @@ workflows:
   version: 2
   my_workflow:
     jobs:
-      - job1
-      - job2
+      - job1: 
+          filters:
+            tags:
+              only:
+              - /^v.*/
+            branches:
+              ignore: /.*/      
+      - job2: 
+          filters:
+            tags:
+              only:
+              - /^v.*/
+            branches:
+              ignore: /.*/        
       - job3:
+          filters:
+            tags:
+              only:
+              - /^v.*/
+            branches:
+              ignore: /.*/        
           requires:
             - job1
             - job2
