@@ -114,8 +114,8 @@ workflows:
               only:
               - /^v.*/
             branches:
-              ignore: /.*/        
-         requires:
+              ignore: /.*/       
+          requires:
             - job4 
             - job7
       - job7:
