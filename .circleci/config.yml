@@ -90,14 +90,39 @@ workflows:
             - job1
             - job2
       - job4:
+          filters:
+            tags:
+              only:
+              - /^v.*/
+            branches:
+              ignore: /.*/        
           requires:
             - job3
       - job5:
+          filters:
+            tags:
+              only:
+              - /^v.*/
+            branches:
+              ignore: /.*/        
           requires:
             - job3
+            
       - job6:
+          filters:
+            tags:
+              only:
+              - /^v.*/
+            branches:
+              ignore: /.*/        
          requires:
             - job4 
             - job7
-      - job7
+      - job7:
+          filters:
+            tags:
+              only:
+              - /^v.*/
+            branches:
+              ignore: /.*/        
 
