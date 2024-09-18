@@ -1,128 +1,15 @@
 version: 2.1
-
 jobs:
-  job1:
-    docker:
-      - image: cimg/base:stable
+  build:
+    machine: true
+    resource_class:  henna/test_runner_2
     steps:
-      - checkout
-      - run:
-          name: hello
-          command: sleep 10
-
-  job2:
-    docker:
-      - image: cimg/base:stable
-    steps:
-      - checkout
-      - run:
-          name: hello
-          command: sleep 10
-
-
-  job3:
-    docker:
-      - image: cimg/base:stable
-    steps:
-      - checkout
-      - run:
-          name: sleep
-          command: sleep 10
-  job4:
-    docker:
-      - image: cimg/base:stable
-    steps:
-      - checkout
-      - run:
-          name: hello
-          command: echo "holla"
-  job5:
-    docker:
-      - image: cimg/base:stable
-    steps:
-      - checkout
-      - run:
-          name: hello
-          command: echo "hola"
-  job6:
-    docker:
-      - image: cimg/base:stable
-    steps:
-      - checkout
-      - run:
-          name: hello
-          command: echo "holla"
-  job7:
-    docker:
-      - image: cimg/base:stable
-    steps:
-      - checkout
-      - run:
-          name: hello
-          command: exit 1
-          
+      - run: echo "Hi I'm on a Container Runner"
+      - run: echo "please work.  k thanks"
+      - run: sleep 500
 workflows:
-  version: 2
-  my_workflow:
+  build-workflow:
     jobs:
-      - job1: 
-          filters:
-            tags:
-              only:
-              - /^v.*/
-            branches:
-              ignore: /.*/      
-      - job2: 
-          filters:
-            tags:
-              only:
-              - /^v.*/
-            branches:
-              ignore: /.*/        
-      - job3:
-          filters:
-            tags:
-              only:
-              - /^v.*/
-            branches:
-              ignore: /.*/        
-          requires:
-            - job1
-            - job2
-      - job4:
-          filters:
-            tags:
-              only:
-              - /^v.*/
-            branches:
-              ignore: /.*/        
-          requires:
-            - job3
-      - job5:
-          filters:
-            tags:
-              only:
-              - /^v.*/
-            branches:
-              ignore: /.*/        
-          requires:
-            - job3
-            
-      - job6:
-          filters:
-            tags:
-              only:
-              - /^v.*/
-            branches:
-              ignore: /.*/       
-          requires:
-            - job4 
-            - job7
-      - job7:
-          filters:
-            tags:
-              only:
-              - /^v.*/
-            branches:
-              ignore: /.*/        
+      - build
+     
 
