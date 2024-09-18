@@ -6,14 +6,12 @@ orbs:
 jobs:
   build:
     machine: true
-    resource_class:  henna/test_runner_2
+    resource_class:  henna/test_runner_3
     steps:
       - checkout
       - browser-tools/install-chrome
-      - run: google-chrome-stable --version
+
 workflows:
   build-workflow:
     jobs:
       - build
-     
-
