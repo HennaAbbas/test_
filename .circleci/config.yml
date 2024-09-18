@@ -1,12 +1,16 @@
 version: 2.1
+
+orbs:
+  browser-tools: circleci/browser-tools@1.1.1
+
 jobs:
   build:
     machine: true
     resource_class:  henna/test_runner_2
     steps:
-      - run: echo "Hi I'm on a Container Runner"
-      - run: echo "please work.  k thanks"
-      - run: sleep 500
+      - checkout
+      - browser-tools/install-chrome
+      - run: google-chrome-stable --version
 workflows:
   build-workflow:
     jobs:
