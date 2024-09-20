@@ -5,7 +5,7 @@ jobs:
     - image: cimg/python:3.12
     steps:
       - checkout
-      - run: pip install pyenv
+      - run: pip3 install pyenv
       - run:
           name: Check Google Chrome Version
           command: google-chrome-stable --version
