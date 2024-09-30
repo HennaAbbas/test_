@@ -1,10 +1,15 @@
 version: 2.1
 jobs:
-  build:
-    circleci_ip_ranges: true
-    docker:
-    - image: cimg/python:3.12
+  build-web:
+    machine:
+      image: default
+    resource_class: large
     steps:
-      - checkout
-      - run: curl ifconfig.me
+
+    - run:
+        command: "# Only install nvm if it's not already installed\nif command -v nvm &> /dev/null; then\n    echo \"nvm is already installed. Skipping nvm install.\";\nelse\n    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.37.2/install.sh | bash;\n    \n    echo 'export NVM_DIR=\"$HOME/.nvm\"' >> \"$BASH_ENV\";\n    echo '[ -s \"$NVM_DIR/nvm.sh\" ] && \\. \"$NVM_DIR/nvm.sh\" --no-use' >> \"$BASH_ENV\";\n    \n    # shellcheck source=/dev/null\n    source \"$BASH_ENV\";\nfi\n\n# See: https://github.com/nvm-sh/nvm#usage\nif [ \"$NODE_PARAM_VERSION\" = \"latest\" ]; then\n    # When no version is specified we default to the latest version of Node\n    NODE_ORB_INSTALL_VERSION=$(nvm ls-remote | tail -n1 | grep -Eo 'v[0-9]+\\.[0-9]+\\.[0-9]+')\n    nvm install \"$NODE_ORB_INSTALL_VERSION\" # aka nvm install node. We're being explicit here.\n    nvm alias default \"$NODE_ORB_INSTALL_VERSION\"\nelif [ -n \"$NODE_PARAM_VERSION\" ] && [ \"$NODE_PARAM_VERSION\" != \"lts\" ]; then\n    nvm install \"$NODE_PARAM_VERSION\"\n    nvm alias default \"$NODE_PARAM_VERSION\"\nelif [ -f \".nvmrc\" ]; then\n    NVMRC_SPECIFIED_VERSION=$(<.nvmrc)\n    nvm install \"$NVMRC_SPECIFIED_VERSION\"\n    nvm alias default \"$NVMRC_SPECIFIED_VERSION\"\nelse\n    nvm install --lts\n    nvm alias default lts/*\nfi\n\necho 'nvm use default &>/dev/null' >> \"$BASH_ENV\"\n"
+        environment:
+          NODE_PARAM_VERSION: 22.1.0
+        name: Install Node.js 22.1.0
+
 
