@@ -9,5 +9,10 @@ jobs:
     steps:
       - node/install:
           node-version: '22.1.0'
+workflows:
+  my_workflow:
+
+    jobs:
+      - build-web    
 
 
