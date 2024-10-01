@@ -11,7 +11,7 @@ jobs:
           node-version: '22.1.0'
   
   test-m2:
-    parallelism: 30
+
     macos:
       xcode: 13.4.1
     resource_class: m2pro.medium.test
