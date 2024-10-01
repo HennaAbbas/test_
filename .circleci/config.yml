@@ -9,10 +9,25 @@ jobs:
     steps:
       - node/install:
           node-version: '22.1.0'
+  
+  test-m2:
+    parallelism: 30
+    macos:
+      xcode: 13.4.1
+    resource_class: m2pro.medium.test
+    environment:
+    - PLATFORM: iOS
+    - DEVICE_VERSION: 15.5
+    - DEVICE_NAME: iPhone_13_Test
+    - SIM_DEVICE_TYPE: com.apple.CoreSimulator.SimDeviceType.iPhone-13
+    - SIM_RUN_TIME: com.apple.CoreSimulator.SimRuntime.iOS-15-5
+    steps:
+    - checkout             
 workflows:
   my_workflow:
 
     jobs:
-      - build-web    
+      - build-web   
+      - test-m2
 
 
