@@ -1,34 +1,18 @@
 version: 2.1
-orbs:
-  node: circleci/node@5.0.2
+executors:
+  xcode-executor:
+    macos:
+      xcode: "16.0.0"
 jobs:
-  build-web:
-    machine:
-      image: default
-    resource_class: large
+  build:
+    executor: xcode-executor
     steps:
-      - node/install:
-          node-version: '22.1.0'
-  m2-test-1: 
-    macos:
-      xcode: 15.0.1
-    resource_class: m2pro.medium.test  
-    steps:
-      - run: echo "hello world!"
-  
-  test-m2:
-
-    macos:
-      xcode: 13.4.1
-    resource_class: m2pro.medium.test
-    steps:
-    - checkout             
+      - checkout
+      - run:
+          name: Print Environment Variables
+          command: env
 workflows:
-  my_workflow:
-
+  version: 2
+  build:
     jobs:
-      - build-web   
-      - test-m2
-      - m2-test-1
-
-
+      - build
