@@ -3,7 +3,7 @@ version: 2.1
 parameters:
   enabled:
     type: boolean
-    default: false
+    default: true
 
 jobs:
   build:
