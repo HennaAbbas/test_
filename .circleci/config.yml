@@ -1,18 +1,19 @@
 version: 2.1
-executors:
-  xcode-executor:
-    macos:
-      xcode: "16.0.0"
+
+parameters:
+  enabled:
+    type: boolean
+    default: false
+
 jobs:
   build:
-    executor: xcode-executor
+    docker:
+      - image: cimg/python:3.11.0-node
     steps:
-      - checkout
-      - run:
-          name: Print Environment Variables
-          command: env
+      - run: echo "OK" 
+
 workflows:
-  version: 2
   build:
+    when: << pipeline.parameters.enabled >>
     jobs:
-      - build
+      - invalid_job
