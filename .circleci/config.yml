@@ -1,82 +1,19 @@
 version: 2.1
-
 executors:
-  my-executor:
-    docker:
-      - image: buildpack-deps:jessie
-    working_directory: /tmp
-
+  xcode-executor:
+    macos:
+      xcode: "16.0.0"
 jobs:
-  flow:
-    executor: my-executor
+  build:
+    executor: xcode-executor
     steps:
-      - run: mkdir -p $CIRCLE_WORKFLOW_JOB_ID
-      - run: ls -al
-      - run: pwd
-      - run: echo "Hello, world!" > $CIRCLE_WORKFLOW_JOB_ID/echo-output
-      - run: cat /tmp/$CIRCLE_WORKFLOW_JOB_ID/echo-output
-      - run: ls -al
-      - run: find $CIRCLE_WORKFLOW_JOB_ID/echo-output
-      - run: cat $CIRCLE_WORKFLOW_JOB_ID/echo-output
-
-      # Persist the specified paths (workspace/echo-output) into the workspace for use in downstream job.
-      - persist_to_workspace:
-          # Must be an absolute path, or relative path from working_directory. This is a directory in the execution
-          # environment which is taken to be the root directory of the workspace.
-          root: $CIRCLE_WORKFLOW_JOB_ID
-          # Must be relative path from root
-          paths:
-            - echo-output
-  test:
-    executor: my-executor
-    steps:
-      - run: mkdir -p $CIRCLE_WORKFLOW_JOB_ID
-      - run: echo "Hello, world!" > $CIRCLE_WORKFLOW_JOB_ID/echo-output
-
-      # Persist the specified paths (workspace/echo-output) into the workspace for use in downstream job.
-      - persist_to_workspace:
-          # Must be an absolute path, or relative path from working_directory. This is a directory in the execution
-          # environment which is taken to be the root directory of the workspace.
-          root: $CIRCLE_WORKFLOW_JOB_ID
-          # Must be relative path from root
-          paths:
-            - echo-output
-  testing:
-    executor: my-executor
-    steps:
-      - run: mkdir -p $CIRCLE_WORKFLOW_JOB_ID
-      - run: echo "Hello, world!" > $CIRCLE_WORKFLOW_JOB_ID/echo-output
-
-      # Persist the specified paths (workspace/echo-output) into the workspace for use in downstream job.
-      - persist_to_workspace:
-          # Must be an absolute path, or relative path from working_directory. This is a directory in the execution
-          # environment which is taken to be the root directory of the workspace.
-          root: $CIRCLE_WORKFLOW_JOB_ID
-          # Must be relative path from root
-          paths:
-            - echo-output            
-            
-
-  downstream:
-    executor: my-executor
-    steps:
-      - attach_workspace:
-          # Must be absolute path or relative path from working_directory
-          at: /tmp/workspace
-
-      - run: |
-          if [[ `cat /tmp/workspace/echo-output` == "Hello, world!" ]]; then
-            echo "It worked!";
-          else
-            echo "Nope!"; exit 1
-          fi
-
+      - checkout
+      - run:
+          name: Print Environment Variables
+          command: echo $CIRCLE_PULL_REQUEST
+      - run: PATH=./sonar-scanner-5.0.1.3006/bin/:$PATH && Echo $CIRCLE_PULL_REQUEST    
 workflows:
-  btd:
+  version: 2
+  build:
     jobs:
-      - flow
-      - test
-      - testing
-      - downstream:
-          requires:
-            - flow
+      - build
