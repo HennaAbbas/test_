@@ -11,7 +11,9 @@ jobs:
       - run:
           name: Print Environment Variables
           command: echo $CIRCLE_PULL_REQUEST
-      - run: PATH=./sonar-scanner-5.0.1.3006/bin/:$PATH && Echo $CIRCLE_PULL_REQUEST    
+      - run: PATH=./sonar-scanner-5.0.1.3006/bin/:$PATH && Echo $CIRCLE_PULL_REQUEST  
+      - run: base=something && echo $base
+      - run: env base=something && echo $base
 workflows:
   version: 2
   build:
