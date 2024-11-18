@@ -1,19 +1,16 @@
 version: 2.1
 
-parameters:
-  enabled:
-    type: boolean
-    default: true
 
 jobs:
   build:
     docker:
       - image: cimg/python:3.11.0-node
     steps:
+      - run : sleep 5000
       - run: echo "OK" 
 
 workflows:
   build:
     when: << pipeline.parameters.enabled >>
     jobs:
-      - invalid_job
+      - build
