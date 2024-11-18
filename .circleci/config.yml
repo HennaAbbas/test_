@@ -11,6 +11,5 @@ jobs:
 
 workflows:
   build:
-    when: << pipeline.parameters.enabled >>
     jobs:
       - build
