@@ -1,82 +1,18 @@
 version: 2.1
 
-executors:
-  my-executor:
-    docker:
-      - image: buildpack-deps:jessie
-    working_directory: /tmp
 
+# Define the jobs we want to run for this project
 jobs:
-  flow:
-    executor: my-executor
+  build:
+    docker:
+      - image: cimg/python:3.12.5
     steps:
-      - run: mkdir -p $CIRCLE_WORKFLOW_JOB_ID
-      - run: ls -al
-      - run: pwd
-      - run: echo "Hello, world!" > $CIRCLE_WORKFLOW_JOB_ID/echo-output
-      - run: cat /tmp/$CIRCLE_WORKFLOW_JOB_ID/echo-output
-      - run: ls -al
-      - run: find $CIRCLE_WORKFLOW_JOB_ID/echo-output
-      - run: cat $CIRCLE_WORKFLOW_JOB_ID/echo-output
+      - checkout
+      - run: python3 script.py
 
-      # Persist the specified paths (workspace/echo-output) into the workspace for use in downstream job.
-      - persist_to_workspace:
-          # Must be an absolute path, or relative path from working_directory. This is a directory in the execution
-          # environment which is taken to be the root directory of the workspace.
-          root: $CIRCLE_WORKFLOW_JOB_ID
-          # Must be relative path from root
-          paths:
-            - echo-output
-  test:
-    executor: my-executor
-    steps:
-      - run: mkdir -p $CIRCLE_WORKFLOW_JOB_ID
-      - run: echo "Hello, world!" > $CIRCLE_WORKFLOW_JOB_ID/echo-output
 
-      # Persist the specified paths (workspace/echo-output) into the workspace for use in downstream job.
-      - persist_to_workspace:
-          # Must be an absolute path, or relative path from working_directory. This is a directory in the execution
-          # environment which is taken to be the root directory of the workspace.
-          root: $CIRCLE_WORKFLOW_JOB_ID
-          # Must be relative path from root
-          paths:
-            - echo-output
-  testing:
-    executor: my-executor
-    steps:
-      - run: mkdir -p $CIRCLE_WORKFLOW_JOB_ID
-      - run: echo "Hello, world!" > $CIRCLE_WORKFLOW_JOB_ID/echo-output
-
-      # Persist the specified paths (workspace/echo-output) into the workspace for use in downstream job.
-      - persist_to_workspace:
-          # Must be an absolute path, or relative path from working_directory. This is a directory in the execution
-          # environment which is taken to be the root directory of the workspace.
-          root: $CIRCLE_WORKFLOW_JOB_ID
-          # Must be relative path from root
-          paths:
-            - echo-output            
-            
-
-  downstream:
-    executor: my-executor
-    steps:
-      - attach_workspace:
-          # Must be absolute path or relative path from working_directory
-          at: /tmp/workspace
-
-      - run: |
-          if [[ `cat /tmp/workspace/echo-output` == "Hello, world!" ]]; then
-            echo "It worked!";
-          else
-            echo "Nope!"; exit 1
-          fi
 
 workflows:
-  btd:
+  build_and_test:
     jobs:
-      - flow
-      - test
-      - testing
-      - downstream:
-          requires:
-            - flow
+      - build
