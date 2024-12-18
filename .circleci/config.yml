@@ -8,6 +8,15 @@ jobs:
     steps:
       - run : sleep 5000
       - run: echo "OK" 
+      - when:
+          condition: 
+            or:
+              - and:
+                - equl: [ api, << pipeline.trigger_source >> ]
+                - equl: [ webhook, << pipeline.trigger_source >> ]
+            steps:
+              - run:
+                  name: "Create signed Mac package"      
 
 workflows:
   build:
