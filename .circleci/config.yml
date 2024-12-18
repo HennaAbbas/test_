@@ -3,13 +3,13 @@ jobs:
   build:
     docker:
       - image: cimg/python:3.11.0-node
-  - when:
-      condition:
-        or:
-          - and:
-            - equal: [ main, << pipeline.git.branch >> ]
-          - or:
-            - equal: [ api, << pipeline.trigger_source >> ]
+    - when:
+        condition:
+          or:
+            - and:
+              - equal: [ main, << pipeline.git.branch >> ]
+            - or:
+              - equal: [ api, << pipeline.trigger_source >> ]
       steps:
         - run: echo "I am on main AND param1 is true OR param2 is true -- OR param1 is false"              
                    
