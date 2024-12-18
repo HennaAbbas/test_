@@ -13,7 +13,7 @@ jobs:
             or:
               - and:
                 - equl: [ api, << pipeline.trigger_source >> ]
-                - equl: [ webhook, << pipeline.trigger_source >> ]
+              - equl: [ webhook, << pipeline.trigger_source >> ]
             steps:
               - run: echo "this sould not ALWAY trigger"
                    
