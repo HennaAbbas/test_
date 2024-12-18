@@ -15,8 +15,8 @@ jobs:
                 - equl: [ api, << pipeline.trigger_source >> ]
                 - equl: [ webhook, << pipeline.trigger_source >> ]
             steps:
-              - run:
-                  name: "Create signed Mac package"      
+              - run: echo "this sould not ALWAY trigger"
+                   
 
 workflows:
   build:
