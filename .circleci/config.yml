@@ -5,17 +5,15 @@ jobs:
   build:
     docker:
       - image: cimg/python:3.11.0-node
+- when:
+    condition:
+      or:
+        - and:
+          - equal: [ main, << pipeline.git.branch >> ]
+        - or:
+          - equal: [ api, << pipeline.trigger_source >> ]
     steps:
-      - run : sleep 5000
-      - run: echo "OK" 
-      - when:
-          condition: 
-            or:
-              - and:
-                - equl: [ api, << pipeline.trigger_source >> ]
-              - equl: [ webhook, << pipeline.trigger_source >> ]
-            steps:
-              - run: echo "this sould not ALWAY trigger"
+      - run: echo "I am on main AND param1 is true OR param2 is true -- OR param1 is false"              
                    
 
 workflows:
