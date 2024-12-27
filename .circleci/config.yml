@@ -14,7 +14,7 @@ jobs:
             docker ps
 
             # Get the container ID or name you need
-            CONTAINER_ID=<your_container_id>
+            CONTAINER_ID=hungry_haibt
 
             # Get the IP address of the specific container
             CONTAINER_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $CONTAINER_ID)
