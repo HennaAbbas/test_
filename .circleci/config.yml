@@ -6,6 +6,7 @@ jobs:
       - image: cimg/python:3.11.0-node
     steps:
       - checkout
+      - setup_remote_docker
       - run:
           name: Find Container IP
           command: |
