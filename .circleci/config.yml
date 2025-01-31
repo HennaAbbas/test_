@@ -6,11 +6,32 @@ jobs:
       - image: cimg/python:3.11.0-node
     steps:
       - checkout
-
-
+  sleep:
+    docker:
+      - image: cimg/python:3.11.0-node
+    steps:
+      - run: sleep 5000    
+  downstream_1:
+    docker:
+      - image: cimg/python:3.11.0-node
+    steps:
+      - run: sleep 500 
+  downstream_2:
+    docker:
+      - image: cimg/python:3.11.0-node
+    steps:
+      - run: sleep 500 
 workflows:
   version: 2
   build:
     jobs:
-      - build      
+      - build  
+      - sleep
+      - downstream_1: 
+          requires: 
+            - build
+      - downstream_2: 
+          requires: 
+            - build
+            - downstream_1
 
