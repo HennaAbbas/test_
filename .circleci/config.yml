@@ -6,21 +6,7 @@ jobs:
       - image: cimg/python:3.11.0-node
     steps:
       - checkout
-      - setup_remote_docker
-      - run:
-          name: Find Container IP
-          command: |
-            # List all running containers
-            docker ps
 
-            # Get the container ID or name you need
-            CONTAINER_ID=hungry_haibt
-
-            # Get the IP address of the specific container
-            CONTAINER_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $CONTAINER_ID)
-
-            # Output the IP address for reference
-            echo "Container IP: $CONTAINER_IP"
 
 workflows:
   version: 2
