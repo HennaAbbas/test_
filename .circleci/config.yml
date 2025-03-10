@@ -13,7 +13,7 @@ jobs:
           command: |
             # Simulate test execution
             pytest tests/ || echo "Tests failed"
-      - run: wqr     
+    
 
       # Always persist to workspace, even if the previous step fails
       - run:
