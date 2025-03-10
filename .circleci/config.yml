@@ -21,10 +21,17 @@ jobs:
           command: |
             echo "Persisting workspace..."
             # You can add any commands needed to prepare your workspace here
-      - persist_to_workspace:
-          root: /home/circleci/project
-          paths:
-            - path/to/persist
+
+      - when: always
+          steps:
+            - persist_to_workspace:
+                root: /home/circleci/project
+                paths:
+                  - path/to/persist       
+      # - persist_to_workspace:
+      #     root: /home/circleci/project
+      #     paths:
+      #       - path/to/persist
 
 workflows:
   version: 2
