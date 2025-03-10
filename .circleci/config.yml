@@ -21,17 +21,15 @@ jobs:
           command: |
             echo "Persisting workspace..."
             # You can add any commands needed to prepare your workspace here
-
-      - when: always
-          steps:
-            - persist_to_workspace:
-                root: /home/circleci/project
-                paths:
-                  - path/to/persist       
-      # - persist_to_workspace:
-      #     root: /home/circleci/project
-      #     paths:
-      #       - path/to/persist
+      - run:
+          name: Upload CodeCov.io Data
+          command: bash <(curl -s https://codecov.io/bash) -F unittests
+          when: always # Uploads code coverage results, pass or fail
+                
+      - persist_to_workspace:
+          root: /home/circleci/project
+          paths:
+            - path/to/persist
 
 workflows:
   version: 2
