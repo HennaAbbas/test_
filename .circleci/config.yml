@@ -7,6 +7,8 @@ jobs:
     steps:
       - checkout
       - run: python3 --version
+      - run: pwd 
+      - run: cd project
   other_job:
     docker:
       - image: cimg/python:3.11.11
