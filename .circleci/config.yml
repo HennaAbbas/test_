@@ -3,9 +3,16 @@ version: 2.1
 jobs:
   example_job:
     docker:
-      - image: circleci/python:3.8
+      - image: cimg/python:3.11.12
     steps:
       - checkout
+      - run: python3 --version
+  other_job:
+    docker:
+      - image: cimg/python:3.11.11
+    steps:
+      - checkout
+      - run: python3 --version      
       
       # # Your main steps here
       # - run:
@@ -36,3 +43,4 @@ workflows:
   build:
     jobs:
       - example_job
+      - other_job
