@@ -35,5 +35,8 @@ workflows:
   version: 2
   build:
     jobs:
-      - example_job
+      - example_job: 
+          context:
+            - fake-context      
+        
 
