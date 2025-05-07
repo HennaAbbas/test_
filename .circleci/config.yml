@@ -6,30 +6,31 @@ jobs:
       - image: circleci/python:3.8
     steps:
       - checkout
+      - run: echo "hello world"
       
-      # Your main steps here
-      - run:
-          name: Run Tests
-          command: |
-            # Simulate test execution
-            pytest tests/ || echo "Tests failed"
+      # # Your main steps here
+      # - run:
+      #     name: Run Tests
+      #     command: |
+      #       # Simulate test execution
+      #       pytest tests/ || echo "Tests failed"
     
 
-      # Always persist to workspace, even if the previous step fails
-      - run:
-          name: Persist Workspace
-          command: |
-            echo "Persisting workspace..."
-            # You can add any commands needed to prepare your workspace here
-      - run:
-          name: Upload CodeCov.io Data
-          command: bash <(curl -s https://codecov.io/bash) -F unittests
-          when: always # Uploads code coverage results, pass or fail
+      # # Always persist to workspace, even if the previous step fails
+      # - run:
+      #     name: Persist Workspace
+      #     command: |
+      #       echo "Persisting workspace..."
+      #       # You can add any commands needed to prepare your workspace here
+      # - run:
+      #     name: Upload CodeCov.io Data
+      #     command: bash <(curl -s https://codecov.io/bash) -F unittests
+      #     when: always # Uploads code coverage results, pass or fail
                 
-      - persist_to_workspace:
-          root: /home/circleci/project
-          paths:
-            - path/to/persist
+      # - persist_to_workspace:
+      #     root: /home/circleci/project
+      #     paths:
+      #       - path/to/persist
 
 workflows:
   version: 2
