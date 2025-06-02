@@ -1,46 +1,20 @@
 version: 2.1
 
 jobs:
-  example_job:
+  sayhello: # defines a parameterized job
+    description: A job that does very little other than demonstrate what a parameterized job looks like
+    parameters:
+      saywhat:
+        description: "To whom shall we say hello?"
+        default: "World"
+        type: string
     docker:
-      - image: cimg/ruby:3.4.2-node
-
+      - image: cimg/base:2023.11
     steps:
-
-      - checkout
-      - run: echo "hello world"
-      
-      # # Your main steps here
-      # - run:
-      #     name: Run Tests
-      #     command: |
-      #       # Simulate test execution
-      #       pytest tests/ || echo "Tests failed"
-    
-
-      # # Always persist to workspace, even if the previous step fails
-      # - run:
-      #     name: Persist Workspace
-      #     command: |
-      #       echo "Persisting workspace..."
-      #       # You can add any commands needed to prepare your workspace here
-      # - run:
-      #     name: Upload CodeCov.io Data
-      #     command: bash <(curl -s https://codecov.io/bash) -F unittests
-      #     when: always # Uploads code coverage results, pass or fail
-                
-      # - persist_to_workspace:
-      #     root: /home/circleci/project
-      #     paths:
-      #       - path/to/persist
+      - run: echo "Hello << parameters.saywhat >>"
 
 workflows:
-  version: 2
   build:
     jobs:
-      - example_job
-  integration_tests:
-    when: << pipeline.event.github.pull_request.number >>
-    jobs:
-      - example_job
-
+      - sayhello: # invokes the parameterized job
+          saywhat: Everyone
