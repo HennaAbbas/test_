@@ -10,7 +10,7 @@ jobs:
         type: string
       image:
         type: string
-        default: ubuntu-2404:current
+        default: cimg/python:3.13.3
         description: Specifies the machine image to use for the executor   
     docker:
       - image: << parameters.image >>
