@@ -8,8 +8,13 @@ jobs:
         description: "To whom shall we say hello?"
         default: "World"
         type: string
+      image:
+        type: string
+        default: ubuntu-2404:current
+        description: Specifies the machine image to use for the executor   
     docker:
-      - image: cimg/base:2023.11
+      - image: << parameters.image >>
+        
     steps:
       - run: echo "Hello << parameters.saywhat >>"
 
