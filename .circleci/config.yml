@@ -1,25 +1,20 @@
 version: 2.1
 
-orbs:
-  node: circleci/node@4.5.0
+parameters:
+  image-tag:
+    type: string
+    default: "current"
+  workingdir:
+    type: string
+    default: "~/main"
 
 jobs:
-  fe:
-    executor:
-      name: node/default
-      tag: '16.3.0'
-
-    working_directory: ~/repo
-
+  build:
+    docker:
+      - image: cimg/node:<< pipeline.parameters.image-tag >>
+    environment:
+      IMAGETAG: << pipeline.parameters.image-tag >>
+    working_directory: << pipeline.parameters.workingdir >>
     steps:
-      - checkout
-      - run: sleep 50000
-
-
-workflows:
-  sqlmonitor:
-    jobs:
-      - fe
-
-#test
-#test
+      - run: echo "Image tag used was ${IMAGETAG}"
+      - run: echo "$(pwd) == << pipeline.parameters.workingdir >>"
