@@ -1,9 +1,5 @@
 version: 2.1
-orbs:
-  artifactory: jfrog/artifactory-orb@1.0.1
-  js: cambiahealth/janus-javascript@1
-  sb: cambiahealth/stack-build@1
-  codeql: cambiahealth/codeql-sast@1
+
 
 jobs:
   sayhello: # defines a parameterized job
@@ -31,15 +27,7 @@ jobs:
     docker:
       - image: cimg/node:22.13.1@sha256:2a7a5e8a81de3e45b6b09f67f068bf378c281df83c6b0b44d6cdd91b2f1f1ab8
     steps:
-      - attach_workspace:
-          at: ./
-      - js/configure-npm
-      - artifactory/install
-      - artifactory/configure
-      - run:
-          name: Configure jfrog cli for npm
-          command: |
-            jfrog rt npm-config --server-id-resolve Default-Server --server-id-deploy Default-Server --repo-resolve npm --repo-deploy npm
+
       - run:
           name: "📋 Check << parameters.package >> version"
           command: |
