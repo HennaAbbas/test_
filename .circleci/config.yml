@@ -16,6 +16,7 @@ jobs:
       - image: << parameters.image >>
         
     steps:
+      - run: circleci step halt
       - run: echo "Hello << parameters.saywhat >>"
 
 workflows:
