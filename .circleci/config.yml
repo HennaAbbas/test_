@@ -1,4 +1,9 @@
 version: 2.1
+orbs:
+  artifactory: jfrog/artifactory-orb@1.0.1
+  js: cambiahealth/janus-javascript@1
+  sb: cambiahealth/stack-build@1
+  codeql: cambiahealth/codeql-sast@1
 
 jobs:
   sayhello: # defines a parameterized job
