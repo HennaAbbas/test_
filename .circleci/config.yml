@@ -18,9 +18,75 @@ jobs:
     steps:
       - run: circleci step halt
       - run: echo "Hello << parameters.saywhat >>"
+  publish-npm:
+    parameters:
+      package:
+        description: Path to the package directory (ex. packages/react)
+        type: string
+    docker:
+      - image: cimg/node:22.13.1@sha256:2a7a5e8a81de3e45b6b09f67f068bf378c281df83c6b0b44d6cdd91b2f1f1ab8
+    steps:
+      - attach_workspace:
+          at: ./
+      - js/configure-npm
+      - artifactory/install
+      - artifactory/configure
+      - run:
+          name: Configure jfrog cli for npm
+          command: |
+            jfrog rt npm-config --server-id-resolve Default-Server --server-id-deploy Default-Server --repo-resolve npm --repo-deploy npm
+      - run:
+          name: "📋 Check << parameters.package >> version"
+          command: |
+            echo "=== Checking << parameters.package >> version ==="
+            
+            PACKAGE_VERSION=$(node -p "require('./<< parameters.package >>/package.json').version")
+            PACKAGE_NAME=$(node -p "require('./<< parameters.package >>/package.json').name")
+            
+            echo "📦 Package: $PACKAGE_NAME"
+            echo "🏷️  Version: $PACKAGE_VERSION"
+            
+            if ./check-package-version.sh << parameters.package >>; then
+              echo "🆕 Status: NEW VERSION - ready to publish"
+              echo 'export SHOULD_PUBLISH="true"' >> $BASH_ENV
+            else
+              echo "⏭️  Status: VERSION EXISTS - will skip publish step"
+              echo 'export SHOULD_PUBLISH="false"' >> $BASH_ENV
+            fi
+            
+            echo "✅ Version check completed"
+      
+      # This step runs when publishing is needed
+      - run:
+          name: "🚀 Publish << parameters.package >>"
+          command: |
+            echo "🚀 Publishing << parameters.package >>..."
+            cd ./<< parameters.package >> && jfrog rt npm-publish --build-name=$CIRCLE_PROJECT_REPONAME --build-number=$CIRCLE_BUILD_NUM
+            echo ""
+            echo "✅ SUCCESS: Package << parameters.package >> published to registry"
+          when:
+            condition:
+              equal: [ "true", "$SHOULD_PUBLISH" ]
+      
+      # This step runs when skipping (shows as a step that ran)
+      - run:
+          name: "⏭️  Skip << parameters.package >> (version exists)"
+          command: |
+            echo "⏭️  SKIPPED: Package << parameters.package >> not published"
+            echo "📝 Reason: Version already exists in registry"
+            echo "💡 To publish: increment version in << parameters.package >>/package.json"
+            echo "✅ This is expected behavior for unchanged packages"
+          when:
+            condition:
+              equal: [ "false", "$SHOULD_PUBLISH" ]      
 
 workflows:
   build:
     jobs:
       - sayhello: # invokes the parameterized job
           saywhat: Everyone
+      - publish-npm:
+          name: publish @heartwood/utils
+          package: packages/utils
+
+  
