@@ -1,22 +1,115 @@
 version: 2.1
-
-parameters:
-  image-tag:
-    type: string
-    default: "current"
-  workingdir:
-    type: string
-    default: "~/main"
-
-jobs:
-  build:
+# Define executors
+executors:
+  node-executor:
     docker:
-      - image: cimg/node:<< pipeline.parameters.image-tag >>
-    environment:
-      IMAGETAG: << pipeline.parameters.image-tag >>
-    working_directory: << pipeline.parameters.workingdir >>
-    steps:
-      - run: echo "Image tag used was ${IMAGETAG}"
-      - run: echo "$(pwd) == << pipeline.parameters.workingdir >>"
+      - image: cimg/node:18.17
+    working_directory: ~/project
 
-      #comment
+# Define jobs
+jobs:
+  # Job that always runs
+  test:
+    executor: node-executor
+    steps:
+      - checkout
+      - run:
+          name: Run tests
+          command: echo "run test"
+      - run:
+          name: Run linting
+          command: echo "run linting"
+
+  # Job that always runs
+  build:
+    executor: node-executor
+    steps:
+      - checkout
+
+      - run:
+          name: Run tests
+          command: echo "run test"
+      - run:
+          name: Run linting
+          command: echo "run linting"
+
+  # Conditional job - only runs on main branch
+  deploy:
+    executor: node-executor
+    steps:
+
+      - run:
+          name: Deploy to production
+          command: |
+            echo "Deploying to production..."
+            # Add your deployment commands here
+            # e.g., aws s3 sync dist/ s3://my-bucket/
+            # e.g., kubectl apply -f k8s/
+            echo "Deployment completed!"
+
+  # Another conditional job - only runs on feature branches
+  integration-test:
+    executor: node-executor
+    steps:
+      - run:
+          name: Run integration tests
+          command: |
+            echo "Running integration tests..."
+            # Add integration test commands here
+          
+
+# Define workflows
+workflows:
+  version: 2
+  build-test-deploy:
+    jobs:
+      # These jobs run on every commit
+      - test
+      - build:
+          requires:
+            - test
+      
+      # Conditional job: Deploy only runs on main branch
+      - deploy:
+          requires:
+            - build
+          filters:
+            branches:
+              only: main
+      
+      # Conditional job: Integration tests only run on feature branches
+      - integration-test:
+          requires:
+            - build
+          filters:
+            branches:
+              ignore: 
+                - main
+                - develop
+
+  # Alternative workflow that runs only on tags
+  release:
+    jobs:
+      - test:
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore: /.*/
+      - build:
+          requires:
+            - test
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore: /.*/
+      - deploy:
+          requires:
+            - build
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore: /.*/
+  
