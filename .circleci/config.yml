@@ -1,85 +1,139 @@
 version: 2.1
 
+# Define executors
+executors:
+  node-executor:
+    docker:
+      - image: cimg/node:18.17
+    working_directory: ~/project
 
+# Define jobs
 jobs:
-  sayhello: # defines a parameterized job
-    description: A job that does very little other than demonstrate what a parameterized job looks like
-    parameters:
-      saywhat:
-        description: "To whom shall we say hello?"
-        default: "World"
-        type: string
-      image:
-        type: string
-        default: cimg/python:3.13.3
-        description: Specifies the machine image to use for the executor   
-    docker:
-      - image: << parameters.image >>
-        
+  # Job that always runs
+  test:
+    executor: node-executor
     steps:
-      - run: circleci step halt
-      - run: echo "Hello << parameters.saywhat >>"
-  publish-npm:
-    parameters:
-      package:
-        description: Path to the package directory (ex. packages/react)
-        type: string
-    docker:
-      - image: cimg/node:22.13.1@sha256:2a7a5e8a81de3e45b6b09f67f068bf378c281df83c6b0b44d6cdd91b2f1f1ab8
-    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "package-lock.json" }}
+            - v1-dependencies-
+      - run:
+          name: Install dependencies
+          command: npm ci
+      - save_cache:
+          paths:
+            - node_modules
+          key: v1-dependencies-{{ checksum "package-lock.json" }}
+      - run:
+          name: Run tests
+          command: npm test
+      - run:
+          name: Run linting
+          command: npm run lint
 
-      - run:
-          name: "📋 Check << parameters.package >> version"
-          command: |
-            echo "=== Checking << parameters.package >> version ==="
-            
-            PACKAGE_VERSION=$(node -p "require('./<< parameters.package >>/package.json').version")
-            PACKAGE_NAME=$(node -p "require('./<< parameters.package >>/package.json').name")
-            
-            echo "📦 Package: $PACKAGE_NAME"
-            echo "🏷️  Version: $PACKAGE_VERSION"
-            
-            if ./check-package-version.sh << parameters.package >>; then
-              echo "🆕 Status: NEW VERSION - ready to publish"
-              echo 'export SHOULD_PUBLISH="true"' >> $BASH_ENV
-            else
-              echo "⏭️  Status: VERSION EXISTS - will skip publish step"
-              echo 'export SHOULD_PUBLISH="false"' >> $BASH_ENV
-            fi
-            
-            echo "✅ Version check completed"
-      
-      # This step runs when publishing is needed
-      - run:
-          name: "🚀 Publish << parameters.package >>"
-          command: |
-            echo "🚀 Publishing << parameters.package >>..."
-            cd ./<< parameters.package >> && jfrog rt npm-publish --build-name=$CIRCLE_PROJECT_REPONAME --build-number=$CIRCLE_BUILD_NUM
-            echo ""
-            echo "✅ SUCCESS: Package << parameters.package >> published to registry"
-          when:
-            condition:
-              equal: [ "true", "$SHOULD_PUBLISH" ]
-      
-      # This step runs when skipping (shows as a step that ran)
-      - run:
-          name: "⏭️  Skip << parameters.package >> (version exists)"
-          command: |
-            echo "⏭️  SKIPPED: Package << parameters.package >> not published"
-            echo "📝 Reason: Version already exists in registry"
-            echo "💡 To publish: increment version in << parameters.package >>/package.json"
-            echo "✅ This is expected behavior for unchanged packages"
-          when:
-            condition:
-              equal: [ "false", "$SHOULD_PUBLISH" ]      
-
-workflows:
+  # Job that always runs
   build:
-    jobs:
-      - sayhello: # invokes the parameterized job
-          saywhat: Everyone
-      - publish-npm:
-          name: publish @heartwood/utils
-          package: packages/utils
+    executor: node-executor
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "package-lock.json" }}
+            - v1-dependencies-
+      - run:
+          name: Install dependencies
+          command: npm ci
+      - run:
+          name: Build application
+          command: npm run build
+      - persist_to_workspace:
+          root: ~/project
+          paths:
+            - dist/
 
+  # Conditional job - only runs on main branch
+  deploy:
+    executor: node-executor
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/project
+      - run:
+          name: Deploy to production
+          command: |
+            echo "Deploying to production..."
+            # Add your deployment commands here
+            # e.g., aws s3 sync dist/ s3://my-bucket/
+            # e.g., kubectl apply -f k8s/
+            echo "Deployment completed!"
+
+  # Another conditional job - only runs on feature branches
+  integration-test:
+    executor: node-executor
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/project
+      - run:
+          name: Run integration tests
+          command: |
+            echo "Running integration tests..."
+            # Add integration test commands here
+            npm run test:integration
+
+# Define workflows
+workflows:
+  version: 2
+  build-test-deploy:
+    jobs:
+      # These jobs run on every commit
+      - test
+      - build:
+          requires:
+            - test
+      
+      # Conditional job: Deploy only runs on main branch
+      - deploy:
+          requires:
+            - build
+          filters:
+            branches:
+              only: main
+      
+      # Conditional job: Integration tests only run on feature branches
+      - integration-test:
+          requires:
+            - build
+          filters:
+            branches:
+              ignore: 
+                - main
+                - develop
+
+  # Alternative workflow that runs only on tags
+  release:
+    jobs:
+      - test:
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore: /.*/
+      - build:
+          requires:
+            - test
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore: /.*/
+      - deploy:
+          requires:
+            - build
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore: /.*/
   
