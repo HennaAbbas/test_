@@ -60,7 +60,7 @@ jobs:
 # Define workflows
 workflows:
   version: 2
-  build-test-deploy:
+  build-test-deploy-<< pipeline.git.branch >>:
     jobs:
       # These jobs run on every commit
       - test
