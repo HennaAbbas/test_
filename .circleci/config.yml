@@ -23,5 +23,5 @@ jobs:
 workflows:
   my-workflow:
     jobs:
-      - daily-message:
-         message: echo << parameters.message >>
+      - daily-message
+         # message: echo << parameters.message >>
