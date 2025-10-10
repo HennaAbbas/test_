@@ -111,4 +111,8 @@ workflows:
               only: /^v.*/
             branches:
               ignore: /.*/
+  build-test-deploy:
+    jobs:
+      # These jobs run on every commit
+      - test              
   
