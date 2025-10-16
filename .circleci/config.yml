@@ -2,7 +2,7 @@ version: 2.1
 
 jobs:
   test-coordinator:
-    type: no-op
+
   test-unit:
     docker:
       - image: cimg/node:20.10
