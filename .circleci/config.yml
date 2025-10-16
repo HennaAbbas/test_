@@ -2,12 +2,7 @@ version: 2.1
 
 jobs:
   test-coordinator:
-    type: no-op  
-    docker:
-      - image: cimg/base:stable
-    steps:
-      - run: echo "Coordinator job - no operation needed"
-  
+    type: no-op
   test-unit:
     docker:
       - image: cimg/node:20.10
