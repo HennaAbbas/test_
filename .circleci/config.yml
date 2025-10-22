@@ -89,12 +89,10 @@ workflows:
   # Alternative workflow that runs only on tags
   release:
     jobs:
-      - test:
-          filters:
-            tags:
-              only: /^v.*/
-            branches:
-              ignore: /.*/
+      - test
+      - test  
+      - test
+
       - build:
           requires:
             - test
