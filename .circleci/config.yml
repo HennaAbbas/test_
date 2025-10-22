@@ -89,9 +89,10 @@ workflows:
   # Alternative workflow that runs only on tags
   release:
     jobs:
-      - test
+      - test: 
+          name: test-1
       - test  
-      - test
+
 
       - build:
           requires:
