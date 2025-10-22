@@ -18,6 +18,7 @@ jobs:
       - run:
           name: Run linting
           command: echo "run linting"
+      - run: sleep 500    
 
   # Job that always runs
   build:
@@ -91,6 +92,8 @@ workflows:
     jobs:
       - test: 
           name: test-1
+      - test: 
+          name: test-2          
       - test  
 
 
