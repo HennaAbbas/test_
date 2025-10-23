@@ -63,10 +63,10 @@ workflows:
   build-test-deploy:
     jobs:
       # These jobs run on every commit
-      - test
+      - test1/test
       - build:
           requires:
-            - test
+            - test1/test
       
       # Conditional job: Deploy only runs on main branch
       - deploy:
@@ -97,7 +97,7 @@ workflows:
               ignore: /.*/
       - build:
           requires:
-            - test
+            - test1/test
           filters:
             tags:
               only: /^v.*/
