@@ -8,7 +8,7 @@ executors:
 # Define jobs
 jobs:
   # Job that always runs
-  test:
+  tes1/test:
     executor: node-executor
     steps:
       - checkout
@@ -89,7 +89,7 @@ workflows:
   # Alternative workflow that runs only on tags
   release:
     jobs:
-      - test:
+      - tes1/test:
           filters:
             tags:
               only: /^v.*/
