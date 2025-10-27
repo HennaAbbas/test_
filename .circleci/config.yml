@@ -2,18 +2,25 @@ version: 2.1
 
 jobs:
   test-coordinator:
-    type: no-op
+    docker:
+      - image: cimg/node:20.10
+    steps:
+      - checkout
+      - run : sleep 1000
   test-unit:
     docker:
       - image: cimg/node:20.10
     steps:
       - checkout
+      - run : sleep 1000
 
 
 workflows:
   build-test-deploy:
     jobs:
       - test-coordinator
-      - test-unit
+      - test-unit: 
+          requires: 
+            - test-coordinator 
 
 #testing
