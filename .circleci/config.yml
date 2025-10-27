@@ -14,10 +14,10 @@ jobs:
 workflows:
   build-test-deploy:
     jobs:
-      - test-unit: 
+      - test-unit   
+      - test-coordinator: 
           requires: 
-            - test-coordinator    
-      - test-coordinator
+            - test-unit
 
 
 #testing
