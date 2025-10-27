@@ -15,7 +15,9 @@ workflows:
   build-test-deploy:
     jobs:
       - test-unit   
-      - test-coordinator
+      - test-coordinator:
+          requires: 
+            - test-unit
 
 
 
