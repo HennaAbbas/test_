@@ -8,12 +8,15 @@ jobs:
       - image: cimg/node:20.10
     steps:
       - checkout
+      - run : sleep 1000
 
 
 workflows:
   build-test-deploy:
     jobs:
       - test-coordinator
-      - test-unit
+      - test-unit: 
+          requires: 
+            - test-coordinator
 
 #testing
