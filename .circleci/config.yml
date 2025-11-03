@@ -18,14 +18,15 @@ workflows:
           requires:
             - build
             - test
-            - deploy
-          requires-status: cancelled
+            - deploy: 
+              - canelled 
       - notify-failed:
           requires:
             - build
             - test
-            - deploy
-          requires-status: failed
+            - deploy:
+              - failed
+
 
 jobs:
   build:
