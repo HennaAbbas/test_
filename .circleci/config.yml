@@ -14,23 +14,22 @@ workflows:
           requires:
             - build
             - test
-      - slack/on-hold:
-          context: slack-secrets
+      - notify-cancelled:
           requires:
-            - build
-          filters:
-            branches:
-              only:
-                - main
-      - notify-on-fail:
-          context: slack-secrets
+            - build:
+                status: cancelled
+            - test:
+                status: cancelled
+            - deploy:
+                status: cancelled
+      - notify-failed:
           requires:
-            - deploy
-          when:
-            condition:
-              or:
-                - equal: [ cancelled, << pipeline.status >> ]
-                - equal: [ failed, << pipeline.status >> ]
+            - build:
+                status: failed
+            - test:
+                status: failed
+            - deploy:
+                status: failed
 
 jobs:
   build:
@@ -39,20 +38,8 @@ jobs:
     steps:
       - checkout
       - run: echo "Building..."
-      - slack/notify:
-          event: fail
-          custom: |
-            {
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "❌ Build *cancelled* or *failed*"
-                  }
-                }
-              ]
-            }
+      # Uncomment to demo failure:
+      # - run: exit 1
 
   test:
     docker:
@@ -65,12 +52,8 @@ jobs:
       - image: cimg/base:stable
     steps:
       - run: echo "Deploying..."
-      - slack/notify:
-          event: fail
-          mentions: '@channel'
-          template: basic_fail_1
 
-  notify-on-fail:
+  notify-cancelled:
     docker:
       - image: cimg/base:stable
     steps:
@@ -83,7 +66,26 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "⚠️ Workflow completed with failures or cancellations"
+                    "text": "⚠️ *Build Cancelled*\nWorkflow: ${CIRCLE_WORKFLOW_ID}\nBranch: ${CIRCLE_BRANCH}"
+                  }
+                }
+              ]
+            }
+
+  notify-failed:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - slack/notify:
+          event: always
+          custom: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "❌ *Build Failed*\nWorkflow: ${CIRCLE_WORKFLOW_ID}\nBranch: ${CIRCLE_BRANCH}"
                   }
                 }
               ]
