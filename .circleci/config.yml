@@ -12,72 +12,38 @@ workflows:
             - build
       - deploy:
           requires:
-            - build
             - test
-      - notify-cancelled:
+      # This job runs if any upstream job fails
+      - notify-on-failure:
           requires:
-            - build: canceled
-      - notify-failed:
-          requires:
+            - build: failed
+            - test: failed
             - deploy: failed
-
 
 jobs:
   build:
     docker:
       - image: cimg/base:stable
     steps:
-      - checkout
       - run: echo "Building..."
-      # Uncomment to demo failure:
+      # Uncomment to test failure behavior:
       # - run: exit 1
-
+      
   test:
     docker:
       - image: cimg/base:stable
     steps:
       - run: echo "Testing..."
-
+      
   deploy:
     docker:
       - image: cimg/base:stable
     steps:
-      - run: wqr
-
-  notify-cancelled:
+      - run: echo "Deploying..."
+      
+  notify-on-failure:
     docker:
       - image: cimg/base:stable
     steps:
-      - slack/notify:
-          event: always
-          custom: |
-            {
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "⚠️ *Build Cancelled*\nWorkflow: ${CIRCLE_WORKFLOW_ID}\nBranch: ${CIRCLE_BRANCH}"
-                  }
-                }
-              ]
-            }
-
-  notify-failed:
-    docker:
-      - image: cimg/base:stable
-    steps:
-      - slack/notify:
-          event: always
-          custom: |
-            {
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "❌ *Build Failed*\nWorkflow: ${CIRCLE_WORKFLOW_ID}\nBranch: ${CIRCLE_BRANCH}"
-                  }
-                }
-              ]
-            }
+      - slack/notify: 
+          template: basic_fail_1fail
