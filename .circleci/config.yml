@@ -46,4 +46,4 @@ jobs:
       - image: cimg/base:stable
     steps:
       - slack/notify: 
-          template: basic_fail_1fail
+          template: basic_fail_1
