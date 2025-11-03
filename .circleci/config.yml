@@ -17,8 +17,7 @@ workflows:
       - notify-on-failure:
           requires:
             - build: failed
-            - test: failed
-            - deploy: failed
+ 
 
 jobs:
   build:
