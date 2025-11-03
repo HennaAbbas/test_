@@ -16,14 +16,10 @@ workflows:
             - test
       - notify-cancelled:
           requires:
-            - build
-            - test
             - deploy: 
               - canelled 
       - notify-failed:
           requires:
-            - build
-            - test
             - deploy:
               - failed
 
