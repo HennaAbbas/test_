@@ -16,20 +16,16 @@ workflows:
             - test
       - notify-cancelled:
           requires:
-            - build:
-                status: cancelled
-            - test:
-                status: cancelled
-            - deploy:
-                status: cancelled
+            - build
+            - test
+            - deploy
+          requires-status: cancelled
       - notify-failed:
           requires:
-            - build:
-                status: failed
-            - test:
-                status: failed
-            - deploy:
-                status: failed
+            - build
+            - test
+            - deploy
+          requires-status: failed
 
 jobs:
   build:
@@ -49,44 +45,4 @@ jobs:
 
   deploy:
     docker:
-      - image: cimg/base:stable
-    steps:
-      - run: echo "Deploying..."
-
-  notify-cancelled:
-    docker:
-      - image: cimg/base:stable
-    steps:
-      - slack/notify:
-          event: always
-          custom: |
-            {
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "⚠️ *Build Cancelled*\nWorkflow: ${CIRCLE_WORKFLOW_ID}\nBranch: ${CIRCLE_BRANCH}"
-                  }
-                }
-              ]
-            }
-
-  notify-failed:
-    docker:
-      - image: cimg/base:stable
-    steps:
-      - slack/notify:
-          event: always
-          custom: |
-            {
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "❌ *Build Failed*\nWorkflow: ${CIRCLE_WORKFLOW_ID}\nBranch: ${CIRCLE_BRANCH}"
-                  }
-                }
-              ]
-            }
+      - image: cimg/
