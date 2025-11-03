@@ -27,7 +27,7 @@ jobs:
     steps:
       - run: echo "Building..."
       # Uncomment to test failure behavior:
-      # - run: exit 1
+      - run: exit 1
       
   test:
     docker:
