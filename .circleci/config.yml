@@ -42,7 +42,7 @@ jobs:
     docker:
       - image: cimg/base:stable
     steps:
-      - run: echo "Deploying..."
+      - run: wqr
 
   notify-cancelled:
     docker:
