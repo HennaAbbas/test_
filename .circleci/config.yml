@@ -6,6 +6,7 @@ executors:
       - image: cimg/node:18.17
     working_directory: ~/project
 # Define jobs
+#test
 jobs:
   # Job that always runs
   test:
