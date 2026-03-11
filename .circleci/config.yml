@@ -1,13 +1,12 @@
 version: 2.1
 
 orbs:
-  aws-ecr: circleci/aws-ecr@9.0.0
+  python: circleci/python@2.1.1
 
 workflows:
-  build:
+  build-and-test:
     jobs:
-      - aws-ecr/build_and_push_image:
-          repo: my-repo-staging
-      - aws-ecr/build_and_push_image:
-          repo: my-repo-prod
-  
+      - python/test:
+          pkg-manager: pip
+      - python/test:
+          pkg-manager: pipenv
