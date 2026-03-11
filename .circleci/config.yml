@@ -7,6 +7,13 @@ workflows:
   build-and-test:
     jobs:
       - python/test:
+          name: setup
           pkg-manager: pip
       - python/test:
+          requires:
+            - setup         # try both: short name AND orb-prefixed
+          pkg-manager: pip
+      - python/test:
+          requires:
+            - setup
           pkg-manager: pipenv
