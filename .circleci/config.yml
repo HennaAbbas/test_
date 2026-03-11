@@ -1,7 +1,110 @@
 version: 2.1
 
+# Inline orb that mirrors the structure of whoop/javascript's build-with-variant job
+# Stubs out CodeArtifact auth, Docker push, and report-build so it runs in any repo
 orbs:
-  javascript: whoop/javascript@2
+  javascript:
+    executors:
+      docker:
+        parameters:
+          executor_docker_image:
+            type: string
+            default: cimg/node:22.5.1
+          executor_resource_class:
+            type: enum
+            enum: [small, medium, medium+, large, xlarge, 2xlarge, 2xlarge+]
+            default: medium
+          working_directory:
+            type: string
+            default: ~/repo
+        docker:
+          - image: <<parameters.executor_docker_image>>
+        resource_class: <<parameters.executor_resource_class>>
+        working_directory: <<parameters.working_directory>>
+
+    jobs:
+      install-and-lint:
+        executor:
+          name: docker
+          executor_docker_image: <<parameters.executor_docker_image>>
+          executor_resource_class: <<parameters.executor_resource_class>>
+          working_directory: <<parameters.working_directory>>
+        parameters:
+          executor_docker_image:
+            type: string
+            default: cimg/node:22.5.1
+          executor_resource_class:
+            type: enum
+            enum: [small, medium, medium+, large, xlarge, 2xlarge, 2xlarge+]
+            default: medium
+          working_directory:
+            type: string
+            default: ~/repo
+          persist_to_workspace_path:
+            type: string
+            default: repo
+          persist_to_workspace_root:
+            type: string
+            default: ~/
+        steps:
+          - checkout
+          - run:
+              name: Install dependencies (stubbed)
+              command: echo "install stub"
+          - run:
+              name: Lint (stubbed)
+              command: echo "lint stub"
+          - persist_to_workspace:
+              root: <<parameters.persist_to_workspace_root>>
+              paths:
+                - <<parameters.persist_to_workspace_path>>
+
+      build-with-variant:
+        executor:
+          name: docker
+          executor_docker_image: <<parameters.executor_docker_image>>
+          executor_resource_class: <<parameters.executor_resource_class>>
+          working_directory: <<parameters.working_directory>>
+        parameters:
+          executor_docker_image:
+            type: string
+            default: cimg/node:22.5.1
+          executor_resource_class:
+            type: enum
+            enum: [small, medium, medium+, large, xlarge, 2xlarge, 2xlarge+]
+            default: medium
+          working_directory:
+            type: string
+            default: ~/repo
+          variant:
+            type: enum
+            enum: [qa, prod, loadtest]
+          env:
+            type: enum
+            enum: [all, qa, prod]
+            default: all
+        steps:
+          - checkout
+          - run:
+              name: Pull auth (stubbed)
+              command: echo "pull-auth stub"
+          - run:
+              name: Report build start (stubbed)
+              command: echo "report-build/start stub - variant=<<parameters.variant>>"
+          - attach_workspace:
+              at: "~"
+          - run:
+              name: Set up env var
+              command: echo "set-up-env-var stub - variant=<<parameters.variant>>"
+          - run:
+              name: Build project (stubbed)
+              command: echo "build stub"
+          - run:
+              name: Docker push (stubbed)
+              command: echo "push stub"
+          - run:
+              name: Report build end (stubbed)
+              command: echo "report-build/report stub"
 
 workflows:
   build-and-test:
@@ -11,14 +114,13 @@ workflows:
           executor_docker_image: cimg/node:22.5.1
           working_directory: ~/accountsandbox
           persist_to_workspace_path: accountsandbox
-          cache_prefix: v2
+          persist_to_workspace_root: ~/
       - javascript/build-with-variant:
           requires:
             - javascript/install-and-lint
           context: environment-variables
           executor_docker_image: cimg/node:22.5.1
           working_directory: ~/accountsandbox
-          image_type: ""
           variant: qa
           env: qa
       - javascript/build-with-variant:
@@ -27,6 +129,5 @@ workflows:
           context: environment-variables
           executor_docker_image: cimg/node:22.5.1
           working_directory: ~/accountsandbox
-          image_type: ""
           variant: prod
           env: prod
