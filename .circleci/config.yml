@@ -3,17 +3,22 @@ version: 2.1
 orbs:
   python: circleci/python@2.1.1
 
+jobs:
+  noop:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - run: echo "done"
+
 workflows:
   build-and-test:
     jobs:
+      - noop
       - python/test:
-          name: setup
+          requires:
+            - noop
           pkg-manager: pip
       - python/test:
           requires:
-            - setup         # try both: short name AND orb-prefixed
-          pkg-manager: pip
-      - python/test:
-          requires:
-            - setup
+            - noop
           pkg-manager: pipenv
