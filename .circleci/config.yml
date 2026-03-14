@@ -118,20 +118,20 @@ workflows:
           name: install-and-lint
       - javascript/build-with-variant:
           requires:
-            - javascript/install-and-lint
+            - install-and-lint
           context: environment-variables
           executor_docker_image: cimg/node:22.5.1
           working_directory: ~/accountsandbox
           variant: qa
           env: qa
-          name: test/test
+     
       - javascript/build-with-variant:
           requires:
-            - javascript/install-and-lint
+            - install-and-lint
           context: environment-variables
           executor_docker_image: cimg/node:22.5.1
           working_directory: ~/accountsandbox
           variant: prod
           env: prod
-          name: test/test
+       
 
