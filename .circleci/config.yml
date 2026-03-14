@@ -115,6 +115,7 @@ workflows:
           working_directory: ~/accountsandbox
           persist_to_workspace_path: accountsandbox
           persist_to_workspace_root: ~/
+          name: install-and-lint
       - javascript/build-with-variant:
           requires:
             - javascript/install-and-lint
