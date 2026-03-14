@@ -123,6 +123,7 @@ workflows:
           working_directory: ~/accountsandbox
           variant: qa
           env: qa
+          name: javascript/build-with-variant
       - javascript/build-with-variant:
           requires:
             - javascript/install-and-lint
@@ -131,3 +132,4 @@ workflows:
           working_directory: ~/accountsandbox
           variant: prod
           env: prod
+          name: javascript/build-with-variant
