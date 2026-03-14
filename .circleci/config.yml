@@ -1,114 +1,139 @@
 version: 2.1
-# Define executors
-executors:
-  node-executor:
-    docker:
-      - image: cimg/node:18.17
-    working_directory: ~/project
-# Define jobs
-jobs:
-  # Job that always runs
-  test:
-    executor: node-executor
-    steps:
-      - checkout
-      - run:
-          name: Run tests
-          command: echo "run test"
-      - run:
-          name: Run linting
-          command: echo "run linting"
+#
+# Inline orb that mirrors the structure of whoop/javascript's build-with-variant job
+# Stubs out CodeArtifact auth, Docker push, and report-build so it runs in any repo
+orbs:
+  javascript:
+    executors:
+      docker:
+        parameters:
+          executor_docker_image:
+            type: string
+            default: cimg/node:22.5.1
+          executor_resource_class:
+            type: enum
+            enum: [small, medium, medium+, large, xlarge, 2xlarge, 2xlarge+]
+            default: medium
+          working_directory:
+            type: string
+            default: ~/repo
+        docker:
+          - image: <<parameters.executor_docker_image>>
+        resource_class: <<parameters.executor_resource_class>>
+        working_directory: <<parameters.working_directory>>
 
-  # Job that always runs
-  build:
-    executor: node-executor
-    steps:
-      - checkout
+    jobs:
+      install-and-lint:
+        executor:
+          name: docker
+          executor_docker_image: <<parameters.executor_docker_image>>
+          executor_resource_class: <<parameters.executor_resource_class>>
+          working_directory: <<parameters.working_directory>>
+        parameters:
+          executor_docker_image:
+            type: string
+            default: cimg/node:22.5.1
+          executor_resource_class:
+            type: enum
+            enum: [small, medium, medium+, large, xlarge, 2xlarge, 2xlarge+]
+            default: medium
+          working_directory:
+            type: string
+            default: ~/repo
+          persist_to_workspace_path:
+            type: string
+            default: repo
+          persist_to_workspace_root:
+            type: string
+            default: ~/
+        steps:
+          - checkout
+          - run:
+              name: Install dependencies (stubbed)
+              command: echo "install stub"
+          - run:
+              name: Lint (stubbed)
+              command: echo "lint stub"
+          - persist_to_workspace:
+              root: <<parameters.persist_to_workspace_root>>
+              paths:
+                - <<parameters.persist_to_workspace_path>>
 
-      - run:
-          name: Run tests
-          command: echo "run test"
-      - run:
-          name: Run linting
-          command: echo "run linting"
+      build-with-variant:
+        executor:
+          name: docker
+          executor_docker_image: <<parameters.executor_docker_image>>
+          executor_resource_class: <<parameters.executor_resource_class>>
+          working_directory: <<parameters.working_directory>>
+        parameters:
+          executor_docker_image:
+            type: string
+            default: cimg/node:22.5.1
+          executor_resource_class:
+            type: enum
+            enum: [small, medium, medium+, large, xlarge, 2xlarge, 2xlarge+]
+            default: medium
+          working_directory:
+            type: string
+            default: ~/repo
+          variant:
+            type: enum
+            enum: [qa, prod, loadtest]
+          env:
+            type: enum
+            enum: [all, qa, prod]
+            default: all
+        steps:
+          - checkout
+          - run:
+              name: Pull auth (stubbed)
+              command: echo "pull-auth stub"
+          - run:
+              name: Report build start (stubbed)
+              command: echo "report-build/start stub - variant=<<parameters.variant>>"
+          - attach_workspace:
+              at: "~"
+          - run:
+              name: Set up env var
+              command: echo "set-up-env-var stub - variant=<<parameters.variant>>"
+          - run:
+              name: Build project (stubbed)
+              command: echo "build stub"
+          - run:
+              name: Docker push (stubbed)
+              command: echo "push stub"
+          - run:
+              name: Report build end (stubbed)
+              command: echo "report-build/report stub"
 
-  # Conditional job - only runs on main branch
-  deploy:
-    executor: node-executor
-    steps:
-
-      - run:
-          name: Deploy to production
-          command: |
-            echo "Deploying to production..."
-            # Add your deployment commands here
-            # e.g., aws s3 sync dist/ s3://my-bucket/
-            # e.g., kubectl apply -f k8s/
-            echo "Deployment completed!"
-
-  # Another conditional job - only runs on feature branches
-  integration-test:
-    executor: node-executor
-    steps:
-      - run:
-          name: Run integration tests
-          command: |
-            echo "Running integration tests..."
-            # Add integration test commands here
-          
-
-# Define workflows
 workflows:
-  version: 2
-  build-test-deploy:
+  build-and-test:
     jobs:
-      # These jobs run on every commit
-      - test
-      - build:
+      - javascript/install-and-lint:
+          context: environment-variables
+          executor_docker_image: cimg/node:22.5.1
+          working_directory: ~/accountsandbox
+          persist_to_workspace_path: accountsandbox
+          persist_to_workspace_root: ~/
+          name: install-and-lint
+      - javascript/build-with-variant:
           requires:
-            - test
-      
-      # Conditional job: Deploy only runs on main branch
-      - deploy:
+            - install-and-lint
+          context: environment-variables
+          executor_docker_image: cimg/node:22.5.1
+          working_directory: ~/accountsandbox
+          variant: qa
+          env: qa
+          name: build-with-variant
+     
+      - javascript/build-with-variant:
           requires:
-            - build
-          filters:
-            branches:
-              only: main
-      
-      # Conditional job: Integration tests only run on feature branches
-      - integration-test:
-          requires:
-            - build
-          filters:
-            branches:
-              ignore: 
-                - main
-                - develop
+            - install-and-lint
+          context: environment-variables
+          executor_docker_image: cimg/node:22.5.1
+          working_directory: ~/accountsandbox
+          variant: prod
+          env: prod
+          name: build-with-variant
+       
 
-  # Alternative workflow that runs only on tags
-  release:
-    jobs:
-      - test:
-          filters:
-            tags:
-              only: /^v.*/
-            branches:
-              ignore: /.*/
-      - build:
-          requires:
-            - test
-          filters:
-            tags:
-              only: /^v.*/
-            branches:
-              ignore: /.*/
-      - deploy:
-          requires:
-            - build
-          filters:
-            tags:
-              only: /^v.*/
-            branches:
-              ignore: /.*/
-  
