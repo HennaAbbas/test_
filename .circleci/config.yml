@@ -103,12 +103,13 @@ workflows:
               only: /^v.*/
             branches:
               ignore: /.*/
+      - hold: # <<< A job that will require manual approval in the CircleCI web application.
+          type: approval # This key-value pair will set your workflow to a status of "Needs Approval"
+          requires: # We only run the "hold" job when test2 has succeeded
+           - build
+      # On approval of the `hold` job, any successive job that requires the `hold` job will run.
+      # In this case, a user is manually triggering the deploy job.
       - deploy:
           requires:
-            - build
-          filters:
-            tags:
-              only: /^v.*/
-            branches:
-              ignore: /.*/
+            - hold
   
