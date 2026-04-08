@@ -19,7 +19,7 @@ jobs:
           name: Run linting
           command: echo "run linting"
 
-  build-very-long-job-name-to-test:
+  build-very-long-job-name-to-test-it-needs-to-be-even-longer-than-long:
     executor: node-executor
     steps:
       - checkout
@@ -72,7 +72,7 @@ workflows:
       - build:
           requires:
             - test
-      - build-very-long-job-name-to-test            
+      - build-very-long-job-name-to-test-it-needs-to-be-even-longer-than-long            
       - hold: # <<< A job that will require manual approval in the CircleCI web application.
           type: approval # This key-value pair will set your workflow to a status of "Needs Approval"
           requires: # We only run the "hold" job when test2 has succeeded
