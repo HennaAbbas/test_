@@ -19,6 +19,11 @@ jobs:
           name: Run linting
           command: echo "run linting"
 
+  build-very-long-job-name-to-test-it-needs-to-be-even-longer-than-long:
+    executor: node-executor
+    steps:
+      - checkout
+
   # Job that always runs
   build:
     executor: node-executor
@@ -67,6 +72,16 @@ workflows:
       - build:
           requires:
             - test
+      - build-very-long-job-name-to-test-it-needs-to-be-even-longer-than-long            
+      - hold: # <<< A job that will require manual approval in the CircleCI web application.
+          type: approval # This key-value pair will set your workflow to a status of "Needs Approval"
+          requires: # We only run the "hold" job when test2 has succeeded
+           - build
+      # On approval of the `hold` job, any successive job that requires the `hold` job will run.
+      # In this case, a user is manually triggering the deploy job.
+      - deploy:
+          requires:
+            - hold            
       
       # Conditional job: Deploy only runs on main branch
       - deploy:
@@ -76,15 +91,8 @@ workflows:
             branches:
               only: main
       
-      # Conditional job: Integration tests only run on feature branches
-      - integration-test:
-          requires:
-            - build
-          filters:
-            branches:
-              ignore: 
-                - main
-                - develop
+
+  
 
   # Alternative workflow that runs only on tags
   release:
@@ -103,12 +111,13 @@ workflows:
               only: /^v.*/
             branches:
               ignore: /.*/
+      - hold: # <<< A job that will require manual approval in the CircleCI web application.
+          type: approval # This key-value pair will set your workflow to a status of "Needs Approval"
+          requires: # We only run the "hold" job when test2 has succeeded
+           - build
+      # On approval of the `hold` job, any successive job that requires the `hold` job will run.
+      # In this case, a user is manually triggering the deploy job.
       - deploy:
           requires:
-            - build
-          filters:
-            tags:
-              only: /^v.*/
-            branches:
-              ignore: /.*/
+            - hold
   
