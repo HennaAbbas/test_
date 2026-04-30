@@ -1,114 +1,125 @@
+# ============================================================
+# config.yml — Reproduces NOT-702
+# "Stale cancelled GitHub status persists for blocked approval jobs"
+#
+# HOW TO TRIGGER THE BUG:
+#   1. Open a PR — this workflow runs.
+#   2. While `build` or `test` are still running, push a new commit
+#      (or manually cancel the workflow). Auto-cancel fires.
+#   3. GitHub receives a "cancelled" status for `trigger-e2e`.
+#   4. The NEW workflow starts. `trigger-e2e` enters **blocked** state
+#      (waiting on build + test). CircleCI does NOT report a GitHub
+#      status for blocked jobs, so the stale "cancelled" check is
+#      never overwritten.
+#   5. The commit appears to have failed checks ❌ — even though the
+#      new workflow is running fine.
+#
+# ROOT CAUSE:
+#   CircleCI only reports a GitHub status when a job reaches `on_hold`
+#   (waiting for approval). It does NOT report when a job is `blocked`
+#   (waiting on upstream dependencies). So the window between workflow
+#   start and the job's upstream deps completing produces no status
+#   write, leaving GitHub with the previous workflow's cancelled status.
+#
+# PREREQUISITES (project settings):
+#   ✅ Auto-cancel redundant workflows  — ON
+#   ✅ GitHub Status Updates            — ON
+#   ✅ GitHub Checks                    — ON
+# ============================================================
+
 version: 2.1
-# Define executors
-executors:
-  node-executor:
-    docker:
-      - image: cimg/node:18.17
-    working_directory: ~/project
-# Define jobs
+
+# ── BUGGY WORKFLOW ───────────────────────────────────────────
+# trigger-e2e is gated on real upstream work (build + test).
+# It starts life as `blocked`, not `on_hold`, so CircleCI never
+# writes a fresh "pending" status to GitHub on the new run.
+
 jobs:
-  # Job that always runs
-  test:
-    executor: node-executor
-    steps:
-      - checkout
-      - run:
-          name: Run tests
-          command: echo "run test"
-      - run:
-          name: Run linting
-          command: echo "run linting"
-
-  # Job that always runs
   build:
-    executor: node-executor
+    docker:
+      - image: cimg/base:stable
     steps:
       - checkout
-
       - run:
-          name: Run tests
-          command: echo "run test"
-      - run:
-          name: Run linting
-          command: echo "run linting"
+          name: Build
+          command: echo "Building..." && sleep 30   # simulate real work
 
-  # Conditional job - only runs on main branch
-  deploy:
-    executor: node-executor
+  test:
+    docker:
+      - image: cimg/base:stable
     steps:
-
+      - checkout
       - run:
-          name: Deploy to production
-          command: |
-            echo "Deploying to production..."
-            # Add your deployment commands here
-            # e.g., aws s3 sync dist/ s3://my-bucket/
-            # e.g., kubectl apply -f k8s/
-            echo "Deployment completed!"
+          name: Test
+          command: echo "Testing..." && sleep 20    # simulate real work
 
-  # Another conditional job - only runs on feature branches
-  integration-test:
-    executor: node-executor
+  run-e2e:
+    docker:
+      - image: cimg/base:stable
     steps:
+      - checkout
       - run:
-          name: Run integration tests
-          command: |
-            echo "Running integration tests..."
-            # Add integration test commands here
-          
+          name: E2E
+          command: echo "Running E2E tests..."
 
-# Define workflows
 workflows:
-  version: 2
-  build-test-deploy:
+  # ❌ BUGGY — reproduces the stale cancelled status
+  run-tests-on-pull-request:
     jobs:
-      # These jobs run on every commit
-      - test
-      - build:
-          requires:
-            - test
-      
-      # Conditional job: Deploy only runs on main branch
-      - deploy:
-          requires:
-            - build
-          filters:
-            branches:
-              only: main
-      
-      # Conditional job: Integration tests only run on feature branches
-      - integration-test:
-          requires:
-            - build
-          filters:
-            branches:
-              ignore: 
-                - main
-                - develop
+      - build
 
-  # Alternative workflow that runs only on tags
-  release:
-    jobs:
       - test:
-          filters:
-            tags:
-              only: /^v.*/
-            branches:
-              ignore: /.*/
-      - build:
-          requires:
-            - test
-          filters:
-            tags:
-              only: /^v.*/
-            branches:
-              ignore: /.*/
-      - deploy:
           requires:
             - build
-          filters:
-            tags:
-              only: /^v.*/
-            branches:
-              ignore: /.*/
-  
+
+      # This job is BLOCKED (not on_hold) while build + test run.
+      # Cancel the workflow now → GitHub records "cancelled" for trigger-e2e.
+      # Re-run → trigger-e2e goes back to blocked → no status written → stale ❌
+      - trigger-e2e:
+          type: approval
+          requires:
+            - build
+            - test
+
+      - run-e2e:
+          requires:
+            - trigger-e2e
+
+
+# ── FIXED WORKFLOW ───────────────────────────────────────────
+# Insert a no-op job as the immediate parent of the approval.
+# no-op completes instantly → approval jumps straight to `on_hold`
+# → CircleCI reports a "pending/waiting for approval" status to
+# GitHub immediately → overwrites any stale cancelled status. ✅
+#
+# The real upstream deps (build + test) are moved to the execution
+# job (run-e2e-fixed) so they still gate actual work.
+#
+# Uncomment the section below and remove the buggy workflow above
+# to apply the fix.
+
+# jobs:
+#   unblock-e2e:
+#     type: no-op             # completes in < 1 s; forces approval to on_hold instantly
+#
+# workflows:
+#   run-tests-on-pull-request:
+#     jobs:
+#       - build
+#
+#       - test:
+#           requires:
+#             - build
+#
+#       - unblock-e2e         # no-op — no dependencies, finishes immediately
+#
+#       - trigger-e2e:
+#           type: approval
+#           requires:
+#             - unblock-e2e   # ← only no-op here; job reaches on_hold right away ✅
+#
+#       - run-e2e-fixed:
+#           requires:
+#             - trigger-e2e
+#             - build         # real gates live on the execution job, not the approval
+#             - test
