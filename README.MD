@@ -1,0 +1,1 @@
+[![CircleCI](https://dl.circleci.com/insights-snapshot/gh/HennaAbbas/test_/master/my_workflow/badge.svg?window=30d&circle-token=CCIPRJ_EN2A9GCmHtv7h5ST3aUrbA_12d9777ebfe292beca989180f0fc151906a8ace1)](https://app.circleci.com/insights/github/HennaAbbas/test_/workflows/my_workflow/overview?branch=master&reporting-window=last-30-days&insights-snapshot=true)
