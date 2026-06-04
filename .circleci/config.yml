@@ -1,8 +1,5 @@
 version: 2.1
 
-orbs:
-  win: circleci/windows@2.2.0
-  nx: nrwl/nx@1.2.2
   
 
 jobs:
@@ -19,17 +16,4 @@ workflows:
     jobs:
       - build
 
-  nightly:
-    triggers:
-      - schedule:
-          #every weekday at 6am
-          cron: "* * * * 1-5"
-          filters:
-            branches:
-              only:
-#                 - /^release.*/
-                - test
-                
-    jobs:
-      - build
-      #test
+
