@@ -1,4 +1,17 @@
 version: 2.1
+
+#test
+
+  
+
+jobs:
+  build:
+    docker:
+     - image: cimg/node:14.16-browsers
+    steps:
+      - run: echo "hello world"
+          
+               
 # Define executors
 executors:
   node-executor:
@@ -62,6 +75,9 @@ workflows:
   version: 2
   build-test-deploy:
     jobs:
+      - build
+
+
       # These jobs run on every commit
       - test
       - build:
