@@ -3,3 +3,5 @@
 hello
 
 rasheeda trying to stay alive
+
+setting proejct flag
