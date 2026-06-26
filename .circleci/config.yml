@@ -28,7 +28,7 @@ jobs:
       - checkout
       - run:
           name: Deploy
-          command: echo "Deploying..."
+          command: echo "Deploying...."
 
 workflows:
   build-test-deploy:
