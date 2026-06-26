@@ -3,7 +3,7 @@ version: 2.1
 jobs:
   build:
     machine:
-      image: ubuntu-2604:edge
+      image: ubuntu-2604:current
     resource_class: medium  
 
     steps:
