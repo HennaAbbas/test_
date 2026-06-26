@@ -2,8 +2,10 @@ version: 2.1
 
 jobs:
   build:
-    docker:
-      - image: cimg/base:stable
+    machine:
+      image: ubuntu-2604:current
+    resource_class: medium  
+
     steps:
       - checkout
       - run:
