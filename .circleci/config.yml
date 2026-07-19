@@ -12,35 +12,12 @@ jobs:
           name: Build
           command: echo "Building..."
 
-  test:
-    docker:
-      - image: cimg/base:stable
-    steps:
-      - checkout
-      - run:
-          name: Test
-          command: echo "Running tests..."
-
-  deploy:
-    docker:
-      - image: cimg/base:stable
-    steps:
-      - checkout
-      - run:
-          name: Deploy
-          command: echo "Deploying...."
 
 workflows:
-  build-test-deploy:
+  build:
     jobs:
       - build
-      - test:
-          requires:
-            - build
+  hold:     
       - hold-for-approval:
           type: approval
-          requires:
-            - test
-      - deploy:
-          requires:
-            - hold-for-approval
+
