@@ -16,9 +16,6 @@ jobs:
 workflows:
   build:
     jobs:
-      - build
-  hold: 
-    jobs:
-      - hold-for-approval:
-          type: approval
+      - build:
+          type: approval      
 
