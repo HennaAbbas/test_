@@ -1,18 +1,57 @@
 version: 2.1
-
+ 
+# Pipeline parameters must be declared at the top level.
+# These can be passed via the API or the CircleCI web app when triggering a pipeline.
+parameters:
+  environment:
+    type: string
+    default: "staging"
+  run_integration_tests:
+    type: boolean
+    default: false
+  image-tag:
+    type: string
+    default: "latest"
+ 
 jobs:
   build:
-    machine:
-      image: ubuntu-2604:current
-    resource_class: medium  
-
+    docker:
+      - image: cimg/node:<< pipeline.parameters.image-tag >>
     steps:
       - checkout
-      - run: wrq
-
-
+      - run:
+          name: Build
+          command: echo "Building for environment: << pipeline.parameters.environment >>"
+ 
+  test:
+    docker:
+      - image: cimg/node:<< pipeline.parameters.image-tag >>
+    steps:
+      - checkout
+      - run:
+          name: Run unit tests
+          command: echo "Running tests with image tag: << pipeline.parameters.image-tag >>"
+ 
+  integration-test:
+    docker:
+      - image: cimg/node:<< pipeline.parameters.image-tag >>
+    steps:
+      - checkout
+      - run:
+          name: Run integration tests
+          command: echo "Running integration tests against << pipeline.parameters.environment >>"
+ 
 workflows:
-  build:
+  # Default workflow: always runs build + test
+  build-and-test:
     jobs:
-      - build    
-
+      - build
+      - test:
+          requires:
+            - build
+ 
+  # Conditional workflow: only runs when run_integration_tests=true is passed via API/UI
+  integration-tests:
+    when: << pipeline.parameters.run_integration_tests >>
+    jobs:
+      - integration-test
