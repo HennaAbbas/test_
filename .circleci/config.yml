@@ -14,7 +14,6 @@ parameters:
     type: string
     default: "20.11"
 
-    #test
  
 jobs:
   build:
