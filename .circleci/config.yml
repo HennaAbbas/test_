@@ -12,7 +12,7 @@ parameters:
     default: false
   image-tag:
     type: string
-    default: "latest"
+    default: "20.11"
  
 jobs:
   build:
