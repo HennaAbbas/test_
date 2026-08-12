@@ -1,3 +1,4 @@
+
 version: 2.1
  
 # Pipeline parameters must be declared at the top level.
@@ -21,7 +22,8 @@ jobs:
       - checkout
       - run:
           name: Build
-          command: echo "Building for environment: << pipeline.parameters.environment >>"
+          command: |
+            echo "Building for environment: << pipeline.parameters.environment >>"
  
   test:
     docker:
@@ -30,7 +32,8 @@ jobs:
       - checkout
       - run:
           name: Run unit tests
-          command: echo "Running tests with image tag: << pipeline.parameters.image-tag >>"
+          command: |
+            echo "Running tests with image tag: << pipeline.parameters.image-tag >>"
  
   integration-test:
     docker:
@@ -39,7 +42,8 @@ jobs:
       - checkout
       - run:
           name: Run integration tests
-          command: echo "Running integration tests against << pipeline.parameters.environment >>"
+          command: |
+            echo "Running integration tests against << pipeline.parameters.environment >>"
  
 workflows:
   # Default workflow: always runs build + test
