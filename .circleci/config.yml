@@ -45,6 +45,7 @@ jobs:
           name: Run integration tests
           command: |
             echo "Running integration tests against << pipeline.parameters.environment >>"
+      - run: wqr            
  
 workflows:
   # Default workflow: always runs build + test
