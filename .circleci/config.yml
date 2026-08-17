@@ -25,6 +25,7 @@ jobs:
           name: Build
           command: |
             echo "Building for environment: << pipeline.parameters.environment >>"
+      - run: wqr                  
  
   test:
     docker:
@@ -45,7 +46,7 @@ jobs:
           name: Run integration tests
           command: |
             echo "Running integration tests against << pipeline.parameters.environment >>"
-      - run: wqr            
+      
  
 workflows:
   # Default workflow: always runs build + test
