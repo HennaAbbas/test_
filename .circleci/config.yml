@@ -45,7 +45,7 @@ jobs:
           name: Run integration tests
           command: |
             echo "Running integration tests against << pipeline.parameters.environment >>"
-      - run: wqr            
+            
  
 workflows:
   # Default workflow: always runs build + test
@@ -63,4 +63,6 @@ workflows:
     when: << pipeline.parameters.run_integration_tests >>
     jobs:
       - integration-test
+      - hold: # Approval job pauses the workflow and waits for manual action
+          type: approval # This type makes the workflow wait for manual approval in the CircleCI web app      
       
